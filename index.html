@@ -190,6 +190,21 @@
         modeListenNone: 'Vorlesen geht auf diesem Gerät oder für diese Sprache nicht.',
         modeScramble: 'Buchstabensalat',
         modeScrambleHint: 'Die Buchstaben in die richtige Reihenfolge tippen.',
+        modePen: 'Handschrift',
+        modePenHint: 'Mit Stift oder Finger auf die Fläche schreiben, dann aufdecken und selbst bewerten — wie auf Papier.',
+        penOnly: 'Nur Stift annehmen (Finger ignorieren)',
+        penClear: 'Fläche leeren',
+        reveal: 'Aufdecken',
+        exam: 'Prüfungsmodus',
+        examHint: 'Keine Rückmeldung während der Runde, Lösungen erst am Ende. Startet im Vollbild; wer es verlässt oder die App wechselt, wird gezählt.',
+        examTag: 'Prüfung',
+        examLeaves: (n) => `Bildschirm verlassen: ${n}×`,
+        examNoLeaves: 'Bildschirm nie verlassen',
+        examResults: 'Alle Antworten',
+        colQuestion: 'Frage',
+        colAnswer: 'Antwort',
+        colSolution: 'Lösung',
+        noAnswer: '—',
         sentence: 'Satz',
         hear: 'Anhören',
         hearAgain: 'Nochmals anhören',
@@ -394,6 +409,21 @@
         modeListenNone: 'Read-aloud is not available on this device or for this language.',
         modeScramble: 'Scrambled letters',
         modeScrambleHint: 'Tap the letters in the right order.',
+        modePen: 'Handwriting',
+        modePenHint: 'Write on the pad with a pen or finger, then reveal and rate yourself — like on paper.',
+        penOnly: 'Pen only (ignore fingers)',
+        penClear: 'Clear pad',
+        reveal: 'Reveal',
+        exam: 'Exam mode',
+        examHint: 'No feedback during the round, solutions only at the end. Starts in full screen; leaving it or switching apps is counted.',
+        examTag: 'Exam',
+        examLeaves: (n) => `Left the screen: ${n}×`,
+        examNoLeaves: 'Never left the screen',
+        examResults: 'All answers',
+        colQuestion: 'Question',
+        colAnswer: 'Answer',
+        colSolution: 'Solution',
+        noAnswer: '—',
         sentence: 'Sentence',
         hear: 'Listen',
         hearAgain: 'Listen again',
@@ -1073,9 +1103,13 @@
     const canFullscreen = () => !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
     const toggleFullscreen = () => {
       const el = document.documentElement;
+      // Beides darf scheitern (kein Vollbild auf dem iPhone, keine Geste) —
+      // auch als abgelehntes Promise, darum beide Fänge.
       try {
-        if (fsElement()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-        else (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+        const r = fsElement()
+          ? (document.exitFullscreen || document.webkitExitFullscreen).call(document)
+          : (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+        if (r && r.catch) r.catch(() => {});
       } catch {}
     };
 
@@ -1599,7 +1633,7 @@
 
     // ---------- Set-Seite: Einstellungen für die Runde + Lernstand ----------
     const OPTS_KEY = 'myvoci_practice';
-    const DEFAULT_OPTS = { mode: 'write', dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true };
+    const DEFAULT_OPTS = { mode: 'write', dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false };
     const loadOpts = () => ({ ...DEFAULT_OPTS, ...(readLocal(OPTS_KEY, {}) || {}) });
 
     const Choice = ({ options, value, onChange }) => (
@@ -1614,8 +1648,9 @@
     );
 
     // Welche Modi gibt es, und was braucht ein Modus vom Set?
-    const MODES = ['write', 'cards', 'choice', 'match', 'gap', 'listen', 'scramble'];
-    const MODE_LABEL = { write: 'modeWrite', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', scramble: 'modeScramble' };
+    const MODES = ['write', 'pen', 'cards', 'choice', 'match', 'gap', 'listen', 'scramble'];
+    const MODE_LABEL = { write: 'modeWrite', pen: 'modePen', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', scramble: 'modeScramble' };
+    const EXAM_MODES = ['write', 'gap', 'listen', 'choice', 'scramble']; // automatisch korrigierbar
     const TYPED_MODES = ['write', 'gap', 'listen']; // Eingabefeld + Toleranz + Abschreiben
     const DIRECTIONLESS = ['gap', 'match']; // Satz ist immer Sprache B, Zuordnen zeigt beide
     // Hören: gehört wird die Antwortseite — bei «gemischt» müssen beide gehen
@@ -1713,10 +1748,19 @@
                 )}
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                   <label className="flex items-center gap-2"><input type="checkbox" checked={opts.hints} onChange={(e) => set_({ hints: e.target.checked })} /> {t('showHints')}</label>
-                  {TYPED_MODES.includes(opts.mode) && (
+                  {TYPED_MODES.includes(opts.mode) && !opts.exam && (
                     <label className="flex items-center gap-2"><input type="checkbox" checked={opts.copy} onChange={(e) => set_({ copy: e.target.checked })} /> {t('copyWrong')}</label>
                   )}
+                  {opts.mode === 'pen' && (
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={opts.penOnly} onChange={(e) => set_({ penOnly: e.target.checked })} /> {t('penOnly')}</label>
+                  )}
                 </div>
+                {EXAM_MODES.includes(opts.mode) && (
+                  <div className={`rounded-lg border p-3 ${opts.exam ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
+                    <label className="flex items-center gap-2 font-semibold text-gray-700"><input type="checkbox" checked={opts.exam} onChange={(e) => set_({ exam: e.target.checked })} /> {t('exam')}</label>
+                    <p className="text-sm text-gray-500 mt-1">{t('examHint')}</p>
+                  </div>
+                )}
               </div>
               <button onClick={() => onStart(opts, chosen)} disabled={!chosen.length}
                 className={`w-full mt-6 px-6 py-3 text-lg ${chosen.length ? BTN_PRIMARY : 'bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed'}`}>
@@ -1842,6 +1886,62 @@
         <SpeakerIcon />{big && t('hear')}
       </button>
     );
+    // Schreibfläche für den Handschrift-Modus: Pointer-Events, damit Pencil,
+    // Finger und Maus gleich behandelt werden; `touch-action: none` hält die
+    // Seite beim Schreiben still. Keine Erkennung — verglichen wird mit dem
+    // Auge, wie auf Papier. `clearKey` von aussen hochzählen = leeren.
+    const Sketch = ({ penOnly, clearKey }) => {
+      const canvasRef = useRef(null);
+      const drawing = useRef(false);
+      const last = useRef(null);
+      useEffect(() => {
+        const c = canvasRef.current;
+        const resize = () => {
+          const dpr = window.devicePixelRatio || 1;
+          const w = Math.round(c.clientWidth * dpr), h = Math.round(c.clientHeight * dpr);
+          if (c.width === w && c.height === h) return;
+          c.width = w; c.height = h; // löscht die Fläche — passiert nur beim Drehen/Grössenwechsel
+          const ctx = c.getContext('2d');
+          ctx.scale(dpr, dpr);
+          ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = '#1e3a8a';
+        };
+        resize();
+        const ro = window.ResizeObserver && new ResizeObserver(resize);
+        ro && ro.observe(c);
+        return () => ro && ro.disconnect();
+      }, []);
+      useEffect(() => {
+        const c = canvasRef.current;
+        c.getContext('2d').clearRect(0, 0, c.width, c.height);
+      }, [clearKey]);
+      const pos = (e) => { const r = canvasRef.current.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+      const down = (e) => {
+        if (penOnly && e.pointerType !== 'pen') return;
+        e.preventDefault();
+        drawing.current = true;
+        last.current = pos(e);
+        try { canvasRef.current.setPointerCapture(e.pointerId); } catch {}
+      };
+      const move = (e) => {
+        if (!drawing.current) return;
+        const ctx = canvasRef.current.getContext('2d');
+        // Zwischenpunkte, die der Browser gebündelt hat, mitzeichnen — sonst wird schnelle Schrift eckig
+        const events = e.nativeEvent.getCoalescedEvents ? e.nativeEvent.getCoalescedEvents() : [e];
+        for (const ev of events.length ? events : [e]) {
+          const [x, y] = pos(ev);
+          ctx.beginPath(); ctx.moveTo(last.current[0], last.current[1]); ctx.lineTo(x, y); ctx.stroke();
+          last.current = [x, y];
+        }
+      };
+      const up = () => { drawing.current = false; };
+      return (
+        <canvas ref={canvasRef}
+          className="w-full h-48 sm:h-56 bg-white rounded-lg border-2 border-dashed border-gray-300 touch-none cursor-crosshair"
+          style={{ backgroundImage: 'linear-gradient(to top, transparent 34%, #e5e7eb 34%, #e5e7eb calc(34% + 1px), transparent calc(34% + 1px))' }}
+          onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onPointerLeave={up} />
+      );
+    };
+
     const Sentences = ({ word, solution }) => (word.s || []).length > 0 && (
       <ul className="mt-3 text-gray-700 space-y-1">{word.s.map((s, i) => <li key={i}>{markWord(s, solution)}</li>)}</ul>
     );
@@ -1856,8 +1956,11 @@
       const [result, setResult] = useState(null);
       const [picked, setPicked] = useState(null); // Multiple Choice: gewählte Antwort
       const [built, setBuilt] = useState([]); // Buchstabensalat: Indizes der gesetzten Kacheln
-      const [log, setLog] = useState([]); // { item, ok } nur erste Versuche
+      const [log, setLog] = useState([]); // { item, ok, input, solution } nur erste Versuche
+      const [sketchKey, setSketchKey] = useState(0); // Handschrift: Fläche leeren
+      const leaves = useRef(0); // Prüfung: wie oft Vollbild/App verlassen
       const [startedAt] = useState(Date.now);
+      const exam = !!opts.exam && EXAM_MODES.includes(opts.mode);
       const [dialog, setDialog] = useState(null);
       const inputRef = useRef(null);
 
@@ -1879,6 +1982,22 @@
       }, [item]); // nicht an der Warteschlange: die wächst bei jedem Fehler, die Aufgabe bliebe sonst nicht stehen
 
       useEffect(() => { if (phase === 'ask' || phase === 'copy') inputRef.current && inputRef.current.focus(); }, [phase, pos]);
+      useEffect(() => {
+        if (!exam) return;
+        // Der Klick auf «Üben starten» liegt nur Millisekunden zurück — das
+        // reicht dem Browser als Geste fürs Vollbild.
+        if (canFullscreen() && !fsElement()) toggleFullscreen();
+        const onFs = () => { if (!fsElement()) leaves.current++; };
+        const onHide = () => { if (document.hidden) leaves.current++; };
+        document.addEventListener('fullscreenchange', onFs);
+        document.addEventListener('webkitfullscreenchange', onFs);
+        document.addEventListener('visibilitychange', onHide);
+        return () => {
+          document.removeEventListener('fullscreenchange', onFs);
+          document.removeEventListener('webkitfullscreenchange', onFs);
+          document.removeEventListener('visibilitychange', onHide);
+        };
+      }, []);
       // Hören: das Wort kommt von selbst, sobald die Aufgabe da ist
       useEffect(() => { if (mode === 'listen' && item) setTimeout(() => speak(task.spoken, answerLang), 300); }, [pos]);
 
@@ -1886,23 +2005,25 @@
       // sofort weiterschalten — dort darf `next` nicht mit dem alten Zustand
       // rechnen (sonst fehlt das letzte Wort in der Bilanz und die
       // Wiederholung fällt weg).
-      const finish = (ok) => {
+      const finish = (ok, typed = null, solution = task.solution) => {
         if (item.retry) return { nextLog: log, nextQueue: queue };
         onResult(item.word, ok);
-        const nextLog = [...log, { item, ok }];
-        const nextQueue = ok ? queue : [...queue, { ...item, retry: true }];
+        const nextLog = [...log, { item, ok, input: typed, solution }];
+        // In der Prüfung gibt es keine zweite Chance
+        const nextQueue = ok || exam ? queue : [...queue, { ...item, retry: true }];
         setLog(nextLog);
         setQueue(nextQueue);
         return { nextLog, nextQueue };
       };
-      const settle = (r) => {
+      const settle = (r, typed) => {
+        const { nextLog, nextQueue } = finish(r.status !== 'wrong', typed, r.solution);
+        if (exam) { next(nextQueue, nextLog); return; } // keine Rückmeldung, gleich weiter
         setResult(r);
-        finish(r.status !== 'wrong');
         setPhase(r.status === 'wrong' && opts.copy && TYPED_MODES.includes(mode) ? 'copy' : 'feedback');
       };
       const check = () => {
         if (!input.trim()) return;
-        settle(checkAnswer(input, task.solution, { level: opts.level, lang: answerLang }));
+        settle(checkAnswer(input, task.solution, { level: opts.level, lang: answerLang }), input);
       };
       const checkCopy = () => {
         if (checkAnswer(copyInput, result.solution, { level: 'strict' }).status === 'wrong') { setCopyMiss(true); return; }
@@ -1911,7 +2032,7 @@
       const pick = (option) => {
         if (phase !== 'ask') return;
         setPicked(option);
-        settle({ status: option === task.solution ? 'right' : 'wrong', solution: task.solution });
+        settle({ status: option === task.solution ? 'right' : 'wrong', solution: task.solution }, option);
       };
       const addTile = (i) => {
         if (phase !== 'ask' || built.includes(i)) return;
@@ -1919,12 +2040,16 @@
         setBuilt(next);
         if (next.length === task.letters.length) {
           const typed = next.map((j) => task.letters[j]).join('');
-          settle(checkAnswer(typed, task.solution.replace(/\s+/g, ''), { level: 'strict' }));
+          settle(checkAnswer(typed, task.solution.replace(/\s+/g, ''), { level: 'strict' }), typed);
         }
       };
       const rate = (ok) => { const { nextLog, nextQueue } = finish(ok); next(nextQueue, nextLog); };
       const next = (q = queue, l = log) => {
-        if (pos + 1 >= q.length) { onDone({ log: l, seconds: Math.round((Date.now() - startedAt) / 1000) }); return; }
+        if (pos + 1 >= q.length) {
+          if (exam && fsElement()) toggleFullscreen();
+          onDone({ log: l, seconds: Math.round((Date.now() - startedAt) / 1000), exam, leaves: leaves.current });
+          return;
+        }
         setPos(pos + 1);
         setPhase('ask');
         setInput('');
@@ -1944,7 +2069,7 @@
       const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
 
       if (!item) return null;
-      const hint = opts.hints && item.word.h;
+      const hint = opts.hints && !exam && item.word.h;
       const promptLabel = mode === 'gap' ? sideName(set, 0)
         : (langOf(set, item, 'prompt') ? langName(promptLang) : (item.dir === 'ab' ? t('sideA') : t('sideB')));
 
@@ -1991,7 +2116,32 @@
 
       // ---- der Aufgabenteil je Modus ----
       let body;
-      if (mode === 'cards') {
+      if (mode === 'pen') {
+        body = (
+          <>
+            <Sketch penOnly={opts.penOnly} clearKey={sketchKey} />
+            {phase === 'ask' ? (
+              <div className="flex gap-3 mt-3">
+                <button onClick={() => setSketchKey((k) => k + 1)} className={`px-4 py-3 ${BTN_SECONDARY}`}>{t('penClear')}</button>
+                <button onClick={() => setPhase('back')} className={`flex-1 ${BTN_PRIMARY} px-6 py-3 text-lg`}>{t('reveal')}</button>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <div className={`${LABEL} mb-1`}>{t('solution')}</div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 text-3xl font-bold text-blue-700 break-words">{task.solution}</div>
+                  <SpeakButton text={task.solution} lang={answerLang} />
+                </div>
+                <Sentences word={item.word} solution={task.solution} />
+                <div className="flex gap-3 mt-4">
+                  <button onClick={() => { setSketchKey((k) => k + 1); rate(false); }} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 text-lg">{t('knewNot')}</button>
+                  <button onClick={() => { setSketchKey((k) => k + 1); rate(true); }} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-green-100 text-green-700 hover:bg-green-200 text-lg">{t('knew')}</button>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      } else if (mode === 'cards') {
         body = phase === 'ask' ? (
           <button onClick={() => setPhase('back')} className={`w-full ${BTN_PRIMARY} px-6 py-6 text-xl`}>{t('flip')}</button>
         ) : (
@@ -2104,7 +2254,8 @@
 
       return (
         <div className={`${SCREEN} p-4 sm:p-8`} onKeyDown={onKey}>
-          <PracticeFrame set={set} pos={pos} queue={queue.length} total={total} item={item} onQuit={quit}>
+          <PracticeFrame set={set} pos={pos} queue={queue.length} total={total} item={item} onQuit={quit}
+            extra={exam && <span className="ml-2 px-1.5 rounded bg-red-100 text-red-700 text-xs font-semibold">{t('examTag')}</span>}>
             <div className={`${CARD} p-6 sm:p-8 mb-4`}>
               {head}
               <div className="mt-6">{body}</div>
@@ -2205,7 +2356,7 @@
     };
 
     // ---------- Rundenende ----------
-    const Summary = ({ set, log, seconds, onRetry, onAgain, onBack }) => {
+    const Summary = ({ set, log, seconds, exam, leaves, onRetry, onAgain, onBack }) => {
       const ok = log.filter((e) => e.ok).length;
       const wrong = log.filter((e) => !e.ok);
       const [settingsButton, settingsPanel] = useSettings();
@@ -2225,7 +2376,31 @@
               </div>
               <p className="text-gray-600">{t('result', ok, log.length)}</p>
               <p className="text-gray-400 text-sm">{t('timeUsed', Math.floor(seconds / 60), seconds % 60)}</p>
+              {exam && (
+                <p className={`mt-2 font-semibold ${leaves ? 'text-red-600' : 'text-green-700'}`}>
+                  {leaves ? t('examLeaves', leaves) : t('examNoLeaves')}
+                </p>
+              )}
             </div>
+            {exam && (
+              <div className={`${CARD} p-4 sm:p-6 mb-4 overflow-x-auto`}>
+                <h3 className="font-semibold text-gray-700 mb-2">{t('examResults')}</h3>
+                <table className="w-full text-sm text-left">
+                  <thead><tr className={LABEL}><th className="pr-2 py-1">#</th><th className="pr-2">{t('colQuestion')}</th><th className="pr-2">{t('colAnswer')}</th><th className="pr-2">{t('colSolution')}</th><th></th></tr></thead>
+                  <tbody>
+                    {log.map((e, i) => (
+                      <tr key={i} className={`border-t border-gray-100 ${e.ok ? '' : 'bg-red-50'}`}>
+                        <td className="pr-2 py-1 text-gray-400">{i + 1}</td>
+                        <td className="pr-2 py-1 font-semibold">{promptOf(e.item)}</td>
+                        <td className={`pr-2 py-1 ${e.ok ? 'text-green-700' : 'text-red-700'}`}>{e.input || t('noAnswer')}</td>
+                        <td className="pr-2 py-1">{e.solution || solutionOf(e.item)}</td>
+                        <td className="py-1">{e.ok ? '✓' : '✗'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
             {wrong.length ? (
               <div className={`${CARD} p-6 mb-4`}>
                 <h3 className="font-semibold text-gray-700 mb-2">{t('wrongWords')}</h3>
@@ -2254,13 +2429,13 @@
         return (
           <Round key={stage.n} set={set} opts={stage.opts} words={stage.words}
             onResult={(word, ok) => onResult(setKey, word, ok)}
-            onDone={({ log, seconds }) => setStage({ kind: 'done', opts: stage.opts, words: stage.words, log, seconds })}
+            onDone={({ log, seconds, exam, leaves }) => setStage({ kind: 'done', opts: stage.opts, words: stage.words, log, seconds, exam, leaves })}
             onBack={() => setStage({ kind: 'setup' })} />
         );
       }
       if (stage.kind === 'done') {
         return (
-          <Summary set={set} log={stage.log} seconds={stage.seconds}
+          <Summary set={set} log={stage.log} seconds={stage.seconds} exam={stage.exam} leaves={stage.leaves}
             onRetry={(words) => startRound(stage.opts, words)}
             onAgain={() => startRound(stage.opts, stage.words)}
             onBack={() => setStage({ kind: 'setup' })} />

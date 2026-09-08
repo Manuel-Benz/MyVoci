@@ -148,8 +148,15 @@ ab `main`. Lokal: `python3 -m http.server` → http://localhost:8000.
   sonst nach dem Antippen neu. Karteikarten bewerten und schalten im selben
   Schritt weiter: `finish` gibt den neuen Stand zurück, sonst fehlte das
   letzte Wort in der Bilanz.
-- [ ] **4 — Stift & Sperren**: Schreibfläche (Canvas) mit Selbstkontrolle,
-  Prüfungsmodus (Vollbild-Verlassen zählen, Lösung erst am Ende).
+- [x] **4 — Stift & Sperren** (08.09.2026): Modus **Handschrift** — Canvas mit
+  Pointer-Events (`Sketch`, Pencil/Finger/Maus gleich, `touch-action: none`,
+  Grundlinie, «Nur Stift annehmen»), Aufdecken, Selbstbewertung wie bei
+  Karteikarten. **Prüfungsmodus** (`opts.exam`, nur automatisch korrigierbare
+  Modi): `settle` schaltet ohne Rückmeldung weiter, keine Wiederholung, Log
+  trägt Eingabe + Lösung, die Bilanz zeigt alles als Tabelle; Vollbild beim
+  Start (die Geste vom Start-Knopf reicht), Vollbild-Verlassen und
+  `visibilitychange` zählen als «Bildschirm verlassen». Vollbild-Aufrufe
+  fangen das abgelehnte Promise (iPhone kann kein Element-Vollbild).
 - [ ] **5 — Feinschliff**: Link mit Voreinstellung (`&mode=…&dir=…`), Sprechen,
   Blitzrunde mit Timer, Lernstand als Datei exportieren/importieren.
 

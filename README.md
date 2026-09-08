@@ -54,6 +54,14 @@ Set antippen → Einstellungen wählen → **Üben starten**.
   eintippen (nur Wörter, deren Satz das Wort enthält).
 - **Hören**: das Wort wird vorgelesen (Web Speech), aufschreiben, was man hört.
 - **Buchstabensalat**: Buchstaben-Kacheln in die richtige Reihenfolge tippen.
+- **Handschrift**: mit Stift oder Finger auf die Schreibfläche schreiben, aufdecken,
+  selbst bewerten – wie auf Papier, ohne Erkennung. Option «Nur Stift annehmen»
+  gegen Handballen-Striche.
+- **Prüfungsmodus** (Schreiben, Lückentext, Hören, Multiple Choice,
+  Buchstabensalat): keine Rückmeldung während der Runde, keine Wiederholung,
+  Lösungen erst am Ende als Tabelle. Startet im Vollbild; Verlassen des
+  Vollbilds oder Wechseln der App wird gezählt und im Ergebnis angezeigt.
+  Zusammen mit dem Geführten Zugriff (s. unten) ist das die Prüfungssituation.
 - **Richtung** A→B, B→A oder gemischt; **Auswahl** alle / nur Fehler / fällig
   heute / Bereich; Reihenfolge zufällig oder wie in der Liste.
 - **Lernstand** pro Wort im Browser: richtig = ein Leitner-Fach höher (Fach 5
