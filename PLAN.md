@@ -1,0 +1,144 @@
+# MyVoci — Plan
+
+Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
+`index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
+Live: https://manuel-benz.github.io/MyVoci/
+
+## Idee
+
+Flexibel Voci üben — beide Richtungen, verschiedene Abfragearten, Eingabe per
+Tastatur **oder Stift**, automatische Korrektur, Anwendungssätze dazu.
+Lehrperson erstellt Sets (von Hand oder per KI-Prompt), SuS üben auf dem
+eigenen Gerät; der Lernstand bleibt in ihrem Browser.
+
+## Dateiformat
+
+Gleiche Familie wie MyMemory/MyTafelfussball (`F:`/`A:`/`---`), damit dieselbe
+Datei in allen Apps funktioniert — plus zwei neue, optionale Zeilen:
+
+```
+# Unité 3 – La maison
+Sprachen: de → fr
+F: das Haus
+A: la maison
+S: J'habite dans une grande maison.
+H: f.
+---
+F: gehen
+A: aller / marcher
+S: Je vais à l'école. | Nous marchons vite.
+---
+```
+
+- `Sprachen: de → fr` — Sprachcodes für Richtung, Tastatur-Sprache und
+  Vorlesen (TTS). Ohne Zeile: „Sprache A / Sprache B".
+- `A:` mehrere gültige Antworten mit `/`; Klammern `(la) maison` = optional.
+- `S:` Anwendungssatz in Sprache B, mehrere mit `|`; das Wort darin wird für den
+  Lückentext erkannt (Stammform-tolerant: `marchons` ↔ `marcher` via Markierung
+  `*marchons*`, falls nötig).
+- `H:` Hinweis (Genus, Wortart, Merkhilfe) — wird bei der Abfrage eingeblendet.
+- MyMemory-Dateien ohne `S:/H:` laden direkt; umgekehrt überliest MyMemory die
+  neuen Zeilen.
+
+## Abfragemodi
+
+| Modus | Eingabe | Korrektur |
+|---|---|---|
+| **Schreiben** | Tastatur oder Stift (s. u.) | automatisch, mit Toleranz |
+| **Karteikarten** | umdrehen, selbst bewerten (Gewusst/Nicht gewusst) | manuell |
+| **Multiple Choice** | 4 Optionen, Ablenker aus demselben Set | automatisch |
+| **Zuordnen** | 6–8 Paare per Tippen verbinden | automatisch |
+| **Lückentext** | Anwendungssatz mit Lücke, Wort eintippen | automatisch |
+| **Hören** | Wort/Satz vorgelesen (Web Speech TTS), aufschreiben | automatisch |
+| **Buchstabensalat** | Buchstaben in richtige Reihenfolge ziehen | automatisch |
+| **Sprechen** (später) | Wort aussprechen (SpeechRecognition, nur Chrome) | automatisch, unscharf |
+| **Blitzrunde** (später) | beliebiger Modus mit Timer, Punktestand | — |
+
+Einstellbar pro Runde: Richtung (A→B, B→A, gemischt), Auswahl (alle / nur
+Fehler / Leitner-fällig / Bereich 1–20), Reihenfolge (zufällig / wie in Datei),
+Hinweise ein/aus, Toleranz streng/locker.
+
+## Eingabe und Korrektur
+
+**Stift**: Kein eigenes Erkennungs-Modell nötig — auf dem iPad schreibt Apple
+**Scribble** mit dem Pencil direkt in jedes Textfeld, Windows hat das
+Handschrift-Panel, Android Gboard-Handschrift. Die App muss dafür nur ein
+grosses, gut erreichbares Eingabefeld bieten. Zusätzlich **Schreibfläche
+ohne Erkennung** (Canvas): SuS schreiben das Wort von Hand, decken die Lösung
+auf und bewerten selbst — wie Papier, funktioniert überall, gut für Rechtschreib-
+Feinheiten (Akzente, Doppelkonsonanten), die eine Erkennung glattbügelt.
+
+**Automatische Korrektur** (`checkAnswer(eingabe, lösung)`), abgestuft:
+
+1. Normalisieren: Leerzeichen, Gross/klein, typografische Apostrophe, „ß/ss".
+2. Alternativen (`/`) und optionale Teile `( )` durchprobieren.
+3. Artikel-Toleranz optional: `maison` statt `la maison` = „fast richtig".
+4. Akzente: Set-Einstellung — streng (Französisch) oder tolerant.
+5. Tippfehler: Levenshtein ≤ 1 (bei Wörtern ab 5 Zeichen) = **fast richtig**:
+   gilt als gewusst, die Lösung wird mit markierter Abweichung gezeigt
+   (Buchstaben-Diff: fehlend grün, zu viel rot).
+6. Sonst falsch: Lösung zeigen, Wort muss einmal **abgeschrieben** werden, bevor
+   es weitergeht (bewusste Wiederholung), und kommt später nochmals dran.
+
+## Lernstand
+
+Pro Set und Wort im Browser: richtig/falsch-Zähler, Leitner-Fach (1–5),
+zuletzt geübt. Daraus: **Fehlerliste** (nur falsche wiederholen), **Fällig
+heute** (Leitner: Fach 1 täglich, Fach 5 alle 2 Wochen), Fortschrittsbalken
+pro Set, kleine Statistik am Rundenende (Zeit, Trefferquote, schwierigste
+Wörter). Zurücksetzen pro Set möglich. Nicht im Link — der teilt nur Inhalt.
+
+## „In den Bildschirm einsperren"
+
+Eine Website kann das Gerät nicht sperren; das kann nur das Betriebssystem:
+
+- **iPad: Geführter Zugriff** (Bedienungshilfen → Geführter Zugriff, dann
+  3× Seitentaste) — die Lehrperson sperrt das Gerät auf Safari/MyVoci, Code
+  zum Beenden. Das ist im Schulkontext der Standard.
+- **Android: Bildschirm anheften**, **Windows: Kiosk-Modus / Zugewiesener Zugriff**.
+- Die App liefert dazu: **Vollbild-Knopf** (Fullscreen API), PWA-Manifest
+  (auf Homescreen legen → ohne Adressleiste), Anleitung „Sperren fürs Üben"
+  im Hilfe-Kästchen, plus ein **Prüfungsmodus**: Vollbild, kein Zurück-Knopf,
+  Lösung erst am Ende, Ergebnis als Bildschirm zum Vorzeigen/Screenshot.
+  Verlässt jemand das Vollbild, wird das vermerkt (Zähler im Ergebnis) —
+  ehrlich gesagt eine Abschreckung, keine Sperre.
+
+## Rahmen (von MyMemory übernehmen)
+
+Übersicht mit Ordnern (Drag & Drop), Import per Datei-Ablage/Text-Einfügen,
+**Editor**, **KI-Prompt** (Ausfüllblock: Thema/Material, Sprachen, Klasse,
+Anzahl Wörter, mit/ohne Sätze → liefert `Voci_<Thema>.txt`), Export `.txt`/ZIP,
+**Direktlink** (Set komprimiert im `#`-Fragment) und **QR-Code**,
+Oberfläche DE/EN, Beispiel-Sets fest eingebaut (z. B. Französisch Unité 1,
+Englisch Unit 1). Zusätzlich: **Link mit Voreinstellung** (`#v=…&mode=write&dir=ab`)
+— die Lehrperson teilt nicht nur das Set, sondern die fertige Übung.
+
+## Technik
+
+Eine `index.html` — React 18, Tailwind, qrcode-generator per CDN, kein
+Build-Schritt (Babel standalone wie MyMemory). Web Speech API für Hören/Sprechen,
+Canvas für die Schreibfläche, `localStorage` für Sets + Lernstand. GitHub Pages
+ab `main`. Lokal: `python3 -m http.server` → http://localhost:8000.
+
+## Phasen
+
+- [x] **0 — Gerüst**: Repo, GitHub Pages, Platzhalterseite, dieser Plan.
+- [ ] **1 — Grundgerüst**: Übersicht, Ordner, Import (`F:/A:/S:/H:`, `Sprachen:`),
+  Editor, Export, Direktlink/QR, DE/EN, Beispiel-Sets. Weitgehend aus MyMemory.
+- [ ] **2 — Schreiben & Karteikarten**: Rundeneinstellungen (Richtung, Auswahl),
+  Modus Schreiben mit `checkAnswer` + Diff-Anzeige, Karteikarten, Rundenende
+  mit Statistik, Lernstand + Fehlerliste.
+- [ ] **3 — Weitere Modi**: Multiple Choice, Zuordnen, Lückentext (Sätze),
+  Hören (TTS), Buchstabensalat.
+- [ ] **4 — Stift & Sperren**: Schreibfläche (Canvas) mit Selbstkontrolle,
+  Vollbild/Prüfungsmodus, PWA-Manifest, Anleitung Geführter Zugriff.
+- [ ] **5 — Leitner & Feinschliff**: Fällig-heute, Link mit Voreinstellung,
+  KI-Prompt final, Sprechen, Blitzrunde.
+
+## Backlog / Ideen
+
+- Lernstand geräteübergreifend (z. B. Export/Import als Datei; ein Sync via
+  GitHub/Gist bräuchte ein Token pro SchülerIn — eher nicht).
+- Bilder statt Wort A (Bild-URL) für Anfänger.
+- Konjugations-/Formen-Sets (mehrere Spalten) — eigenes Format, erst wenn nötig.
+- Offline (Service Worker) für Schul-iPads ohne stabiles WLAN.
