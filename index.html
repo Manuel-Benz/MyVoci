@@ -2,18 +2,2078 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>MyVoci</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="MyVoci" />
+  <meta name="theme-color" content="#2563eb" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+  <style>
+    /* iOS zoomt in Eingabefelder unter 16 px hinein — hier nie */
+    input, textarea, select { font-size: max(16px, 1em); }
+    .diff-del { background: #fecaca; text-decoration: line-through; border-radius: 2px; }
+    .diff-ins { background: #bbf7d0; border-radius: 2px; }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
-  <main class="max-w-xl mx-auto px-6 py-16">
-    <h1 class="text-4xl font-bold text-blue-600 mb-4">MyVoci</h1>
-    <p class="text-lg mb-6">Vokabeltrainer für den Unterricht – im Aufbau.</p>
-    <p class="text-gray-600">Bald hier: Voci üben mit Tastatur oder Stift, in beide Richtungen,
-      mit automatischer Korrektur und Anwendungssätzen.</p>
-    <p class="mt-8"><a class="text-blue-600 underline" href="https://github.com/Manuel-Benz/MyVoci">Projekt auf GitHub</a></p>
-  </main>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // ---------- Browser-Speicher ----------
+    // Der Browser darf jederzeit nein sagen (privates Fenster, voller Speicher) —
+    // dann gilt der Standardwert. Alle Zugriffe laufen über diese zwei Zeilen.
+    const readLocal = (key, fallback) => {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw === null ? fallback : JSON.parse(raw);
+      } catch { return fallback; }
+    };
+    const writeLocal = (key, value) => {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    };
+
+    // ---------- Sprache der Oberfläche (wie in MyMemory) ----------
+    const LANGS = [{ id: 'de', name: 'Deutsch' }, { id: 'en', name: 'English' }];
+    const LANG_KEY = 'myvoci_lang';
+    const loadLang = () => (readLocal(LANG_KEY) === 'en' ? 'en' : 'de');
+    const hashParts = () => location.hash.slice(1).split('&');
+    const langFromHash = () => {
+      const part = hashParts().find((x) => x.startsWith('l=') && LANGS.some((l) => l.id === x.slice(2)));
+      return part && part.slice(2);
+    };
+    let currentLang = langFromHash() || loadLang();
+    document.documentElement.lang = currentLang;
+    let redrawLang = () => {};
+
+    const code = (x) => <code className="bg-gray-100 px-1 rounded">{x}</code>;
+
+    const I18N = {
+      de: {
+        subtitle: 'Voci üben — Tastatur oder Stift, in beide Richtungen.',
+        settings: 'Einstellungen',
+        language: 'Sprache',
+        createTitle: 'Voci-Set erstellen',
+        steps: (
+          <>
+            <li>Kopiere den KI-Prompt (Button unten) in ein KI-Tool wie <b>Claude</b> oder <b>ChatGPT</b>.</li>
+            <li>Fülle dort <b>den Block zuoberst</b> aus: Thema <i>oder</i> Material (Buchseite, PDF, Liste anhängen), die beiden Sprachen, Klasse, Anzahl Wörter … Alles darunter unverändert lassen.</li>
+            <li>Du erhältst eine .txt-Datei <i>und</i> denselben Text zum Kopieren (Format {code('F:')} / {code('A:')} / {code('S:')} / {code('---')}).</li>
+            <li>Datei unten in die Ablage-Fläche ziehen — oder den Text ins Feld darunter einfügen.</li>
+          </>
+        ),
+        copyPrompt: 'KI-Prompt kopieren',
+        promptCopied: 'KI-Prompt kopiert!',
+        dropTitle: 'Datei hierher ziehen',
+        dropHint: 'oder klicken zum Auswählen (.txt im F:/A:/---‑Format, auch aus MyMemory)',
+        orPaste: 'oder Text einfügen',
+        pastedTitlePh: 'Titel (z.B. Unité 3 – La maison)',
+        pastePh: 'Sprachen: de → fr\nF: das Haus\nA: la maison\nS: J\'habite dans une grande maison.\nH: f.\n---',
+        importText: 'Text importieren',
+        importHint: 'Importierte Sets werden in diesem Browser gespeichert. Bewahre die Originaldatei trotzdem auf — leert der Browser seinen Speicher, importierst du sie einfach wieder.',
+        mySets: 'Meine Voci',
+        examples: 'Beispiele',
+        emptyList: 'Noch nichts da — oben ein Set erstellen oder eine Datei hierher ziehen.',
+        storedHint: 'Gespeichert in diesem Browser. Zum Teilen: Direktlink oder QR-Code — darin steckt das ganze Set. Sets und Ordner lassen sich per Ziehen umhängen.',
+        nWords: (n) => `${n} ${n === 1 ? 'Wort' : 'Wörter'}`,
+        newSet: 'Neues Set',
+        newSetHere: 'Neues Set in diesem Ordner',
+        newFolder: 'Neuer Ordner',
+        newSubfolder: 'Unterordner anlegen',
+        renameFolder: 'Ordner umbenennen',
+        deleteFolder: 'Ordner löschen (nur wenn leer)',
+        exportAll: 'Alle Sets als ZIP herunterladen',
+        exportOne: 'Als .txt herunterladen',
+        copyLink: 'Direktlink kopieren',
+        showQr: 'QR-Code anzeigen',
+        edit: 'Bearbeiten',
+        del: 'Löschen',
+        linkCopied: 'Direktlink kopiert!',
+        copyFailed: 'Kopieren hat nicht geklappt — bitte den Link von Hand kopieren.',
+        downloadedOne: (title) => `«${title}» heruntergeladen`,
+        downloadedAll: (n) => `${n} ${n === 1 ? 'Set' : 'Sets'} heruntergeladen`,
+        noOwnSets: 'Noch keine eigenen Sets da',
+        zipFailed: 'Der ZIP-Export hat nicht geklappt.',
+        imported: (title, n) => `«${title}» importiert (${t('nWords', n)})`,
+        noWordsInFile: (name) => `«${name}»: keine Wörter gefunden (Format F:/A:/---)`,
+        noWordsFound: 'Keine Wörter gefunden (Format F:/A:/---)',
+        folderNotEmpty: 'Ordner ist nicht leer — zuerst ausräumen.',
+        // iPad-Hilfe
+        ipadTitle: 'Üben auf dem iPad (und einsperren)',
+        ipadSteps: (
+          <>
+            <li><b>Wie eine App:</b> In Safari das Teilen-Symbol tippen → <b>«Zum Home-Bildschirm»</b>. MyVoci startet dann ohne Adressleiste und Tabs. Das ist keine App-Installation und geht meist auch auf Schul-iPads.</li>
+            <li><b>Einsperren:</b> Einstellungen → Bedienungshilfen → <b>Geführter Zugriff</b> einschalten und einen Code setzen. MyVoci öffnen, <b>3× Seitentaste</b> (bzw. Home-Taste) drücken → «Starten». Beenden: wieder 3× drücken und den Code eingeben.</li>
+            <li><b>Nur Safari möglich?</b> Beim Starten des Geführten Zugriffs mit dem Finger die Adressleiste und die Tab-Leiste <b>einkreisen</b> — diese Bereiche reagieren dann nicht mehr.</li>
+          </>
+        ),
+        // Dialoge
+        cancel: 'Abbrechen',
+        create: 'Anlegen',
+        rename: 'Umbenennen',
+        discard: 'Verwerfen',
+        save: 'Speichern',
+        close: 'Schliessen',
+        copyLinkBtn: 'Link kopieren',
+        askSubfolder: (name) => `Name des Unterordners in «${name}»:`,
+        askFolder: 'Name des neuen Ordners:',
+        askRename: 'Neuer Name des Ordners:',
+        confirmDeleteFolder: (name) => `Ordner «${name}» löschen?`,
+        confirmDeleteSet: (title) => `«${title}» löschen?`,
+        confirmDiscard: 'Änderungen verwerfen?',
+        confirmReset: 'Lernstand dieses Sets zurücksetzen?',
+        qrTooBig: 'Dieses Set ist zu gross für einen QR-Code — nutze den Direktlink.',
+        // Editor
+        editSet: 'Set bearbeiten',
+        titleLabel: 'Titel',
+        titlePh: 'Titel des Sets',
+        folderLabel: 'Ordner',
+        rootFolder: 'Hauptordner',
+        makeFolder: 'Ordner anlegen',
+        langA: 'Sprache A (Vorderseite)',
+        langB: 'Sprache B (Rückseite)',
+        langPh: 'z.B. de, fr, en',
+        langsHint: 'Sprachcodes oder Namen — steuern Vorlesen und Artikel-Toleranz. Darf leer bleiben.',
+        uiLangLabel: 'Sprache der Oberfläche beim Üben',
+        uiLangDefault: 'Wie in den Einstellungen',
+        uiLangHint: 'Gilt auch für Direktlink und QR-Code; die Klasse kann trotzdem umschalten.',
+        wordN: (n) => `Wort ${n}`,
+        moveUp: 'Nach oben',
+        moveDown: 'Nach unten',
+        deleteWord: 'Wort löschen',
+        sideA: 'Sprache A',
+        sideB: 'Sprache B',
+        sideAPh: 'z.B. das Haus',
+        sideBPh: 'z.B. la maison',
+        sentences: 'Anwendungssätze (einer pro Zeile)',
+        sentencesPh: 'J\'habite dans une grande maison.',
+        hint: 'Hinweis',
+        hintPh: 'z.B. f. / Verb / unregelmässig',
+        addWord: 'Wort hinzufügen',
+        errTitle: 'Der Titel fehlt.',
+        errTitleTaken: 'Ein Set mit diesem Titel gibt es schon.',
+        errNoWord: 'Mindestens ein Wort eintragen.',
+        errHalfWord: 'Jedes Wort braucht beide Seiten.',
+        editorHint: () => (
+          <>Mehrere richtige Antworten mit {code('/')} trennen: {code('aller / marcher')}. Optionales in Klammern:
+          {' '}{code('(la) maison')} gilt mit und ohne Artikel.</>
+        ),
+        // Set-Seite
+        overview: 'Übersicht',
+        toOverview: 'Zur Übersicht',
+        practiceTitle: 'Üben',
+        mode: 'Modus',
+        modeWrite: 'Schreiben',
+        modeWriteHint: 'Wort eintippen — Tastatur oder Stift (iPad: Scribble). Automatische Korrektur.',
+        modeCards: 'Karteikarten',
+        modeCardsHint: 'Umdrehen und selbst bewerten.',
+        direction: 'Richtung',
+        dirAB: (a, b) => `${a} → ${b}`,
+        dirMix: 'gemischt',
+        selection: 'Auswahl',
+        selAll: 'alle Wörter',
+        selWrong: (n) => `nur Fehler (${n})`,
+        selDue: (n) => `fällig heute (${n})`,
+        selRange: 'Bereich',
+        rangeFrom: 'von',
+        rangeTo: 'bis',
+        order: 'Reihenfolge',
+        orderRandom: 'zufällig',
+        orderFile: 'wie in der Liste',
+        tolerance: 'Toleranz',
+        tolStrict: 'streng',
+        tolNormal: 'normal',
+        tolLoose: 'locker',
+        tolHint: 'streng: alles muss stimmen · normal: Tippfehler zählen als «fast richtig» · locker: auch Akzente und Artikel egal',
+        showHints: 'Hinweise zeigen',
+        copyWrong: 'Falsche Wörter einmal abschreiben',
+        start: 'Üben starten',
+        nothingSelected: 'Keine Wörter in dieser Auswahl.',
+        progress: 'Lernstand',
+        boxLabel: (n) => (n === 0 ? 'neu' : `Fach ${n}`),
+        wrongCount: (n) => `${n} ${n === 1 ? 'Fehler' : 'Fehler'}`,
+        dueCount: (n) => `${n} fällig`,
+        resetProgress: 'Lernstand zurücksetzen',
+        progressHint: 'Der Lernstand bleibt in diesem Browser. Richtig = ein Fach höher (Fach 5 alle zwei Wochen fällig), falsch = zurück in Fach 1.',
+        wordList: 'Wörter',
+        // Üben
+        check: 'Prüfen',
+        next: 'Weiter',
+        right: 'Richtig!',
+        almost: 'Fast richtig',
+        wrong: 'Leider falsch',
+        noteTypo: 'Tippfehler',
+        noteAccent: 'Akzent stimmt nicht',
+        noteCase: 'Gross-/Kleinschreibung',
+        noteArticle: 'Artikel fehlt oder stimmt nicht',
+        yourInput: 'Deine Eingabe',
+        solution: 'Lösung',
+        copyPrompt2: 'Schreib die Lösung einmal ab:',
+        copyNotYet: 'Noch nicht ganz — nochmals genau abschreiben.',
+        answerPh: 'Antwort eintippen',
+        flip: 'Umdrehen',
+        knew: 'Gewusst',
+        knewNot: 'Nicht gewusst',
+        retryTag: 'Wiederholung',
+        speak: 'Vorlesen',
+        fullscreen: 'Vollbild',
+        exitFullscreen: 'Vollbild beenden',
+        quit: 'Abbrechen',
+        confirmQuit: 'Übung abbrechen? Der bisherige Lernstand bleibt.',
+        // Ende
+        done: 'Fertig!',
+        result: (ok, n) => `${ok} von ${n} beim ersten Versuch richtig`,
+        timeUsed: (m, s) => `Zeit: ${m}:${String(s).padStart(2, '0')}`,
+        wrongWords: 'Diese Wörter noch einmal anschauen:',
+        allRight: 'Alles richtig — stark!',
+        retryWrong: 'Fehler nochmals üben',
+        again: 'Nochmal',
+        toSet: 'Zum Set',
+        loading: 'Lade Set…',
+        errNoSuchSet: 'Dieses Set gibt es nicht.',
+        errNotStored: 'Dieses Set ist in diesem Browser nicht gespeichert.',
+        errLinkEmpty: 'Der Link enthält keine Wörter.',
+        errLinkBroken: 'Der Link konnte nicht gelesen werden.',
+        errGone: 'Dieses Set gibt es nicht (mehr).',
+        backToList: 'Zurück zur Auswahl',
+      },
+      en: {
+        subtitle: 'Practise vocabulary — keyboard or pen, in both directions.',
+        settings: 'Settings',
+        language: 'Language',
+        createTitle: 'Create a vocabulary set',
+        steps: (
+          <>
+            <li>Copy the AI prompt (button below) into an AI tool such as <b>Claude</b> or <b>ChatGPT</b>.</li>
+            <li>Fill in <b>the block at the top</b>: topic <i>or</i> material (attach the book page, PDF or list), the two languages, class, number of words … Leave everything below unchanged.</li>
+            <li>You get a .txt file <i>and</i> the same text to copy (format {code('F:')} / {code('A:')} / {code('S:')} / {code('---')}).</li>
+            <li>Drag the file onto the drop area below — or paste the text into the field underneath.</li>
+          </>
+        ),
+        copyPrompt: 'Copy AI prompt',
+        promptCopied: 'AI prompt copied!',
+        dropTitle: 'Drag a file here',
+        dropHint: 'or click to choose one (.txt in F:/A:/--- format, MyMemory files work too)',
+        orPaste: 'or paste text',
+        pastedTitlePh: 'Title (e.g. Unit 3 – At home)',
+        pastePh: 'Languages: de → en\nF: das Haus\nA: the house\nS: I live in a big house.\n---',
+        importText: 'Import text',
+        importHint: 'Imported sets are stored in this browser. Keep the original file anyway — if the browser clears its storage, you simply import it again.',
+        mySets: 'My sets',
+        examples: 'Examples',
+        emptyList: 'Nothing here yet — create a set above or drag a file here.',
+        storedHint: 'Stored in this browser. To share: direct link or QR code — the whole set is inside it. Sets and folders can be moved by dragging.',
+        nWords: (n) => `${n} ${n === 1 ? 'word' : 'words'}`,
+        newSet: 'New set',
+        newSetHere: 'New set in this folder',
+        newFolder: 'New folder',
+        newSubfolder: 'New subfolder',
+        renameFolder: 'Rename folder',
+        deleteFolder: 'Delete folder (only when empty)',
+        exportAll: 'Download all sets as a ZIP',
+        exportOne: 'Download as .txt',
+        copyLink: 'Copy direct link',
+        showQr: 'Show QR code',
+        edit: 'Edit',
+        del: 'Delete',
+        linkCopied: 'Direct link copied!',
+        copyFailed: 'Copying did not work — please copy the link by hand.',
+        downloadedOne: (title) => `“${title}” downloaded`,
+        downloadedAll: (n) => `${n} ${n === 1 ? 'set' : 'sets'} downloaded`,
+        noOwnSets: 'No sets of your own yet',
+        zipFailed: 'The ZIP export did not work.',
+        imported: (title, n) => `“${title}” imported (${t('nWords', n)})`,
+        noWordsInFile: (name) => `“${name}”: no words found (format F:/A:/---)`,
+        noWordsFound: 'No words found (format F:/A:/---)',
+        folderNotEmpty: 'Folder is not empty — clear it out first.',
+        ipadTitle: 'Practising on an iPad (and locking it)',
+        ipadSteps: (
+          <>
+            <li><b>Like an app:</b> In Safari tap the share icon → <b>“Add to Home Screen”</b>. MyVoci then starts without address bar and tabs. This is not an app installation and usually works on school iPads too.</li>
+            <li><b>Locking:</b> Settings → Accessibility → turn on <b>Guided Access</b> and set a passcode. Open MyVoci, press the <b>side button 3×</b> (or Home) → “Start”. To end: press 3× again and enter the passcode.</li>
+            <li><b>Safari only?</b> When starting Guided Access, <b>circle</b> the address bar and the tab bar with your finger — those areas stop responding.</li>
+          </>
+        ),
+        cancel: 'Cancel',
+        create: 'Create',
+        rename: 'Rename',
+        discard: 'Discard',
+        save: 'Save',
+        close: 'Close',
+        copyLinkBtn: 'Copy link',
+        askSubfolder: (name) => `Name of the subfolder in “${name}”:`,
+        askFolder: 'Name of the new folder:',
+        askRename: 'New name of the folder:',
+        confirmDeleteFolder: (name) => `Delete folder “${name}”?`,
+        confirmDeleteSet: (title) => `Delete “${title}”?`,
+        confirmDiscard: 'Discard changes?',
+        confirmReset: 'Reset the progress of this set?',
+        qrTooBig: 'This set is too big for a QR code — use the direct link.',
+        editSet: 'Edit set',
+        titleLabel: 'Title',
+        titlePh: 'Title of the set',
+        folderLabel: 'Folder',
+        rootFolder: 'Main folder',
+        makeFolder: 'Create folder',
+        langA: 'Language A (front)',
+        langB: 'Language B (back)',
+        langPh: 'e.g. de, fr, en',
+        langsHint: 'Language codes or names — used for read-aloud and article tolerance. May stay empty.',
+        uiLangLabel: 'Interface language while practising',
+        uiLangDefault: 'As set in Settings',
+        uiLangHint: 'Also for direct link and QR code; the class can still switch.',
+        wordN: (n) => `Word ${n}`,
+        moveUp: 'Move up',
+        moveDown: 'Move down',
+        deleteWord: 'Delete word',
+        sideA: 'Language A',
+        sideB: 'Language B',
+        sideAPh: 'e.g. das Haus',
+        sideBPh: 'e.g. the house',
+        sentences: 'Example sentences (one per line)',
+        sentencesPh: 'I live in a big house.',
+        hint: 'Hint',
+        hintPh: 'e.g. noun / verb / irregular',
+        addWord: 'Add word',
+        errTitle: 'The title is missing.',
+        errTitleTaken: 'A set with this title already exists.',
+        errNoWord: 'Enter at least one word.',
+        errHalfWord: 'Every word needs both sides.',
+        editorHint: () => (
+          <>Separate several correct answers with {code('/')}: {code('go / walk')}. Optional parts in brackets:
+          {' '}{code('(the) house')} counts with and without the article.</>
+        ),
+        overview: 'Overview',
+        toOverview: 'Back to the overview',
+        practiceTitle: 'Practise',
+        mode: 'Mode',
+        modeWrite: 'Write',
+        modeWriteHint: 'Type the word — keyboard or pen (iPad: Scribble). Checked automatically.',
+        modeCards: 'Flashcards',
+        modeCardsHint: 'Flip and rate yourself.',
+        direction: 'Direction',
+        dirAB: (a, b) => `${a} → ${b}`,
+        dirMix: 'mixed',
+        selection: 'Selection',
+        selAll: 'all words',
+        selWrong: (n) => `mistakes only (${n})`,
+        selDue: (n) => `due today (${n})`,
+        selRange: 'Range',
+        rangeFrom: 'from',
+        rangeTo: 'to',
+        order: 'Order',
+        orderRandom: 'random',
+        orderFile: 'as in the list',
+        tolerance: 'Tolerance',
+        tolStrict: 'strict',
+        tolNormal: 'normal',
+        tolLoose: 'loose',
+        tolHint: 'strict: everything must match · normal: typos count as “almost right” · loose: accents and articles are ignored too',
+        showHints: 'Show hints',
+        copyWrong: 'Copy wrong words once',
+        start: 'Start practising',
+        nothingSelected: 'No words in this selection.',
+        progress: 'Progress',
+        boxLabel: (n) => (n === 0 ? 'new' : `Box ${n}`),
+        wrongCount: (n) => `${n} ${n === 1 ? 'mistake' : 'mistakes'}`,
+        dueCount: (n) => `${n} due`,
+        resetProgress: 'Reset progress',
+        progressHint: 'Progress stays in this browser. Right = one box up (box 5 is due every two weeks), wrong = back to box 1.',
+        wordList: 'Words',
+        check: 'Check',
+        next: 'Next',
+        right: 'Correct!',
+        almost: 'Almost right',
+        wrong: 'Not quite',
+        noteTypo: 'typo',
+        noteAccent: 'accent is off',
+        noteCase: 'upper/lower case',
+        noteArticle: 'article missing or wrong',
+        yourInput: 'Your answer',
+        solution: 'Solution',
+        copyPrompt2: 'Copy the solution once:',
+        copyNotYet: 'Not quite — copy it exactly.',
+        answerPh: 'Type your answer',
+        flip: 'Flip',
+        knew: 'Knew it',
+        knewNot: 'Did not know',
+        retryTag: 'Retry',
+        speak: 'Read aloud',
+        fullscreen: 'Full screen',
+        exitFullscreen: 'Exit full screen',
+        quit: 'Quit',
+        confirmQuit: 'Quit this round? Your progress so far is kept.',
+        done: 'Done!',
+        result: (ok, n) => `${ok} of ${n} right on the first try`,
+        timeUsed: (m, s) => `Time: ${m}:${String(s).padStart(2, '0')}`,
+        wrongWords: 'Have another look at these:',
+        allRight: 'All correct — well done!',
+        retryWrong: 'Practise mistakes again',
+        again: 'Again',
+        toSet: 'Back to the set',
+        loading: 'Loading set…',
+        errNoSuchSet: 'This set does not exist.',
+        errNotStored: 'This set is not stored in this browser.',
+        errLinkEmpty: 'The link contains no words.',
+        errLinkBroken: 'The link could not be read.',
+        errGone: 'This set no longer exists.',
+        backToList: 'Back to the list',
+      },
+    };
+
+    const t = (key, ...args) => {
+      const value = I18N[currentLang][key];
+      return typeof value === 'function' ? value(...args) : value;
+    };
+
+    // ---------- Sprachen der Voci ----------
+    // Ein Set kennt seine zwei Sprachen als Codes (`langs: ['de', 'fr']`). Die
+    // steuern das Vorlesen und die Artikel-Toleranz; fehlen sie, heisst es
+    // schlicht «Sprache A / B». Namen aus der Datei werden zu Codes.
+    const LANG_NAMES = {
+      de: { de: 'Deutsch', en: 'German' }, fr: { de: 'Französisch', en: 'French' },
+      en: { de: 'Englisch', en: 'English' }, it: { de: 'Italienisch', en: 'Italian' },
+      es: { de: 'Spanisch', en: 'Spanish' }, la: { de: 'Latein', en: 'Latin' },
+      pt: { de: 'Portugiesisch', en: 'Portuguese' }, rm: { de: 'Rätoromanisch', en: 'Romansh' },
+    };
+    const NAME_TO_CODE = {
+      deutsch: 'de', german: 'de', französisch: 'fr', franzoesisch: 'fr', french: 'fr', français: 'fr', francais: 'fr',
+      englisch: 'en', english: 'en', italienisch: 'it', italian: 'it', italiano: 'it', spanisch: 'es', spanish: 'es',
+      español: 'es', espanol: 'es', latein: 'la', latin: 'la', portugiesisch: 'pt', portuguese: 'pt',
+      rätoromanisch: 'rm', romansh: 'rm', romantsch: 'rm',
+    };
+    const langCode = (raw) => {
+      const w = (raw || '').trim().toLowerCase();
+      if (!w) return '';
+      return LANG_NAMES[w] ? w : (NAME_TO_CODE[w] || w.slice(0, 12));
+    };
+    const langName = (code) => (code ? (LANG_NAMES[code] ? LANG_NAMES[code][currentLang] : code) : '');
+    const sideName = (set, side) => (set.langs && set.langs[side] ? langName(set.langs[side]) : t(side === 0 ? 'sideA' : 'sideB'));
+    const TTS_LOCALE = { de: 'de-DE', fr: 'fr-FR', en: 'en-GB', it: 'it-IT', es: 'es-ES', pt: 'pt-PT' };
+
+    // ---------- Eingebaute Beispiel-Sets ----------
+    const DEMOS = [
+      {
+        id: 'unite1', title: 'Französisch – Unité 1', langs: ['de', 'fr'],
+        words: [
+          { a: 'das Haus', b: 'la maison', s: ['J\'habite dans une grande maison.'], h: 'f.' },
+          { a: 'die Schule', b: 'l\'école', s: ['L\'école commence à huit heures.'], h: 'f.' },
+          { a: 'der Freund', b: 'l\'ami', s: ['Marc est mon meilleur ami.'], h: 'm.' },
+          { a: 'gehen', b: 'aller / marcher', s: ['Je vais à l\'école à pied.'] },
+          { a: 'essen', b: 'manger', s: ['Nous mangeons à midi.'] },
+          { a: 'der Hund', b: 'le chien', s: ['Le chien dort dans le jardin.'], h: 'm.' },
+          { a: 'die Katze', b: 'le chat', s: ['Le chat est sur la table.'], h: 'm.' },
+          { a: 'heute', b: 'aujourd\'hui', s: ['Aujourd\'hui, il fait beau.'] },
+          { a: 'morgen', b: 'demain', s: ['Demain, c\'est samedi.'] },
+          { a: 'sprechen', b: 'parler', s: ['Tu parles très bien français.'] },
+          { a: 'das Wasser', b: 'l\'eau', s: ['Je bois de l\'eau.'], h: 'f.' },
+          { a: 'der Bruder', b: 'le frère', s: ['Mon frère a dix ans.'], h: 'm.' },
+        ],
+      },
+      {
+        id: 'unit1', title: 'Englisch – Unit 1', langs: ['de', 'en'],
+        words: [
+          { a: 'das Haus', b: 'the house', s: ['I live in a big house.'] },
+          { a: 'die Schule', b: 'the school', s: ['School starts at eight.'] },
+          { a: 'der Freund', b: 'the friend', s: ['Tom is my best friend.'] },
+          { a: 'gehen', b: 'to go / to walk', s: ['I walk to school.'] },
+          { a: 'essen', b: 'to eat', s: ['We eat at noon.'] },
+          { a: 'der Hund', b: 'the dog', s: ['The dog sleeps in the garden.'] },
+          { a: 'die Katze', b: 'the cat', s: ['The cat is on the table.'] },
+          { a: 'heute', b: 'today', s: ['Today the weather is nice.'] },
+          { a: 'morgen', b: 'tomorrow', s: ['Tomorrow is Saturday.'] },
+          { a: 'sprechen', b: 'to speak / to talk', s: ['You speak English very well.'] },
+          { a: 'das Wasser', b: 'the water', s: ['I drink water.'] },
+          { a: 'der Bruder', b: 'the brother', s: ['My brother is ten years old.'] },
+        ],
+      },
+    ];
+
+    // ---------- KI-Prompt ----------
+    // Wie in MyMemory: zuoberst der Ausfüll-Block, darunter die Formatvorgaben.
+    const KI_PROMPT_DE = [
+      "Du erstellst Vokabellisten für den Unterricht. Erstelle ein Voci-Set nach meinen Angaben.",
+      "",
+      "===== NUR DAS HIER AUSFÜLLEN (Rest unverändert lassen) =====",
+      "Thema oder Material: [Thema in einem Satz — oder: siehe angehängte Buchseite/Datei/Liste]",
+      "Sprache A (Vorderseite): [Deutsch]",
+      "Sprache B (Rückseite): [Französisch]",
+      "Für wen: [z. B. 7. Klasse]",
+      "Anzahl Wörter: [z. B. 20]",
+      "Anwendungssätze: [ja / nein]",
+      "Besonderes: [optional, z. B. nur Verben, Reihenfolge wie im Buch]",
+      "============================================================",
+      "",
+      "Schicke ich Material mit, nimm die Wörter NUR daraus, in der Reihenfolge des",
+      "Materials, mit genau den Bedeutungen, die dort stehen. Sonst nimmst du dein",
+      "eigenes Wissen zum angegebenen Thema.",
+      "",
+      "SO GIBST DU ES AUS — daran scheitert es sonst:",
+      "- Gib beides aus, in dieser Reihenfolge:",
+      "  1. eine Datei zum Herunterladen, Endung .txt (kein .docx, kein PDF). Der",
+      "     Dateiname beginnt mit «Voci_», danach folgt der Titel des Sets —",
+      "     kurz und passend, Wörter mit «_» getrennt: Voci_Unite_3_La_maison.txt",
+      "  2. denselben Inhalt nochmals in EINEM Code-Block (```), zum Kopieren.",
+      "- Kannst du keine Dateien erzeugen, reicht der Code-Block allein.",
+      "- Kein Wort davor oder danach: keine Einleitung, keine Erklärung, keine Rückfrage.",
+      "",
+      "FORMAT (genau so):",
+      "",
+      "# Unité 3 – La maison",
+      "Sprachen: de → fr",
+      "",
+      "F: das Haus",
+      "A: la maison",
+      "S: J'habite dans une grande maison.",
+      "H: f.",
+      "---",
+      "F: gehen",
+      "A: aller / marcher",
+      "S: Je vais à l'école à pied.",
+      "---",
+      "",
+      "REGELN:",
+      "- Erste Zeile «# Titel», zweite Zeile «Sprachen: <Code A> → <Code B>» mit",
+      "  Sprachcodes (de, fr, en, it, es, la).",
+      "- «F: » ist das Wort in Sprache A, «A: » in Sprache B, «---» trennt die Wörter.",
+      "  Nach jedem Wort eine Zeile «---», auch nach dem letzten.",
+      "- Mehrere richtige Antworten mit « / » trennen: «A: aller / marcher».",
+      "  Optionales in Klammern: «A: (la) maison». Nomen MIT Artikel, Verben im Infinitiv",
+      "  (Englisch mit «to»).",
+      "- «S: » ist ein kurzer Anwendungssatz in Sprache B, in dem das Wort genau so",
+      "  vorkommt (bei Verben darf es konjugiert sein). Ein Satz pro Wort, nur wenn",
+      "  oben «Anwendungssätze: ja» steht. Niveau der Klasse, nur bekannte Wörter.",
+      "- «H: » ist ein optionaler Hinweis: Genus (m./f.), Wortart, «unregelmässig».",
+      "  Weglassen, wenn es nichts zu sagen gibt.",
+      "- Jedes Wort nur einmal. Keine Nummerierung, keine Fettschrift, keine Erklärungen.",
+      "",
+      "ZUM SCHLUSS: geh die Liste nochmals durch und bessere STILL aus, was hier nicht",
+      "stimmt — am Ende nur das fertige Set ausgeben, keine Liste der Änderungen.",
+      "- Stimmen Rechtschreibung und Akzente in Sprache B genau? Sie werden Buchstabe",
+      "  für Buchstabe geprüft.",
+      "- Kommt das Wort im Satz wirklich vor?",
+      "- Stimmt das Format überall: «F: », «A: », «S: », «H: », «---»?",
+    ].join("\n");
+
+    const KI_PROMPT_EN = [
+      "You create vocabulary lists for school. Create a vocabulary set from my input.",
+      "",
+      "===== FILL IN THIS PART ONLY (leave the rest unchanged) =====",
+      "Topic or material: [topic in one sentence — or: see attached book page/file/list]",
+      "Language A (front): [German]",
+      "Language B (back): [English]",
+      "For whom: [e.g. grade 7]",
+      "Number of words: [e.g. 20]",
+      "Example sentences: [yes / no]",
+      "Special notes: [optional, e.g. verbs only, same order as the book]",
+      "============================================================",
+      "",
+      "If I attach material, take the words ONLY from it, in the order of the",
+      "material, with exactly the meanings given there. Otherwise use your own",
+      "knowledge of the topic given above.",
+      "",
+      "HOW TO OUTPUT IT — this is where it usually goes wrong:",
+      "- Give both, in this order:",
+      "  1. a file to download, extension .txt (no .docx, no PDF). The file name",
+      "     starts with «Voci_», followed by the title of the set — short and",
+      "     fitting, words separated by «_»: Voci_Unit_3_At_home.txt",
+      "  2. the same content again in ONE code block (```), to copy.",
+      "- If you cannot produce files, the code block alone is enough.",
+      "- Not a word before or after: no introduction, no explanation, no follow-up question.",
+      "",
+      "FORMAT (exactly like this):",
+      "",
+      "# Unit 3 – At home",
+      "Languages: de → en",
+      "",
+      "F: das Haus",
+      "A: the house",
+      "S: I live in a big house.",
+      "---",
+      "F: gehen",
+      "A: to go / to walk",
+      "S: I walk to school.",
+      "H: irregular: went, gone",
+      "---",
+      "",
+      "RULES:",
+      "- First line «# Title», second line «Languages: <code A> → <code B>» with",
+      "  language codes (de, fr, en, it, es, la).",
+      "- «F: » is the word in language A, «A: » in language B, «---» separates words.",
+      "  A line «---» after every word, including the last one.",
+      "- Several correct answers separated by « / »: «A: to go / to walk».",
+      "  Optional parts in brackets: «A: (the) house». Nouns WITH article, verbs in",
+      "  the infinitive (English with «to»).",
+      "- «S: » is a short example sentence in language B containing the word exactly",
+      "  (verbs may be conjugated). One sentence per word, only if «Example",
+      "  sentences: yes» above. Level of the class, known words only.",
+      "- «H: » is an optional hint: gender (m./f.), part of speech, «irregular».",
+      "  Omit it when there is nothing to say.",
+      "- Every word once. No numbering, no bold, no explanations.",
+      "",
+      "FINALLY: go through the list again and QUIETLY fix whatever does not match",
+      "the rules — output only the finished set, no list of changes.",
+      "- Are spelling and accents in language B exactly right? They are checked",
+      "  letter by letter.",
+      "- Does the word really appear in the sentence?",
+      "- Is the format right everywhere: «F: », «A: », «S: », «H: », «---»?",
+    ].join("\n");
+
+    const kiPrompt = () => (currentLang === 'en' ? KI_PROMPT_EN : KI_PROMPT_DE);
+
+    // ---------- Dateien parsen ----------
+    // F: Sprache A, A: Sprache B, S: Satz (mehrere Zeilen oder mit | getrennt),
+    // H: Hinweis, --- Trenner. Ein neues F: schliesst das vorige Wort auch ohne ---.
+    const parseFA = (text) => {
+      const words = [];
+      let cur = null;
+      const flush = () => { if (cur && cur.a && cur.b) words.push(cur); cur = null; };
+      for (const raw of text.split(/\r?\n/)) {
+        const line = raw.trim();
+        if (/^-{3,}$/.test(line)) { flush(); continue; }
+        const m = line.match(/^([FQASH]):\s*(.*)$/i);
+        if (!m) continue;
+        const key = m[1].toUpperCase(), val = m[2].trim();
+        if (key === 'F' || key === 'Q') { flush(); cur = { a: val, b: '' }; continue; }
+        if (!cur) continue;
+        if (key === 'A') cur.b = cur.b ? `${cur.b} / ${val}` : val;
+        else if (key === 'S' && val) cur.s = [...(cur.s || []), ...val.split('|').map((x) => x.trim()).filter(Boolean)];
+        else if (key === 'H' && val) cur.h = cur.h ? `${cur.h} ${val}` : val;
+      }
+      flush();
+      return words;
+    };
+
+    // «Sprachen: de → fr» / «Languages: German - French» / «de, fr»
+    const langsInFile = (text) => {
+      const m = text.match(/^(?:sprachen|languages)\s*:\s*(.+)$/im);
+      if (!m) return undefined;
+      const parts = m[1].split(/\s*(?:→|->|=>|—|–|-|,|;|>|\/)\s*/).map(langCode).filter(Boolean);
+      return parts.length >= 2 ? [parts[0], parts[1]] : undefined;
+    };
+
+    // «Sprache: en» (Einzahl!) ist wie in MyMemory die Sprache der Oberfläche.
+    const langInFile = (text) => {
+      const m = text.match(/^(?:sprache|language)\s*:\s*([a-z]+)/im);
+      const word = m && m[1].toLowerCase();
+      if (!word) return undefined;
+      if (word.startsWith('de') || word.startsWith('ge')) return 'de';
+      if (word.startsWith('en')) return 'en';
+      return undefined;
+    };
+
+    const parseFile = (text, filename) => {
+      // Der KI-Prompt verlangt «Voci_Thema.txt»: Präfix weg, nur mit Unterstrich.
+      const fromName = filename.replace(/\.(txt|md)$/i, '').replace(/^(voci|memory)_+(?=.)/i, '').replace(/_/g, ' ').trim();
+      const inFile = text.match(/^#\s+(.+)$/m);
+      const lang = langInFile(text);
+      const langs = langsInFile(text);
+      return {
+        title: (inFile && inFile[1].trim()) || fromName,
+        words: parseFA(text),
+        ...(lang ? { lang } : {}), ...(langs ? { langs } : {}),
+      };
+    };
+
+    // ---------- Dateien schreiben (Export) ----------
+    const toFile = (set) =>
+      `# ${set.title}\n` +
+      (set.langs ? `${currentLang === 'en' ? 'Languages' : 'Sprachen'}: ${set.langs[0]} → ${set.langs[1]}\n` : '') +
+      (set.lang ? `${set.lang === 'en' ? 'Language' : 'Sprache'}: ${set.lang}\n` : '') + '\n' +
+      set.words.map((w) =>
+        `F: ${w.a}\nA: ${w.b}\n` + (w.s || []).map((s) => `S: ${s}\n`).join('') + (w.h ? `H: ${w.h}\n` : '') + '---'
+      ).join('\n') + '\n';
+
+    const safeName = (title) => title.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'Voci';
+    const safeDir = (dir) => dir.split('/').map(safeName).join('/');
+
+    let jsZipLoading = null;
+    const loadJsZip = () => {
+      if (window.JSZip) return Promise.resolve(window.JSZip);
+      if (!jsZipLoading) {
+        jsZipLoading = new Promise((resolve, reject) => {
+          const el = document.createElement('script');
+          el.src = 'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js';
+          el.onload = () => resolve(window.JSZip);
+          el.onerror = () => { jsZipLoading = null; reject(); };
+          document.head.appendChild(el);
+        });
+      }
+      return jsZipLoading;
+    };
+
+    const zipBlob = async (sets, folders) => {
+      const JSZipLib = await loadJsZip();
+      const zip = new JSZipLib();
+      const used = new Set();
+      for (const folder of folders) zip.folder(safeDir(folder));
+      for (const set of sets) {
+        const base = `${set.dir ? safeDir(set.dir) + '/' : ''}${safeName(set.title)}`;
+        let name = `${base}.txt`;
+        for (let i = 2; used.has(name); i++) name = `${base} (${i}).txt`;
+        used.add(name);
+        zip.file(name, toFile(set));
+      }
+      return zip.generateAsync({ type: 'blob' });
+    };
+
+    const download = (name, data) => {
+      const blob = data instanceof Blob ? data : new Blob([data], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
+    // ---------- Eigene Sets im Browser ----------
+    const STORAGE_KEY = 'myvoci';
+    const loadStore = () => {
+      const raw = readLocal(STORAGE_KEY, {}) || {};
+      return { sets: (raw.sets || []).map((s) => ({ dir: '', ...s })), folders: raw.folders || [] };
+    };
+    const saveStore = (store) => writeLocal(STORAGE_KEY, store);
+
+    // ---------- Ordner (wie MyMemory) ----------
+    const dirName = (dir) => dir.split('/').pop();
+    const parentDir = (dir) => (dir.includes('/') ? dir.slice(0, dir.lastIndexOf('/')) : '');
+    const inside = (dir, ancestor) => dir === ancestor || dir.startsWith(ancestor + '/');
+    const byTitle = (a, b) => a.title.localeCompare(b.title, 'de');
+    const allFolders = ({ sets, folders }) => {
+      const all = new Set(folders);
+      for (const s of sets) for (let d = s.dir || ''; d; d = parentDir(d)) all.add(d);
+      return [...all].sort((a, b) => a.localeCompare(b, 'de'));
+    };
+    const remapDir = (store, from, to) => {
+      const move = (d) => (inside(d, from) ? to + d.slice(from.length) : d);
+      return { sets: store.sets.map((s) => ({ ...s, dir: move(s.dir || '') })), folders: [...new Set(store.folders.map(move))] };
+    };
+    const OPEN_KEY = 'myvoci_open_dirs';
+    const loadOpen = () => readLocal(OPEN_KEY, []) || [];
+    const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+
+    // ---------- Lernstand ----------
+    // Pro Set und Wort: richtig/falsch-Zähler, Leitner-Fach 1–5, letzter Versuch,
+    // ob der letzte Versuch sass. Bleibt im Browser, steckt nie im Link.
+    const PROGRESS_KEY = 'myvoci_progress';
+    const loadProgress = () => readLocal(PROGRESS_KEY, {}) || {};
+    const wordKey = (w) => `${w.a}\u0001${w.b}`;
+    const BOX_DAYS = [0, 1, 3, 7, 14];
+    const isDue = (rec, now = Date.now()) =>
+      !rec || !rec.box || now - rec.last >= BOX_DAYS[Math.min(rec.box, 5) - 1] * 864e5;
+    const isWrong = (rec) => !!rec && rec.lastOk === false;
+    const applyResult = (rec, ok) => ({
+      ok: (rec?.ok || 0) + (ok ? 1 : 0),
+      bad: (rec?.bad || 0) + (ok ? 0 : 1),
+      box: ok ? Math.min(5, (rec?.box || 0) + 1) : 1,
+      last: Date.now(),
+      lastOk: ok,
+    });
+
+    // ---------- Direktlinks: Set komprimiert im URL-Fragment ----------
+    const b64urlEncode = (bytes) => {
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    };
+    const b64urlDecode = (str) =>
+      Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+
+    const encodeSet = async (set) => {
+      const json = new TextEncoder().encode(JSON.stringify([
+        set.title, set.langs || 0, set.words.map((w) => [w.a, w.b, w.s && w.s.length ? w.s : 0, w.h || 0]),
+      ]));
+      if (window.CompressionStream) {
+        const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+        return '1.' + b64urlEncode(new Uint8Array(await new Response(stream).arrayBuffer()));
+      }
+      return '0.' + b64urlEncode(json);
+    };
+
+    const decodeSet = async (data) => {
+      const bytes = b64urlDecode(data.slice(2));
+      const json = data.slice(0, 1) === '1'
+        ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()
+        : new TextDecoder().decode(bytes);
+      const [title, langs, words] = JSON.parse(json);
+      return {
+        title, ...(langs ? { langs } : {}),
+        words: words.map(([a, b, s, h]) => ({ a, b, ...(s ? { s } : {}), ...(h ? { h } : {}) })),
+      };
+    };
+
+    const demoById = (id) => DEMOS.find((d) => d.id === id);
+
+    // ---------- Routing über das URL-Fragment ----------
+    const withLang = (hash, lang = currentLang) => `${hash}${hash.endsWith('#') ? '' : '&'}l=${lang || currentLang}`;
+    const routePart = () => hashParts().find((x) => !x.startsWith('l=')) || '';
+    const applyLang = (id) => {
+      if (id === currentLang) return;
+      currentLang = id;
+      document.documentElement.lang = id;
+      redrawLang(id);
+    };
+    const restoreLang = () => applyLang(loadLang());
+    const changeLang = (id) => {
+      writeLocal(LANG_KEY, id);
+      applyLang(id);
+      if (langFromHash()) {
+        try { history.replaceState(null, '', location.pathname + location.search + withLang('#' + routePart())); } catch {}
+      }
+    };
+    const toHash = (set) => withLang(demoById(set.id) ? '#demo=' + set.id : '#local=' + set.id, set.lang);
+    const directLink = async (set) => {
+      const base = location.origin + location.pathname;
+      return demoById(set.id) ? base + toHash(set) : withLang(`${base}#v=${await encodeSet(set)}`, set.lang);
+    };
+    const safeDecode = (raw) => { try { return decodeURIComponent(raw); } catch { return raw; } };
+    const getRoute = () => {
+      const hash = routePart();
+      if (hash.startsWith('v=')) return { type: 'data', data: hash.slice(2) };
+      if (hash.startsWith('demo=')) return { type: 'demo', id: hash.slice(5) };
+      if (hash.startsWith('local=')) return { type: 'local', id: hash.slice(6) };
+      if (hash.startsWith('edit=')) return { type: 'edit', id: hash.slice(5) };
+      if (hash.startsWith('new=')) return { type: 'new', dir: safeDecode(hash.slice(4)) };
+      return null;
+    };
+
+    const shuffleArray = (array) => {
+      const out = [...array];
+      for (let i = out.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+      }
+      return out;
+    };
+
+    // ---------- Automatische Korrektur ----------
+    // Kein Modell, nur Regeln: normalisieren, Alternativen und Klammern
+    // durchprobieren, dann abgestuft vergleichen. Zurück kommt
+    // { status: 'right'|'almost'|'wrong', solution, note }.
+    const ARTICLES = {
+      de: ['der', 'die', 'das', 'ein', 'eine', 'einen', 'einem', 'einer', 'eines', 'dem', 'den', 'des'],
+      fr: ['le', 'la', 'les', "l'", 'un', 'une', 'des', 'du', 'de la', "de l'"],
+      en: ['the', 'a', 'an', 'to'],
+      it: ['il', 'lo', 'la', 'i', 'gli', 'le', "l'", 'un', 'una', 'uno', "un'"],
+      es: ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas'],
+      pt: ['o', 'a', 'os', 'as', 'um', 'uma'],
+    };
+    const stripAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const baseNorm = (s) => s
+      .replace(/[’‘`´]/g, "'").replace(/ß/g, 'ss').replace(/\s*'\s*/g, "'")
+      .replace(/\s+/g, ' ').replace(/[.!?…]+$/, '').trim();
+    const stripArticle = (s, lang) => {
+      for (const art of ARTICLES[lang] || []) {
+        if (s === art) continue;
+        if (art.endsWith("'") ? s.startsWith(art) : s.startsWith(art + ' ')) return s.slice(art.length).trim();
+      }
+      return s;
+    };
+    // «aller / marcher» → zwei Lösungen; «(la) maison» → mit und ohne Klammerteil.
+    const variants = (solution) => {
+      const out = [];
+      for (const alt of solution.split(/\s*[\/;,]\s*/)) {
+        if (!alt.trim()) continue;
+        let forms = [alt];
+        while (forms.some((f) => /\([^()]*\)/.test(f))) {
+          forms = forms.flatMap((f) => (/\([^()]*\)/.test(f)
+            ? [f.replace(/\(([^()]*)\)/, '$1'), f.replace(/\s*\([^()]*\)\s*/, ' ')] : [f]));
+        }
+        for (const f of forms) { const v = baseNorm(f); if (v && !out.includes(v)) out.push(v); }
+      }
+      return out.length ? out : [baseNorm(solution)];
+    };
+    const levenshtein = (a, b) => {
+      if (a === b) return 0;
+      if (!a.length || !b.length) return Math.max(a.length, b.length);
+      let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+      for (let i = 1; i <= a.length; i++) {
+        const cur = [i];
+        for (let j = 1; j <= b.length; j++) {
+          cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        }
+        prev = cur;
+      }
+      return prev[b.length];
+    };
+
+    const checkAnswer = (input, solution, { level = 'normal', lang } = {}) => {
+      const inp = baseNorm(input || '');
+      const vars = variants(solution);
+      const wrong = () => {
+        let best = vars[0], bestD = Infinity;
+        for (const v of vars) {
+          const d = levenshtein(inp.toLowerCase(), v.toLowerCase());
+          if (d < bestD) { best = v; bestD = d; }
+        }
+        return { status: 'wrong', solution: best };
+      };
+      if (!inp) return wrong();
+      for (const v of vars) if (inp === v) return { status: 'right', solution: v };
+      for (const v of vars) if (inp.toLowerCase() === v.toLowerCase()) {
+        return level === 'strict' ? { status: 'almost', solution: v, note: 'noteCase' } : { status: 'right', solution: v };
+      }
+      if (level === 'strict') return wrong();
+      const lo = inp.toLowerCase();
+      for (const v of vars) if (stripAccents(lo) === stripAccents(v.toLowerCase())) {
+        return level === 'loose' ? { status: 'right', solution: v } : { status: 'almost', solution: v, note: 'noteAccent' };
+      }
+      if (level === 'loose') {
+        for (const v of vars) {
+          if (stripArticle(stripAccents(lo), lang) === stripArticle(stripAccents(v.toLowerCase()), lang)) return { status: 'right', solution: v };
+        }
+      } else {
+        for (const v of vars) {
+          if (stripArticle(lo, lang) === stripArticle(v.toLowerCase(), lang)) return { status: 'almost', solution: v, note: 'noteArticle' };
+        }
+      }
+      // Ein Tippfehler bei Wörtern ab vier Zeichen: fast richtig
+      for (const v of vars) {
+        const a = level === 'loose' ? stripArticle(stripAccents(lo), lang) : lo;
+        const b = level === 'loose' ? stripArticle(stripAccents(v.toLowerCase()), lang) : v.toLowerCase();
+        if (b.length >= 4 && levenshtein(a, b) <= 1) return { status: 'almost', solution: v, note: 'noteTypo' };
+      }
+      return wrong();
+    };
+
+    // Zeichenweiser Vergleich (längste gemeinsame Teilfolge): was in der Eingabe
+    // zu viel ist, wird rot durchgestrichen, was in der Lösung fehlt, grün.
+    const charDiff = (a, b) => {
+      const n = a.length, m = b.length;
+      const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+      for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) {
+        dp[i][j] = a[i].toLowerCase() === b[j].toLowerCase() ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+      const A = [], B = [];
+      let i = 0, j = 0;
+      while (i < n && j < m) {
+        if (a[i].toLowerCase() === b[j].toLowerCase()) { A.push([a[i], true]); B.push([b[j], true]); i++; j++; }
+        else if (dp[i + 1][j] >= dp[i][j + 1]) A.push([a[i++], false]);
+        else B.push([b[j++], false]);
+      }
+      while (i < n) A.push([a[i++], false]);
+      while (j < m) B.push([b[j++], false]);
+      return [A, B];
+    };
+    const DiffText = ({ parts, cls }) => (
+      <span>{parts.map(([ch, same], i) => (same ? <span key={i}>{ch}</span> : <span key={i} className={cls}>{ch}</span>))}</span>
+    );
+
+    // Das Wort im Satz hervorheben (Wortstamm reicht: «marchons» zu «marcher»)
+    const markWord = (sentence, word) => {
+      const stems = variants(word).map((v) => stripArticle(v.toLowerCase(), null)).filter((v) => v.length >= 3);
+      const stem = stems.map((v) => v.replace(/(er|ir|re|en|e|s)$/i, '')).filter((v) => v.length >= 3);
+      const re = stem.length ? new RegExp(`(${stem.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\w*`, 'i') : null;
+      const m = re && sentence.match(re);
+      if (!m) return sentence;
+      return <>{sentence.slice(0, m.index)}<b>{m[0]}</b>{sentence.slice(m.index + m[0].length)}</>;
+    };
+
+    // ---------- Vorlesen ----------
+    const canSpeak = (lang) => !!(window.speechSynthesis && TTS_LOCALE[lang]);
+    const speak = (text, lang) => {
+      if (!canSpeak(lang)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text.replace(/\s*\/.*$/, '').replace(/[()]/g, ''));
+        u.lang = TTS_LOCALE[lang];
+        u.rate = 0.9;
+        window.speechSynthesis.speak(u);
+      } catch {}
+    };
+
+    // ---------- Vollbild ----------
+    const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+    const canFullscreen = () => !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+    const toggleFullscreen = () => {
+      const el = document.documentElement;
+      try {
+        if (fsElement()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        else (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+      } catch {}
+    };
+
+    // ---------- Gemeinsame Bausteine ----------
+    const SCREEN = 'min-h-screen bg-gradient-to-br from-blue-50 to-emerald-50';
+    const BTN_PRIMARY = 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-emerald-600 transition-all shadow-lg';
+    const BTN_SECONDARY = 'bg-gray-100 text-gray-600 rounded-lg font-semibold hover:bg-gray-200 transition-all';
+    const CARD = 'bg-white rounded-lg shadow-lg';
+    const LABEL = 'text-xs uppercase tracking-wide text-gray-400';
+    const INPUT = 'px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:border-blue-400';
+
+    const Modal = ({ children, onClose }) => (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+        <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          {children}
+        </div>
+      </div>
+    );
+
+    const AskModal = ({ dialog, onClose }) => {
+      const [value, setValue] = useState(dialog.preset || '');
+      const isPrompt = dialog.kind === 'prompt';
+      const submit = () => {
+        if (isPrompt) { if (!value.trim()) return; dialog.onOk(value.trim()); }
+        else dialog.onYes();
+        onClose();
+      };
+      return (
+        <Modal onClose={onClose}>
+          <p className="text-gray-700 mb-4">{isPrompt ? dialog.label : dialog.text}</p>
+          {isPrompt && (
+            <input
+              autoFocus type="text" value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+              className={`w-full mb-4 ${INPUT}`}
+            />
+          )}
+          <div className="flex gap-3">
+            <button onClick={onClose} className={`flex-1 px-4 py-2 ${BTN_SECONDARY}`}>{t('cancel')}</button>
+            <button onClick={submit} className={`flex-1 ${BTN_PRIMARY} px-4 py-2`}>{dialog.ok || 'OK'}</button>
+          </div>
+        </Modal>
+      );
+    };
+
+    const IconButton = ({ onClick, title, hover = 'hover:bg-blue-50', extra = '', children }) => (
+      <button onClick={onClick} title={title}
+        className={`px-3 py-3 bg-white rounded-lg shadow hover:shadow-md transition-all text-gray-500 ${hover} ${extra}`}>
+        {children}
+      </button>
+    );
+
+    const Icon = ({ children }) => (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+    );
+    const LinkIcon = () => (
+      <Icon>
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </Icon>
+    );
+    const QrIcon = () => (
+      <Icon>
+        <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14.5h3.5V18H14z" /><path d="M18.5 18.5H21V21h-2.5z" />
+      </Icon>
+    );
+    const PenIcon = () => <Icon><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z" /></Icon>;
+    const SettingsIcon = () => (
+      <Icon><path d="M4 8h10M18 8h2M4 16h4M12 16h8" /><circle cx="16" cy="8" r="2" /><circle cx="10" cy="16" r="2" /></Icon>
+    );
+    const InboxIcon = () => (
+      <Icon><path d="M12 3v9" /><path d="M8 8.5 12 12.5l4-4" /><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" /></Icon>
+    );
+    const DownloadIcon = () => <Icon><path d="M12 3v12" /><path d="M7.5 10.5 12 15l4.5-4.5" /><path d="M4 20h16" /></Icon>;
+    const PlusIcon = () => <Icon><path d="M12 5v14" /><path d="M5 12h14" /></Icon>;
+    const FolderIcon = () => <Icon><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" /></Icon>;
+    const TrashIcon = () => (
+      <Icon><path d="M4 7h16" /><path d="M9 7V5h6v2" /><path d="M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12" /></Icon>
+    );
+    const SpeakerIcon = () => (
+      <Icon><path d="M4 9v6h4l5 4V5L8 9z" /><path d="M16 9a4 4 0 0 1 0 6" /><path d="M18.5 6.5a8 8 0 0 1 0 11" /></Icon>
+    );
+    const ExpandIcon = () => (
+      <Icon><path d="M4 9V4h5" /><path d="M20 9V4h-5" /><path d="M4 15v5h5" /><path d="M20 15v5h-5" /></Icon>
+    );
+
+    const QrModal = ({ title, url, onClose, onCopy }) => {
+      const svg = useMemo(() => {
+        try {
+          const qr = window.qrcode(0, 'M');
+          qr.addData(url);
+          qr.make();
+          return qr.createSvgTag({ cellSize: 4, margin: 4, scalable: true });
+        } catch { return null; }
+      }, [url]);
+      return (
+        <Modal onClose={onClose}>
+          <h2 className="text-xl font-bold text-center mb-4 text-gray-800">{title}</h2>
+          {svg ? (
+            <div className="flex justify-center mb-4 [&>svg]:w-56 [&>svg]:h-56" dangerouslySetInnerHTML={{ __html: svg }} />
+          ) : <div className="text-center text-red-600 mb-4">{t('qrTooBig')}</div>}
+          <div className="text-xs text-gray-400 break-all max-h-16 overflow-y-auto mb-4">{url}</div>
+          <div className="flex gap-2">
+            <button onClick={onCopy} className={`flex-1 ${BTN_PRIMARY} px-4 py-2`}>{t('copyLinkBtn')}</button>
+            <button onClick={onClose} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('close')}</button>
+          </div>
+        </Modal>
+      );
+    };
+
+    const useSettings = () => {
+      const [open, setOpen] = useState(false);
+      const button = <IconButton onClick={() => setOpen((v) => !v)} title={t('settings')}><SettingsIcon /></IconButton>;
+      const panel = open && (
+        <div className={`${CARD} p-6 mb-8`}>
+          <h2 className="text-lg font-semibold text-gray-700 mb-3">{t('settings')}</h2>
+          <div className="rounded-lg border border-gray-200 p-4">
+            <div className={`${LABEL} mb-2`}>{t('language')}</div>
+            <div className="flex gap-2">
+              {LANGS.map((entry) => (
+                <button key={entry.id} onClick={() => changeLang(entry.id)}
+                  className={`px-4 py-2 ${entry.id === currentLang ? BTN_PRIMARY : BTN_SECONDARY}`}>{entry.name}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+      return [button, panel];
+    };
+
+    const Collapsible = ({ title, open, onToggle, children }) => (
+      <div className={`${CARD} mb-8`}>
+        <button onClick={onToggle} className="w-full flex items-center justify-between gap-2 px-6 py-4 text-left">
+          <h2 className="text-lg font-semibold text-gray-700">{title}</h2>
+          <span className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
+        </button>
+        {open && <div className="px-6 pb-6">{children}</div>}
+      </div>
+    );
+
+    const langBadge = (set) => set.langs && (
+      <span className="ml-2 px-1.5 rounded bg-gray-100 text-xs font-semibold text-gray-500 uppercase align-middle">
+        {set.langs[0]}→{set.langs[1]}
+      </span>
+    );
+
+    // ---------- Auswahlseite ----------
+    const Selection = ({ own, folders, onOpen, onEdit, onNew, onImport, onDelete, folderApi }) => {
+      const [toast, setToast] = useState(null);
+      const [settingsButton, settingsPanel] = useSettings();
+      const [qr, setQr] = useState(null);
+      const [createOpen, setCreateOpen] = useState(false);
+      const [ipadOpen, setIpadOpen] = useState(false);
+      const [openDirs, setOpenDirs] = useState(loadOpen);
+      const [dropDir, setDropDir] = useState(null);
+      const dragged = useRef(null);
+      const [dialog, setDialog] = useState(null);
+      const [pasted, setPasted] = useState('');
+      const [pastedTitle, setPastedTitle] = useState('');
+      const fileInput = useRef(null);
+
+      const toastTimer = useRef(0);
+      const showToast = (msg) => {
+        setToast(msg);
+        clearTimeout(toastTimer.current);
+        toastTimer.current = setTimeout(() => setToast(null), 2500);
+      };
+      const copyText = async (text, msg) => {
+        try { await navigator.clipboard.writeText(text); showToast(msg); }
+        catch { showToast(t('copyFailed')); }
+      };
+      const copyLink = async (set) => copyText(await directLink(set), t('linkCopied'));
+      const showQr = async (set) => setQr({ title: set.title, url: await directLink(set) });
+      const exportOne = (set) => { download(`${safeName(set.title)}.txt`, toFile(set)); showToast(t('downloadedOne', set.title)); };
+      const exportAll = async () => {
+        if (!own.length) { showToast(t('noOwnSets')); return; }
+        try { download('MyVoci.zip', await zipBlob(own, folders)); }
+        catch { showToast(t('zipFailed')); return; }
+        showToast(t('downloadedAll', own.length));
+      };
+
+      const addImported = (text, name, dir, complain) => {
+        const parsed = parseFile(text, name);
+        if (!parsed.words.length) { showToast(complain); return false; }
+        onImport({ id: newId(), ...parsed, ...(dir === undefined ? {} : { dir }) });
+        showToast(t('imported', parsed.title, parsed.words.length));
+        return true;
+      };
+      const importFiles = (fileList, dir) => {
+        for (const file of fileList) file.text().then((text) => addImported(text, file.name, dir, t('noWordsInFile', file.name)));
+      };
+      const importPasted = () => {
+        if (!addImported(pasted, pastedTitle.trim() || 'Voci', undefined, t('noWordsFound'))) return;
+        setPasted('');
+        setPastedTitle('');
+      };
+
+      useEffect(() => {
+        const over = (e) => { if ([...e.dataTransfer.types].includes('Files')) e.preventDefault(); };
+        const drop = (e) => { if (!e.dataTransfer.files.length) return; e.preventDefault(); importFiles(e.dataTransfer.files); };
+        window.addEventListener('dragover', over);
+        window.addEventListener('drop', drop);
+        return () => { window.removeEventListener('dragover', over); window.removeEventListener('drop', drop); };
+      }, []);
+
+      const rememberOpen = (dirs) => { setOpenDirs(dirs); writeLocal(OPEN_KEY, dirs); };
+      const toggleDir = (dir) => rememberOpen(openDirs.includes(dir) ? openDirs.filter((d) => d !== dir) : [...openDirs, dir]);
+
+      const canDrop = (dir) => {
+        const d = dragged.current;
+        if (!d) return false;
+        if (d.kind === 'set') return d.dir !== dir;
+        return !inside(dir, d.id) && parentDir(d.id) !== dir;
+      };
+      const dragProps = (item) => ({
+        draggable: true,
+        onDragStart: (e) => { dragged.current = item; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', item.id); },
+        onDragEnd: () => { dragged.current = null; setDropDir(null); },
+      });
+      const dropProps = (dir) => ({
+        onDragOver: (e) => {
+          e.stopPropagation();
+          if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); setDropDir(dir); return; }
+          if (!canDrop(dir)) { setDropDir(null); return; }
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          setDropDir(dir);
+        },
+        onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDropDir((cur) => (cur === dir ? null : cur)); },
+        onDrop: (e) => {
+          e.stopPropagation();
+          if (e.dataTransfer.files.length) { e.preventDefault(); setDropDir(null); importFiles(e.dataTransfer.files, dir); return; }
+          const item = dragged.current;
+          if (!item || !canDrop(dir)) return;
+          e.preventDefault();
+          dragged.current = null;
+          setDropDir(null);
+          if (item.kind === 'set') folderApi.moveSet(item.id, dir);
+          else {
+            const target = folderApi.moveFolder(item.id, dir);
+            rememberOpen(openDirs.map((d) => (inside(d, item.id) ? target + d.slice(item.id.length) : d)));
+          }
+        },
+      });
+
+      const newFolder = (parent) => setDialog({
+        kind: 'prompt', ok: t('create'), label: parent ? t('askSubfolder', dirName(parent)) : t('askFolder'),
+        onOk: (name) => {
+          const path = folderApi.makeFolder(parent, name);
+          if (path) rememberOpen([...new Set([...openDirs, parent, path].filter(Boolean))]);
+        },
+      });
+      const renameFolder = (dir) => setDialog({
+        kind: 'prompt', ok: t('rename'), label: t('askRename'), preset: dirName(dir),
+        onOk: (name) => {
+          const target = folderApi.renameFolder(dir, name);
+          if (target) rememberOpen(openDirs.map((d) => (inside(d, dir) ? target + d.slice(dir.length) : d)));
+        },
+      });
+      const dropFolder = (dir) => {
+        if (own.some((s) => inside(s.dir || '', dir)) || folders.some((f) => f !== dir && inside(f, dir))) { showToast(t('folderNotEmpty')); return; }
+        setDialog({
+          kind: 'confirm', ok: t('del'), text: t('confirmDeleteFolder', dirName(dir)),
+          onYes: () => { folderApi.removeFolder(dir); rememberOpen(openDirs.filter((d) => d !== dir)); },
+        });
+      };
+
+      const row = (set, deletable) => (
+        <div key={set.id} className="flex items-center gap-2 mb-2"
+          {...(deletable ? dragProps({ kind: 'set', id: set.id, dir: set.dir || '' }) : {})}>
+          <button onClick={() => onOpen(set)}
+            className="flex-1 min-w-0 truncate text-left px-4 py-3 bg-white rounded-lg shadow hover:shadow-md hover:bg-blue-50 transition-all font-semibold text-gray-800">
+            {set.title}
+            {langBadge(set)}
+            <span className="ml-2 text-sm font-normal text-gray-400">{t('nWords', set.words.length)}</span>
+          </button>
+          <IconButton onClick={() => exportOne(set)} title={t('exportOne')} extra="hidden sm:block"><DownloadIcon /></IconButton>
+          <IconButton onClick={() => copyLink(set)} title={t('copyLink')}><LinkIcon /></IconButton>
+          <IconButton onClick={() => showQr(set)} title={t('showQr')}><QrIcon /></IconButton>
+          {deletable && <IconButton onClick={() => onEdit(set)} title={t('edit')}><PenIcon /></IconButton>}
+          {deletable && (
+            <IconButton title={t('del')} hover="hover:bg-red-50"
+              onClick={() => setDialog({ kind: 'confirm', ok: t('del'), text: t('confirmDeleteSet', set.title), onYes: () => onDelete(set.id) })}>
+              <TrashIcon />
+            </IconButton>
+          )}
+        </div>
+      );
+
+      const folderBox = (dir) => {
+        const isOpen = openDirs.includes(dir);
+        return (
+          <div key={dir} {...dropProps(dir)}
+            className={`mb-2 rounded-lg border-2 transition-colors ${dropDir === dir ? 'border-blue-400 bg-blue-50/60' : 'border-transparent'}`}>
+            <div {...dragProps({ kind: 'dir', id: dir })} onClick={() => toggleDir(dir)}
+              className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow hover:shadow-md cursor-pointer select-none">
+              <span className="text-gray-400 w-3">{isOpen ? '▾' : '▸'}</span>
+              <span className="shrink-0 text-gray-400"><FolderIcon /></span>
+              <span className="flex-1 min-w-0 truncate font-semibold text-gray-700">{dirName(dir)}</span>
+              <IconButton onClick={(e) => { e.stopPropagation(); onNew(dir); }} title={t('newSetHere')}><PlusIcon /></IconButton>
+              <IconButton onClick={(e) => { e.stopPropagation(); newFolder(dir); }} title={t('newSubfolder')}><FolderIcon /></IconButton>
+              <IconButton onClick={(e) => { e.stopPropagation(); renameFolder(dir); }} title={t('renameFolder')}><PenIcon /></IconButton>
+              <IconButton onClick={(e) => { e.stopPropagation(); dropFolder(dir); }} title={t('deleteFolder')} hover="hover:bg-red-50"><TrashIcon /></IconButton>
+            </div>
+            {isOpen && <div className="ml-4 mt-2">{treeOf(dir)}</div>}
+          </div>
+        );
+      };
+      const treeOf = (dir) => (
+        <>
+          {folders.filter((f) => parentDir(f) === dir).map(folderBox)}
+          {own.filter((s) => (s.dir || '') === dir).map((s) => row(s, true))}
+        </>
+      );
+
+      return (
+        <div className={`${SCREEN} p-4 sm:p-8`}>
+          <div className="max-w-2xl mx-auto">
+            <div className="relative mb-2">
+              <h1 className="text-4xl font-bold text-center text-gray-800">MyVoci</h1>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2">{settingsButton}</div>
+            </div>
+            <p className="text-center text-gray-500 mb-8">{t('subtitle')}</p>
+            {settingsPanel}
+
+            <Collapsible title={t('createTitle')} open={createOpen} onToggle={() => setCreateOpen((v) => !v)}>
+              <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1 mb-4">{t('steps')}</ol>
+              <button onClick={() => copyText(kiPrompt(), t('promptCopied'))} className={`w-full ${BTN_PRIMARY} px-4 py-2 mb-6`}>
+                {t('copyPrompt')}
+              </button>
+              <div onClick={() => fileInput.current.click()}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center text-gray-500 cursor-pointer hover:border-blue-400 hover:text-gray-700 hover:bg-blue-50 transition-all">
+                <span className="flex items-center justify-center gap-2 font-bold"><InboxIcon /> {t('dropTitle')}</span>
+                <span className="block text-sm text-gray-400">{t('dropHint')}</span>
+              </div>
+              <input ref={fileInput} type="file" accept=".txt,.md" multiple className="hidden"
+                onChange={(e) => { importFiles(e.target.files); e.target.value = ''; }} />
+              <div className={`flex items-center gap-3 my-4 ${LABEL}`}>
+                <span className="flex-1 h-px bg-gray-200" /> {t('orPaste')} <span className="flex-1 h-px bg-gray-200" />
+              </div>
+              <input type="text" value={pastedTitle} onChange={(e) => setPastedTitle(e.target.value)} placeholder={t('pastedTitlePh')}
+                className={`w-full mb-2 ${INPUT} text-sm`} />
+              <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={6} placeholder={t('pastePh')}
+                className={`w-full ${INPUT} text-sm font-mono`} />
+              <button onClick={importPasted} disabled={!pasted.trim()}
+                className={`w-full mt-2 px-4 py-2 rounded-lg font-semibold transition-all ${pasted.trim() ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                {t('importText')}
+              </button>
+              <p className="text-xs text-gray-400 mt-3">{t('importHint')}</p>
+            </Collapsible>
+
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-3">
+                <h2 className="text-lg font-semibold text-gray-600 flex-1">{t('mySets')}</h2>
+                <IconButton onClick={() => onNew('')} title={t('newSet')}><PlusIcon /></IconButton>
+                <IconButton onClick={() => newFolder('')} title={t('newFolder')}><FolderIcon /></IconButton>
+                <IconButton onClick={exportAll} title={t('exportAll')}><DownloadIcon /></IconButton>
+              </div>
+              <div {...dropProps('')}
+                className={`min-h-[3rem] rounded-lg border-2 transition-colors ${dropDir === '' ? 'border-blue-400 bg-blue-50/60' : 'border-transparent'}`}>
+                {own.length || folders.length ? treeOf('') : <p className="text-sm text-gray-400 px-1 py-3">{t('emptyList')}</p>}
+              </div>
+              {own.length > 0 && <p className="text-xs text-gray-400 mt-1">{t('storedHint')}</p>}
+            </div>
+
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold text-gray-600 mb-3">{t('examples')}</h2>
+              {DEMOS.map((s) => row(s, false))}
+            </div>
+
+            <Collapsible title={t('ipadTitle')} open={ipadOpen} onToggle={() => setIpadOpen((v) => !v)}>
+              <ol className="list-decimal list-inside text-sm text-gray-600 space-y-2">{t('ipadSteps')}</ol>
+            </Collapsible>
+          </div>
+
+          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+          {qr && <QrModal title={qr.title} url={qr.url} onClose={() => setQr(null)} onCopy={() => copyText(qr.url, t('linkCopied'))} />}
+          {toast && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">{toast}</div>
+          )}
+        </div>
+      );
+    };
+
+    // ---------- Editor ----------
+    const SetEditor = ({ set, sets, folders, onSave, onCancel, onNewFolder }) => {
+      const [title, setTitle] = useState(set.title);
+      const [dir, setDir] = useState(set.dir || '');
+      const [lang, setLang] = useState(set.lang || '');
+      const [langA, setLangA] = useState(set.langs ? set.langs[0] : '');
+      const [langB, setLangB] = useState(set.langs ? set.langs[1] : '');
+      const [words, setWords] = useState(() =>
+        set.words.length ? set.words.map((w) => ({ a: w.a, b: w.b, s: (w.s || []).join('\n'), h: w.h || '' })) : [{ a: '', b: '', s: '', h: '' }]);
+      const [error, setError] = useState('');
+      const [dialog, setDialog] = useState(null);
+
+      const snapshot = JSON.stringify({ title, dir, lang, langA, langB, words });
+      const [openSnapshot] = useState(snapshot);
+
+      const setWord = (i, key, value) => setWords((ws) => ws.map((w, j) => (j === i ? { ...w, [key]: value } : w)));
+      const addWord = () => setWords((ws) => [...ws, { a: '', b: '', s: '', h: '' }]);
+      const removeWord = (i) => setWords((ws) => ws.filter((_, j) => j !== i));
+      const moveWord = (i, delta) => setWords((ws) => {
+        const j = i + delta;
+        if (j < 0 || j >= ws.length) return ws;
+        const next = [...ws];
+        [next[i], next[j]] = [next[j], next[i]];
+        return next;
+      });
+
+      const save = () => {
+        const clean = words
+          .map((w) => ({
+            a: w.a.trim(), b: w.b.trim(),
+            s: w.s.split('\n').map((x) => x.trim()).filter(Boolean), h: w.h.trim(),
+          }))
+          .filter((w) => w.a || w.b)
+          .map((w) => ({ a: w.a, b: w.b, ...(w.s.length ? { s: w.s } : {}), ...(w.h ? { h: w.h } : {}) }));
+        const name = title.trim();
+        if (!name) return setError(t('errTitle'));
+        if (sets.some((s) => s.id !== set.id && s.title === name)) return setError(t('errTitleTaken'));
+        if (!clean.length) return setError(t('errNoWord'));
+        if (clean.some((w) => !w.a || !w.b)) return setError(t('errHalfWord'));
+        const a = langCode(langA), b = langCode(langB);
+        onSave({ ...set, title: name, dir, words: clean, lang: lang || undefined, langs: a && b ? [a, b] : undefined });
+      };
+      const cancel = () => {
+        if (snapshot === openSnapshot) return onCancel();
+        setDialog({ kind: 'confirm', ok: t('discard'), text: t('confirmDiscard'), onYes: onCancel });
+      };
+      const newFolder = () => setDialog({
+        kind: 'prompt', ok: t('create'), label: dir ? t('askSubfolder', dirName(dir)) : t('askFolder'),
+        onOk: (name) => { const path = onNewFolder(dir, name); if (path) setDir(path); },
+      });
+
+      const field = (i, key, label, placeholder) => (
+        <label className="block">
+          <span className={LABEL}>{label}</span>
+          <input type="text" value={words[i][key]} placeholder={placeholder} onChange={(e) => setWord(i, key, e.target.value)}
+            className={`w-full mt-1 ${INPUT}`} />
+        </label>
+      );
+
+      return (
+        <div className={`${SCREEN} p-4 sm:p-8`}>
+          <div className="max-w-2xl mx-auto">
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">{set.id ? t('editSet') : t('newSet')}</h1>
+            <div className={`${CARD} p-6 mb-6`}>
+              <label className="block mb-4">
+                <span className={LABEL}>{t('titleLabel')}</span>
+                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('titlePh')} className={`w-full mt-1 ${INPUT}`} />
+              </label>
+              <span className={LABEL}>{t('folderLabel')}</span>
+              <div className="flex gap-2 mt-1 mb-4">
+                <select value={dir} onChange={(e) => setDir(e.target.value)} className={`flex-1 min-w-0 ${INPUT}`}>
+                  <option value="">{t('rootFolder')}</option>
+                  {folders.map((f) => <option key={f} value={f}>{'\u00a0\u00a0'.repeat(f.split('/').length - 1) + dirName(f)}</option>)}
+                </select>
+                <IconButton onClick={newFolder} title={t('makeFolder')}><FolderIcon /></IconButton>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className={LABEL}>{t('langA')}</span>
+                  <input type="text" list="langlist" value={langA} onChange={(e) => setLangA(e.target.value)} placeholder={t('langPh')} className={`w-full mt-1 ${INPUT}`} />
+                </label>
+                <label className="block">
+                  <span className={LABEL}>{t('langB')}</span>
+                  <input type="text" list="langlist" value={langB} onChange={(e) => setLangB(e.target.value)} placeholder={t('langPh')} className={`w-full mt-1 ${INPUT}`} />
+                </label>
+                <datalist id="langlist">{Object.keys(LANG_NAMES).map((c) => <option key={c} value={c}>{langName(c)}</option>)}</datalist>
+              </div>
+              <span className="block mt-1 text-sm text-gray-500">{t('langsHint')}</span>
+              <label className="block mt-4">
+                <span className={LABEL}>{t('uiLangLabel')}</span>
+                <select value={lang} onChange={(e) => setLang(e.target.value)} className={`w-full mt-1 ${INPUT}`}>
+                  <option value="">{t('uiLangDefault')}</option>
+                  {LANGS.map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
+                </select>
+                <span className="block mt-1 text-sm text-gray-500">{t('uiLangHint')}</span>
+              </label>
+            </div>
+
+            {words.map((w, i) => (
+              <div key={i} className="bg-white rounded-lg shadow p-4 mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex-1 text-sm font-semibold text-gray-400">{t('wordN', i + 1)}</span>
+                  <IconButton onClick={() => moveWord(i, -1)} title={t('moveUp')}>↑</IconButton>
+                  <IconButton onClick={() => moveWord(i, 1)} title={t('moveDown')}>↓</IconButton>
+                  <IconButton onClick={() => removeWord(i)} title={t('deleteWord')} hover="hover:bg-red-50"><TrashIcon /></IconButton>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                  {field(i, 'a', langA ? langName(langCode(langA)) : t('sideA'), t('sideAPh'))}
+                  {field(i, 'b', langB ? langName(langCode(langB)) : t('sideB'), t('sideBPh'))}
+                </div>
+                <label className="block mb-3">
+                  <span className={LABEL}>{t('sentences')}</span>
+                  <textarea rows={2} value={w.s} placeholder={t('sentencesPh')} onChange={(e) => setWord(i, 's', e.target.value)}
+                    className={`w-full mt-1 ${INPUT} text-sm`} />
+                </label>
+                {field(i, 'h', t('hint'), t('hintPh'))}
+              </div>
+            ))}
+
+            <button onClick={addWord} className="w-full px-4 py-2 mb-4 bg-white rounded-lg shadow hover:shadow-md font-semibold text-gray-600 flex items-center justify-center gap-2">
+              <PlusIcon /> {t('addWord')}
+            </button>
+            {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
+            <div className="flex gap-3">
+              <button onClick={cancel} className="flex-1 px-4 py-3 bg-white rounded-lg shadow hover:shadow-md font-semibold text-gray-600">{t('cancel')}</button>
+              <button onClick={save} className={`flex-1 ${BTN_PRIMARY} px-4 py-3`}>{t('save')}</button>
+            </div>
+            <p className="text-xs text-gray-400 mt-3">{t('editorHint')}</p>
+          </div>
+          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+        </div>
+      );
+    };
+
+    // ---------- Set-Seite: Einstellungen für die Runde + Lernstand ----------
+    const OPTS_KEY = 'myvoci_practice';
+    const DEFAULT_OPTS = { mode: 'write', dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true };
+    const loadOpts = () => ({ ...DEFAULT_OPTS, ...(readLocal(OPTS_KEY, {}) || {}) });
+
+    const Choice = ({ options, value, onChange }) => (
+      <div className="flex flex-wrap gap-2">
+        {options.map(([id, label, disabled]) => (
+          <button key={id} disabled={disabled} onClick={() => onChange(id)}
+            className={`px-3 py-2 text-sm ${value === id ? BTN_PRIMARY : BTN_SECONDARY} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+    );
+
+    const selectWords = (set, opts, prog) => {
+      const recs = set.words.map((w) => prog[wordKey(w)]);
+      return set.words.filter((w, i) => {
+        if (opts.sel === 'wrong') return isWrong(recs[i]);
+        if (opts.sel === 'due') return isDue(recs[i]);
+        if (opts.sel === 'range') return i + 1 >= Math.min(opts.from, opts.to) && i + 1 <= Math.max(opts.from, opts.to);
+        return true;
+      });
+    };
+
+    const SetPage = ({ set, prog, onStart, onReset, onBack }) => {
+      const [opts, setOpts] = useState(loadOpts);
+      const [settingsButton, settingsPanel] = useSettings();
+      const [dialog, setDialog] = useState(null);
+      const [listOpen, setListOpen] = useState(false);
+      const set_ = (patch) => setOpts((o) => { const next = { ...o, ...patch }; writeLocal(OPTS_KEY, next); return next; });
+
+      const n = set.words.length;
+      const recs = set.words.map((w) => prog[wordKey(w)]);
+      const wrongN = recs.filter(isWrong).length;
+      const dueN = recs.filter((r) => isDue(r)).length;
+      const boxes = [0, 0, 0, 0, 0, 0];
+      recs.forEach((r) => { boxes[r ? Math.min(r.box, 5) : 0]++; });
+      const seen = recs.filter(Boolean).length;
+      const chosen = selectWords(set, opts, prog);
+      const A = sideName(set, 0), B = sideName(set, 1);
+      const BOX_COLORS = ['bg-gray-300', 'bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-lime-400', 'bg-green-500'];
+
+      return (
+        <div className={`${SCREEN} p-4 sm:p-8`}>
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-2 mb-6">
+              <button onClick={onBack} title={t('toOverview')} className="shrink-0 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">
+                ← {t('overview')}
+              </button>
+              <h1 className="flex-1 min-w-0 text-xl sm:text-3xl font-bold text-center text-gray-800 break-words">{set.title}</h1>
+              {settingsButton}
+            </div>
+            {settingsPanel}
+
+            <div className={`${CARD} p-6 mb-6`}>
+              <h2 className="text-lg font-semibold text-gray-700 mb-4">{t('practiceTitle')}</h2>
+              <div className="space-y-4">
+                <div>
+                  <div className={`${LABEL} mb-2`}>{t('mode')}</div>
+                  <Choice value={opts.mode} onChange={(mode) => set_({ mode })} options={[['write', t('modeWrite')], ['cards', t('modeCards')]]} />
+                  <p className="text-sm text-gray-500 mt-1">{opts.mode === 'write' ? t('modeWriteHint') : t('modeCardsHint')}</p>
+                </div>
+                <div>
+                  <div className={`${LABEL} mb-2`}>{t('direction')}</div>
+                  <Choice value={opts.dir} onChange={(dir) => set_({ dir })}
+                    options={[['ab', t('dirAB', A, B)], ['ba', t('dirAB', B, A)], ['mix', t('dirMix')]]} />
+                </div>
+                <div>
+                  <div className={`${LABEL} mb-2`}>{t('selection')}</div>
+                  <Choice value={opts.sel} onChange={(sel) => set_({ sel })}
+                    options={[['all', t('selAll')], ['wrong', t('selWrong', wrongN), !wrongN], ['due', t('selDue', dueN)], ['range', t('selRange')]]} />
+                  {opts.sel === 'range' && (
+                    <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                      {t('rangeFrom')}
+                      <input type="number" min={1} max={n} value={opts.from} onChange={(e) => set_({ from: +e.target.value || 1 })} className={`w-20 ${INPUT}`} />
+                      {t('rangeTo')}
+                      <input type="number" min={1} max={n} value={opts.to} onChange={(e) => set_({ to: +e.target.value || n })} className={`w-20 ${INPUT}`} />
+                      <span className="text-gray-400">/ {n}</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className={`${LABEL} mb-2`}>{t('order')}</div>
+                  <Choice value={opts.order} onChange={(order) => set_({ order })} options={[['random', t('orderRandom')], ['file', t('orderFile')]]} />
+                </div>
+                {opts.mode === 'write' && (
+                  <div>
+                    <div className={`${LABEL} mb-2`}>{t('tolerance')}</div>
+                    <Choice value={opts.level} onChange={(level) => set_({ level })}
+                      options={[['strict', t('tolStrict')], ['normal', t('tolNormal')], ['loose', t('tolLoose')]]} />
+                    <p className="text-sm text-gray-500 mt-1">{t('tolHint')}</p>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={opts.hints} onChange={(e) => set_({ hints: e.target.checked })} /> {t('showHints')}</label>
+                  {opts.mode === 'write' && (
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={opts.copy} onChange={(e) => set_({ copy: e.target.checked })} /> {t('copyWrong')}</label>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => onStart(opts, chosen)} disabled={!chosen.length}
+                className={`w-full mt-6 px-6 py-3 text-lg ${chosen.length ? BTN_PRIMARY : 'bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed'}`}>
+                {t('start')} · {t('nWords', chosen.length)}
+              </button>
+              {!chosen.length && <p className="text-sm text-red-600 mt-2">{t('nothingSelected')}</p>}
+            </div>
+
+            <div className={`${CARD} p-6 mb-6`}>
+              <div className="flex items-center gap-2 mb-3">
+                <h2 className="text-lg font-semibold text-gray-700 flex-1">{t('progress')}</h2>
+                <span className="text-sm text-gray-500">{t('wrongCount', wrongN)} · {t('dueCount', dueN)}</span>
+              </div>
+              <div className="flex h-4 rounded-full overflow-hidden bg-gray-200 mb-2">
+                {boxes.map((c, i) => c > 0 && <div key={i} className={`${BOX_COLORS[i]}`} style={{ width: `${(c / n) * 100}%` }} title={`${t('boxLabel', i)}: ${c}`} />)}
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-3">
+                {boxes.map((c, i) => (
+                  <span key={i} className="flex items-center gap-1"><span className={`inline-block w-3 h-3 rounded-sm ${BOX_COLORS[i]}`} />{t('boxLabel', i)}: {c}</span>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mb-3">{t('progressHint')}</p>
+              {seen > 0 && (
+                <button onClick={() => setDialog({ kind: 'confirm', ok: t('resetProgress'), text: t('confirmReset'), onYes: onReset })}
+                  className={`px-4 py-2 text-sm ${BTN_SECONDARY}`}>{t('resetProgress')}</button>
+              )}
+            </div>
+
+            <Collapsible title={`${t('wordList')} (${n})`} open={listOpen} onToggle={() => setListOpen((v) => !v)}>
+              <ol className="text-sm text-gray-700 space-y-1">
+                {set.words.map((w, i) => {
+                  const r = recs[i];
+                  return (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className={`mt-1.5 inline-block w-2.5 h-2.5 rounded-full shrink-0 ${BOX_COLORS[r ? Math.min(r.box, 5) : 0]}`} />
+                      <span className="text-gray-400 w-6 shrink-0 text-right">{i + 1}.</span>
+                      <span className="flex-1"><b>{w.a}</b> — {w.b}{w.h && <span className="text-gray-400"> ({w.h})</span>}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </Collapsible>
+          </div>
+          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+        </div>
+      );
+    };
+
+    // ---------- Üben ----------
+    // Eine Runde ist eine Warteschlange aus {word, dir}. Falsch beantwortete
+    // Wörter kommen einmal hinten wieder dran (retry) — der Lernstand zählt nur
+    // den ersten Versuch.
+    const buildQueue = (words, opts) => {
+      const list = opts.order === 'random' ? shuffleArray(words) : words;
+      return list.map((word) => ({
+        word, retry: false,
+        dir: opts.dir === 'mix' ? (Math.random() < 0.5 ? 'ab' : 'ba') : opts.dir,
+      }));
+    };
+    const promptOf = (item) => (item.dir === 'ab' ? item.word.a : item.word.b);
+    const solutionOf = (item) => (item.dir === 'ab' ? item.word.b : item.word.a);
+    const langOf = (set, item, side) => set.langs && set.langs[(item.dir === 'ab') === (side === 'prompt') ? 0 : 1];
+
+    const Practice = ({ set, opts, words, onDone, onBack, onResult }) => {
+      const [queue, setQueue] = useState(() => buildQueue(words, opts));
+      const [pos, setPos] = useState(0);
+      const [phase, setPhase] = useState('ask'); // ask | feedback | copy | back (Karten)
+      const [input, setInput] = useState('');
+      const [copyInput, setCopyInput] = useState('');
+      const [copyMiss, setCopyMiss] = useState(false);
+      const [result, setResult] = useState(null);
+      const [log, setLog] = useState([]); // { item, ok } nur erste Versuche
+      const [startedAt] = useState(Date.now);
+      const [dialog, setDialog] = useState(null);
+      const [, redrawFs] = useState(0);
+      const inputRef = useRef(null);
+      const [settingsButton, settingsPanel] = useSettings();
+
+      const item = queue[pos];
+      const total = words.length;
+      const firstTries = log.length;
+      const answerLang = item && langOf(set, item, 'answer');
+      const promptLang = item && langOf(set, item, 'prompt');
+
+      useEffect(() => {
+        const onFs = () => redrawFs((x) => x + 1);
+        document.addEventListener('fullscreenchange', onFs);
+        document.addEventListener('webkitfullscreenchange', onFs);
+        return () => { document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs); };
+      }, []);
+
+      // Fokus zurück ins Feld, sobald es wieder da ist
+      useEffect(() => { if (phase === 'ask' || phase === 'copy') inputRef.current && inputRef.current.focus(); }, [phase, pos]);
+
+      const finish = (ok) => {
+        if (!item.retry) {
+          onResult(item.word, ok);
+          setLog((l) => [...l, { item, ok }]);
+          if (!ok) setQueue((q) => [...q, { ...item, retry: true }]);
+        }
+      };
+
+      const check = () => {
+        if (!input.trim()) return;
+        const r = checkAnswer(input, solutionOf(item), { level: opts.level, lang: answerLang });
+        setResult(r);
+        finish(r.status !== 'wrong');
+        setPhase(r.status === 'wrong' && opts.copy ? 'copy' : 'feedback');
+      };
+      const checkCopy = () => {
+        const r = checkAnswer(copyInput, result.solution, { level: 'strict' });
+        if (r.status === 'wrong') { setCopyMiss(true); return; }
+        setPhase('feedback');
+      };
+      const rate = (ok) => { finish(ok); next(); };
+      const next = () => {
+        if (pos + 1 >= queue.length) { onDone({ log, seconds: Math.round((Date.now() - startedAt) / 1000) }); return; }
+        setPos(pos + 1);
+        setPhase('ask');
+        setInput('');
+        setCopyInput('');
+        setCopyMiss(false);
+        setResult(null);
+      };
+      const onKey = (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        if (phase === 'ask') check();
+        else if (phase === 'copy') checkCopy();
+        else next();
+      };
+      const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
+
+      if (!item) return null;
+      const solution = solutionOf(item);
+      const prompt = promptOf(item);
+      const hint = opts.hints && item.word.h;
+      const sentences = item.word.s || [];
+      const STATUS = {
+        right: ['bg-green-50 border-green-300 text-green-800', t('right')],
+        almost: ['bg-yellow-50 border-yellow-300 text-yellow-800', t('almost')],
+        wrong: ['bg-red-50 border-red-300 text-red-800', t('wrong')],
+      };
+
+      const speakBtn = (text, lang) => canSpeak(lang) && (
+        <button onClick={() => speak(text, lang)} title={t('speak')} className="text-gray-400 hover:text-blue-500 align-middle"><SpeakerIcon /></button>
+      );
+
+      return (
+        <div className={`${SCREEN} p-4 sm:p-8`} onKeyDown={onKey}>
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-2 mb-4">
+              <button onClick={quit} className="shrink-0 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">← {t('quit')}</button>
+              <div className="flex-1 min-w-0 text-center text-gray-500 truncate">{set.title}</div>
+              {canFullscreen() && (
+                <IconButton onClick={toggleFullscreen} title={fsElement() ? t('exitFullscreen') : t('fullscreen')}><ExpandIcon /></IconButton>
+              )}
+              {settingsButton}
+            </div>
+            {settingsPanel}
+
+            <div className="flex items-center gap-3 mb-4 text-sm text-gray-500">
+              <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all" style={{ width: `${(pos / queue.length) * 100}%` }} />
+              </div>
+              <span>{Math.min(firstTries + (item.retry ? 0 : 1), total)} / {total}{item.retry && <span className="ml-2 px-1.5 rounded bg-orange-100 text-orange-700 text-xs font-semibold">{t('retryTag')}</span>}</span>
+            </div>
+
+            <div className={`${CARD} p-6 sm:p-8 mb-4`}>
+              <div className={`${LABEL} mb-2`}>{langOf(set, item, 'prompt') ? langName(promptLang) : (item.dir === 'ab' ? t('sideA') : t('sideB'))}</div>
+              <div className="flex items-start gap-3 mb-1">
+                <div className="flex-1 text-3xl sm:text-4xl font-bold text-gray-800 break-words">{prompt}</div>
+                {speakBtn(prompt, promptLang)}
+              </div>
+              {hint && <div className="text-sm text-gray-500 mb-2">{hint}</div>}
+
+              {opts.mode === 'cards' ? (
+                <div className="mt-6">
+                  {phase === 'ask' ? (
+                    <button onClick={() => setPhase('back')} className={`w-full ${BTN_PRIMARY} px-6 py-6 text-xl`}>{t('flip')}</button>
+                  ) : (
+                    <>
+                      <div className={`${LABEL} mb-1`}>{t('solution')}</div>
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 text-3xl font-bold text-blue-700 break-words">{solution}</div>
+                        {speakBtn(solution, answerLang)}
+                      </div>
+                      {sentences.length > 0 && (
+                        <ul className="mt-3 text-gray-600 space-y-1">{sentences.map((s, i) => <li key={i}>{markWord(s, solution)}</li>)}</ul>
+                      )}
+                      <div className="flex gap-3 mt-6">
+                        <button onClick={() => rate(false)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 text-lg">{t('knewNot')}</button>
+                        <button onClick={() => rate(true)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-green-100 text-green-700 hover:bg-green-200 text-lg">{t('knew')}</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-6">
+                  {phase === 'ask' && (
+                    <div className="flex gap-2">
+                      <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('answerPh')}
+                        autoCapitalize="off" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[answerLang] || undefined}
+                        className={`flex-1 min-w-0 ${INPUT} text-2xl py-3`} />
+                      <button onClick={check} className={`${BTN_PRIMARY} px-5`}>{t('check')}</button>
+                    </div>
+                  )}
+                  {(phase === 'feedback' || phase === 'copy') && (
+                    <div className={`rounded-lg border-2 p-4 ${STATUS[result.status][0]}`}>
+                      <div className="font-bold text-lg mb-2">
+                        {STATUS[result.status][1]}{result.note && <span className="font-normal text-sm"> · {t(result.note)}</span>}
+                      </div>
+                      {result.status !== 'right' && (() => {
+                        const [A, B] = charDiff(baseNorm(input), result.solution);
+                        return (
+                          <div className="space-y-1 text-lg">
+                            <div><span className={`${LABEL} mr-2`}>{t('yourInput')}</span><DiffText parts={A} cls="diff-del" /></div>
+                            <div><span className={`${LABEL} mr-2`}>{t('solution')}</span><b><DiffText parts={B} cls="diff-ins" /></b> {speakBtn(solution, answerLang)}</div>
+                          </div>
+                        );
+                      })()}
+                      {result.status === 'right' && (
+                        <div className="text-lg"><b>{solution}</b> {speakBtn(solution, answerLang)}</div>
+                      )}
+                      {sentences.length > 0 && (
+                        <ul className="mt-3 text-gray-700 space-y-1">{sentences.map((s, i) => <li key={i}>{markWord(s, solution)}</li>)}</ul>
+                      )}
+                    </div>
+                  )}
+                  {phase === 'copy' && (
+                    <div className="mt-4">
+                      <div className="text-sm text-gray-600 mb-1">{t('copyPrompt2')}</div>
+                      <div className="flex gap-2">
+                        <input ref={inputRef} type="text" value={copyInput} onChange={(e) => { setCopyInput(e.target.value); setCopyMiss(false); }}
+                          autoCapitalize="off" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[answerLang] || undefined}
+                          className={`flex-1 min-w-0 ${INPUT} text-2xl py-3 ${copyMiss ? 'border-red-400' : ''}`} />
+                        <button onClick={checkCopy} className={`${BTN_PRIMARY} px-5`}>{t('check')}</button>
+                      </div>
+                      {copyMiss && <p className="text-sm text-red-600 mt-1">{t('copyNotYet')}</p>}
+                    </div>
+                  )}
+                  {phase === 'feedback' && (
+                    <button autoFocus onClick={next} className={`w-full mt-4 ${BTN_PRIMARY} px-6 py-3 text-lg`}>{t('next')} →</button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+        </div>
+      );
+    };
+
+    // ---------- Rundenende ----------
+    const Summary = ({ set, log, seconds, onRetry, onAgain, onBack }) => {
+      const ok = log.filter((e) => e.ok).length;
+      const wrong = log.filter((e) => !e.ok);
+      const [settingsButton, settingsPanel] = useSettings();
+      return (
+        <div className={`${SCREEN} p-4 sm:p-8`}>
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-2 mb-6">
+              <button onClick={onBack} className="shrink-0 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">← {t('toSet')}</button>
+              <div className="flex-1 min-w-0 text-center text-gray-500 truncate">{set.title}</div>
+              {settingsButton}
+            </div>
+            {settingsPanel}
+            <div className={`${CARD} p-6 sm:p-8 text-center mb-4`}>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">{t('done')}</h2>
+              <div className="text-5xl font-bold my-4 bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
+                {log.length ? Math.round((ok / log.length) * 100) : 0}%
+              </div>
+              <p className="text-gray-600">{t('result', ok, log.length)}</p>
+              <p className="text-gray-400 text-sm">{t('timeUsed', Math.floor(seconds / 60), seconds % 60)}</p>
+            </div>
+            {wrong.length ? (
+              <div className={`${CARD} p-6 mb-4`}>
+                <h3 className="font-semibold text-gray-700 mb-2">{t('wrongWords')}</h3>
+                <ul className="space-y-1 text-gray-700">
+                  {wrong.map((e, i) => <li key={i}><b>{promptOf(e.item)}</b> — {solutionOf(e.item)}</li>)}
+                </ul>
+              </div>
+            ) : <p className="text-center text-green-700 font-semibold mb-4">{t('allRight')}</p>}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {wrong.length > 0 && <button onClick={() => onRetry(wrong.map((e) => e.item.word))} className={`flex-1 ${BTN_PRIMARY} px-4 py-3`}>{t('retryWrong')}</button>}
+              <button onClick={onAgain} className={`flex-1 px-4 py-3 ${wrong.length ? BTN_SECONDARY : BTN_PRIMARY}`}>{t('again')}</button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ---------- Trainer: Set-Seite → Runde → Ende ----------
+    const Trainer = ({ set, setKey, progress, onResult, onReset, onBack }) => {
+      const [stage, setStage] = useState({ kind: 'setup' });
+      const prog = progress[setKey] || {};
+      const startRound = (opts, words) => setStage({ kind: 'run', opts, words, n: Date.now() });
+
+      if (stage.kind === 'run') {
+        return (
+          <Practice key={stage.n} set={set} opts={stage.opts} words={stage.words}
+            onResult={(word, ok) => onResult(setKey, word, ok)}
+            onDone={({ log, seconds }) => setStage({ kind: 'done', opts: stage.opts, words: stage.words, log, seconds })}
+            onBack={() => setStage({ kind: 'setup' })} />
+        );
+      }
+      if (stage.kind === 'done') {
+        return (
+          <Summary set={set} log={stage.log} seconds={stage.seconds}
+            onRetry={(words) => startRound(stage.opts, words)}
+            onAgain={() => startRound(stage.opts, stage.words)}
+            onBack={() => setStage({ kind: 'setup' })} />
+        );
+      }
+      return <SetPage set={set} prog={prog} onStart={startRound} onReset={() => onReset(setKey)} onBack={onBack} />;
+    };
+
+    // ---------- Set aus der Route laden ----------
+    const Open = ({ route, own, progress, onResult, onReset, onBack }) => {
+      const [set, setSet] = useState(null);
+      const [error, setError] = useState(null);
+      useEffect(() => {
+        setSet(null);
+        setError(null);
+        if (route.type === 'demo') {
+          const demo = demoById(route.id);
+          demo ? setSet(demo) : setError(t('errNoSuchSet'));
+        } else if (route.type === 'local') {
+          const s = own.find((m) => m.id === route.id);
+          s ? setSet(s) : setError(t('errNotStored'));
+        } else {
+          decodeSet(route.data)
+            .then((s) => (s.words.length ? setSet(s) : setError(t('errLinkEmpty'))))
+            .catch(() => setError(t('errLinkBroken')));
+        }
+      }, [route.type, route.id, route.data]);
+
+      if (error) {
+        return (
+          <div className={`${SCREEN} p-8 flex flex-col items-center justify-center gap-4`}>
+            <div className="text-xl text-red-600 font-semibold text-center">{error}</div>
+            <button onClick={onBack} className={`${BTN_PRIMARY} px-6 py-3`}>{t('toOverview')}</button>
+          </div>
+        );
+      }
+      if (!set) return <div className={`${SCREEN} p-8 text-center text-gray-500`}>{t('loading')}</div>;
+      // Der Lernstand hängt am Set: eigene über die id, Beispiele über ihren
+      // Namen, geteilte Links über den Titel (der Link selbst ändert bei jeder
+      // Korrektur der Lehrperson, der Titel bleibt).
+      const setKey = route.type === 'demo' ? `demo:${set.id}` : route.type === 'local' ? set.id : `link:${set.title}`;
+      return <Trainer set={set} setKey={setKey} progress={progress} onResult={onResult} onReset={onReset} onBack={onBack} />;
+    };
+
+    // ---------- App ----------
+    const App = () => {
+      const [route, setRoute] = useState(getRoute);
+      const [store, setStore] = useState(loadStore);
+      const [progress, setProgress] = useState(loadProgress);
+      const [, redraw] = useState(currentLang);
+      redrawLang = redraw;
+      const own = store.sets;
+      const folders = allFolders(store);
+
+      useEffect(() => {
+        const onHash = () => { applyLang(langFromHash() || loadLang()); setRoute(getRoute()); };
+        window.addEventListener('hashchange', onHash);
+        return () => window.removeEventListener('hashchange', onHash);
+      }, []);
+
+      const openSet = (set) => { location.hash = toHash(set); };
+      const editSet = (set) => { location.hash = withLang('#edit=' + set.id); };
+      const newSet = (dir) => { location.hash = withLang('#new=' + encodeURIComponent(dir || '')); };
+
+      const updateStore = (fn) => setStore((prev) => { const next = fn(prev); saveStore(next); return next; });
+      const insertSet = (prev, set, dropBy) => ({ ...prev, sets: [...prev.sets.filter(dropBy), set].sort(byTitle) });
+      const importSet = (set) => updateStore((prev) => {
+        const old = prev.sets.find((s) => s.title === set.title);
+        return insertSet(prev, old ? { ...old, ...set, id: old.id } : set, (s) => s.title !== set.title);
+      });
+      const saveSet = (set) => {
+        const saved = set.id ? set : { ...set, id: newId() };
+        updateStore((prev) => insertSet(prev, saved, (s) => s.id !== saved.id));
+        back();
+      };
+      const deleteSet = (id) => updateStore((prev) => ({ ...prev, sets: prev.sets.filter((s) => s.id !== id) }));
+
+      const updateProgress = (fn) => setProgress((prev) => { const next = fn(prev); writeLocal(PROGRESS_KEY, next); return next; });
+      const recordResult = (setKey, word, ok) => updateProgress((prev) => {
+        const p = prev[setKey] || {};
+        return { ...prev, [setKey]: { ...p, [wordKey(word)]: applyResult(p[wordKey(word)], ok) } };
+      });
+      const resetProgress = (setKey) => updateProgress((prev) => { const next = { ...prev }; delete next[setKey]; return next; });
+
+      const cleanName = (name) => (name || '').trim().replace(/\//g, '-').replace(/^\.+$/, '-');
+      const makeFolder = (parent, rawName) => {
+        const name = cleanName(rawName);
+        if (!name) return null;
+        const path = parent ? `${parent}/${name}` : name;
+        updateStore((prev) => (prev.folders.includes(path) ? prev : { ...prev, folders: [...prev.folders, path] }));
+        return path;
+      };
+      const renameFolder = (dir, rawName) => {
+        const name = cleanName(rawName);
+        if (!name) return null;
+        const target = parentDir(dir) ? `${parentDir(dir)}/${name}` : name;
+        if (target === dir) return null;
+        updateStore((prev) => remapDir(prev, dir, target));
+        return target;
+      };
+      const moveFolder = (dir, parent) => {
+        const target = parent ? `${parent}/${dirName(dir)}` : dirName(dir);
+        updateStore((prev) => remapDir(prev, dir, target));
+        return target;
+      };
+      const removeFolder = (dir) => updateStore((prev) => ({ ...prev, folders: prev.folders.filter((f) => f !== dir) }));
+      const moveSet = (id, dir) => updateStore((prev) => ({ ...prev, sets: prev.sets.map((s) => (s.id === id ? { ...s, dir } : s)) }));
+      const folderApi = { makeFolder, renameFolder, moveFolder, removeFolder, moveSet };
+
+      const back = () => {
+        history.replaceState(null, '', location.pathname);
+        restoreLang();
+        setRoute(null);
+      };
+
+      if (route && (route.type === 'edit' || route.type === 'new')) {
+        const target = route.type === 'new' ? { id: null, title: '', dir: route.dir, words: [] } : own.find((s) => s.id === route.id);
+        if (!target) {
+          return (
+            <div className={`${SCREEN} p-8 text-center text-gray-500`}>
+              {t('errGone')}
+              <button onClick={back} className="block mx-auto mt-4 underline">{t('backToList')}</button>
+            </div>
+          );
+        }
+        return (
+          <SetEditor key={route.type === 'new' ? 'new' : route.id} set={target} sets={own} folders={folders}
+            onSave={saveSet} onCancel={back} onNewFolder={makeFolder} />
+        );
+      }
+
+      return route
+        ? <Open key={JSON.stringify(route)} route={route} own={own} progress={progress} onResult={recordResult} onReset={resetProgress} onBack={back} />
+        : (
+          <Selection own={own} folders={folders} onOpen={openSet} onEdit={editSet} onNew={newSet}
+            onImport={importSet} onDelete={deleteSet} folderApi={folderApi} />
+        );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>

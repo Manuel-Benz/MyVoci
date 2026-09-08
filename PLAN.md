@@ -19,6 +19,7 @@ Datei in allen Apps funktioniert — plus zwei neue, optionale Zeilen:
 ```
 # Unité 3 – La maison
 Sprachen: de → fr
+
 F: das Haus
 A: la maison
 S: J'habite dans une grande maison.
@@ -122,18 +123,26 @@ ab `main`. Lokal: `python3 -m http.server` → http://localhost:8000.
 
 ## Phasen
 
-- [x] **0 — Gerüst**: Repo, GitHub Pages, Platzhalterseite, dieser Plan.
-- [ ] **1 — Grundgerüst**: Übersicht, Ordner, Import (`F:/A:/S:/H:`, `Sprachen:`),
-  Editor, Export, Direktlink/QR, DE/EN, Beispiel-Sets. Weitgehend aus MyMemory.
-- [ ] **2 — Schreiben & Karteikarten**: Rundeneinstellungen (Richtung, Auswahl),
-  Modus Schreiben mit `checkAnswer` + Diff-Anzeige, Karteikarten, Rundenende
-  mit Statistik, Lernstand + Fehlerliste.
+- [x] **0 — Gerüst**: Repo, GitHub Pages, dieser Plan.
+- [x] **1 — Grundgerüst** (08.09.2026): Übersicht, Ordner, Import
+  (`F:/A:/S:/H:`, `Sprachen:`), Editor, Export, Direktlink/QR, DE/EN,
+  Beispiel-Sets, KI-Prompt. Dazu vorgezogen: **PWA-Manifest** + Icons und die
+  Anleitung «Üben auf dem iPad» (Home-Bildschirm, Geführter Zugriff, Safari-
+  Variante mit eingekreisten Bereichen) — auf Schul-iPads ohne App-Installation
+  ist der Web-Clip der Weg.
+- [x] **2 — Schreiben & Karteikarten** (08.09.2026): Set-Seite mit
+  Rundeneinstellungen (Modus, Richtung, Auswahl alle/Fehler/fällig/Bereich,
+  Reihenfolge, Toleranz streng/normal/locker, Hinweise, Abschreiben),
+  `checkAnswer` mit Diff-Anzeige, Karteikarten mit Selbstbewertung, Wiederholung
+  falscher Wörter am Rundenende, Zusammenfassung mit «Fehler nochmals üben»,
+  Lernstand (Leitner-Fächer, Fehlerliste, fällig heute) inkl. Zurücksetzen.
+  Vorlesen (Web Speech) und Vollbild-Knopf sind schon drin.
 - [ ] **3 — Weitere Modi**: Multiple Choice, Zuordnen, Lückentext (Sätze),
-  Hören (TTS), Buchstabensalat.
+  Hören (Wort vorgelesen, aufschreiben), Buchstabensalat.
 - [ ] **4 — Stift & Sperren**: Schreibfläche (Canvas) mit Selbstkontrolle,
-  Vollbild/Prüfungsmodus, PWA-Manifest, Anleitung Geführter Zugriff.
-- [ ] **5 — Leitner & Feinschliff**: Fällig-heute, Link mit Voreinstellung,
-  KI-Prompt final, Sprechen, Blitzrunde.
+  Prüfungsmodus (Vollbild-Verlassen zählen, Lösung erst am Ende).
+- [ ] **5 — Feinschliff**: Link mit Voreinstellung (`&mode=…&dir=…`), Sprechen,
+  Blitzrunde mit Timer, Lernstand als Datei exportieren/importieren.
 
 ## Backlog / Ideen
 
