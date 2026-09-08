@@ -57,10 +57,12 @@ schneiden und mit `node` prüfen (so entstanden die 26 Fälle in Phase 2).
 
 `MODES` = write, pen, cards, choice, match, gap, listen, speak, scramble.
 Daneben stehen die Listen, die entscheiden, was ein Modus kann:
-`TYPED_MODES` (Eingabefeld, Toleranz, Abschreiben) · `TIMED_MODES` und
-`EXAM_MODES` (automatisch prüfbar) · `DIRECTIONLESS` (Lückentext, Zuordnen).
-Ein Modus, der bei diesem Set nicht geht, ist ausgegraut; ein gemerkter fällt
-auf Schreiben zurück.
+`TYPED_MODES` (Eingabefeld, Toleranz, Abschreiben) · `AUTO_MODES` (der Rechner
+kann selber werten — Voraussetzung für Blitzrunde und Prüfung) ·
+`DIRECTIONLESS` (Lückentext, Zuordnen; dort steht die Richtung fest).
+Ob ein Modus bei diesem Set geht, entscheidet **eine** Stelle (`modeOff` in
+`SetPage`) — sonst laufen ausgegrauter Knopf und Rückfall auf «Schreiben»
+auseinander.
 
 Alle Modi ausser Zuordnen teilen sich `Practice`. **Was ein Modus zeigt und
 verlangt, steckt in `task`** (ein `useMemo`) — dort ansetzen, nicht in `body`
