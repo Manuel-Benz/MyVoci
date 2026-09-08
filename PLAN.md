@@ -35,8 +35,8 @@ S: Je vais à l'école. | Nous marchons vite.
   Vorlesen (TTS). Ohne Zeile: „Sprache A / Sprache B".
 - `A:` mehrere gültige Antworten mit `/`; Klammern `(la) maison` = optional.
 - `S:` Anwendungssatz in Sprache B, mehrere mit `|`; das Wort darin wird für den
-  Lückentext erkannt (Stammform-tolerant: `marchons` ↔ `marcher` via Markierung
-  `*marchons*`, falls nötig).
+  Lückentext per Wortstamm erkannt (`marchons` ↔ `marcher`); weicht die Form
+  stark ab, markiert man sie: `Je *vais* à l'école.`
 - `H:` Hinweis (Genus, Wortart, Merkhilfe) — wird bei der Abfrage eingeblendet.
 - MyMemory-Dateien ohne `S:/H:` laden direkt; umgekehrt überliest MyMemory die
   neuen Zeilen.
@@ -137,8 +137,17 @@ ab `main`. Lokal: `python3 -m http.server` → http://localhost:8000.
   falscher Wörter am Rundenende, Zusammenfassung mit «Fehler nochmals üben»,
   Lernstand (Leitner-Fächer, Fehlerliste, fällig heute) inkl. Zurücksetzen.
   Vorlesen (Web Speech) und Vollbild-Knopf sind schon drin.
-- [ ] **3 — Weitere Modi**: Multiple Choice, Zuordnen, Lückentext (Sätze),
-  Hören (Wort vorgelesen, aufschreiben), Buchstabensalat.
+- [x] **3 — Weitere Modi** (08.09.2026): Multiple Choice (Ablenker aus demselben
+  Set), Zuordnen (Gruppen zu 6, eigene Komponente `MatchRound`), Lückentext
+  (Satz in Sprache B mit Lücke; Form per Stamm gefunden oder mit `*vais*`
+  markiert — `splitSentence` ist die eine Stelle dafür), Hören (Wort per Web
+  Speech vorgelesen, nur wenn die Sprache sprechbar ist), Buchstabensalat
+  (Kacheln). Alle Modi teilen `Practice`; was ein Modus zeigt und verlangt,
+  steckt in `task`. Stolperstein: die Aufgabe hängt am Wort, nicht an der
+  Warteschlange — die wächst bei jedem Fehler, und Multiple Choice mischte
+  sonst nach dem Antippen neu. Karteikarten bewerten und schalten im selben
+  Schritt weiter: `finish` gibt den neuen Stand zurück, sonst fehlte das
+  letzte Wort in der Bilanz.
 - [ ] **4 — Stift & Sperren**: Schreibfläche (Canvas) mit Selbstkontrolle,
   Prüfungsmodus (Vollbild-Verlassen zählen, Lösung erst am Ende).
 - [ ] **5 — Feinschliff**: Link mit Voreinstellung (`&mode=…&dir=…`), Sprechen,

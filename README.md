@@ -34,6 +34,8 @@ S: Je vais à l'école à pied.
   Artikel-Toleranz. Ohne Zeile heisst es «Sprache A / B».
 - `A:` mehrere gültige Antworten mit `/`; Klammern `(la) maison` = optional.
 - `S:` Anwendungssatz (mehrere Zeilen oder mit `|`), `H:` Hinweis – beides optional.
+  Weicht die Form im Satz stark vom Wort ab, mit Sternchen markieren:
+  `S: Je *vais* à l'école.` – das wird die Lücke im Lückentext.
 
 ## Üben
 
@@ -46,6 +48,12 @@ Set antippen → Einstellungen wählen → **Üben starten**.
   *locker* (Akzente und Artikel egal). Falsche Wörter werden einmal
   abgeschrieben und kommen am Rundenende nochmals dran.
 - **Karteikarten**: umdrehen, «Gewusst / Nicht gewusst».
+- **Multiple Choice**: vier Antworten, die falschen stammen aus demselben Set.
+- **Zuordnen**: Gruppen von sechs Paaren, links antippen, rechts die Übersetzung.
+- **Lückentext**: der Anwendungssatz mit Lücke, das Wort in der passenden Form
+  eintippen (nur Wörter, deren Satz das Wort enthält).
+- **Hören**: das Wort wird vorgelesen (Web Speech), aufschreiben, was man hört.
+- **Buchstabensalat**: Buchstaben-Kacheln in die richtige Reihenfolge tippen.
 - **Richtung** A→B, B→A oder gemischt; **Auswahl** alle / nur Fehler / fällig
   heute / Bereich; Reihenfolge zufällig oder wie in der Liste.
 - **Lernstand** pro Wort im Browser: richtig = ein Leitner-Fach höher (Fach 5

@@ -166,7 +166,8 @@
         errHalfWord: 'Jedes Wort braucht beide Seiten.',
         editorHint: () => (
           <>Mehrere richtige Antworten mit {code('/')} trennen: {code('aller / marcher')}. Optionales in Klammern:
-          {' '}{code('(la) maison')} gilt mit und ohne Artikel.</>
+          {' '}{code('(la) maison')} gilt mit und ohne Artikel. Im Satz die Form mit Sternchen markieren, wenn sie
+          vom Wort abweicht: {code('Je *vais* à l\'école.')} — das wird die Lücke im Lückentext.</>
         ),
         // Set-Seite
         overview: 'Übersicht',
@@ -177,6 +178,25 @@
         modeWriteHint: 'Wort eintippen — Tastatur oder Stift (iPad: Scribble). Automatische Korrektur.',
         modeCards: 'Karteikarten',
         modeCardsHint: 'Umdrehen und selbst bewerten.',
+        modeChoice: 'Multiple Choice',
+        modeChoiceHint: 'Die richtige von vier Antworten antippen — die falschen stammen aus demselben Set.',
+        modeMatch: 'Zuordnen',
+        modeMatchHint: 'Paare verbinden: links ein Wort antippen, rechts die Übersetzung.',
+        modeGap: 'Lückentext',
+        modeGapHint: 'Der Anwendungssatz mit Lücke — das Wort in der passenden Form eintippen.',
+        modeGapNone: 'Keine Sätze, in denen das Wort vorkommt — im Editor «S:»-Zeilen ergänzen.',
+        modeListen: 'Hören',
+        modeListenHint: 'Das Wort wird vorgelesen — aufschreiben, was du hörst.',
+        modeListenNone: 'Vorlesen geht auf diesem Gerät oder für diese Sprache nicht.',
+        modeScramble: 'Buchstabensalat',
+        modeScrambleHint: 'Die Buchstaben in die richtige Reihenfolge tippen.',
+        sentence: 'Satz',
+        hear: 'Anhören',
+        hearAgain: 'Nochmals anhören',
+        clearTiles: 'Zurücksetzen',
+        matchLeft: (name) => name,
+        wrongPair: 'Kein Paar',
+        groupN: (i, n) => `Gruppe ${i} von ${n}`,
         direction: 'Richtung',
         dirAB: (a, b) => `${a} → ${b}`,
         dirMix: 'gemischt',
@@ -228,8 +248,8 @@
         speak: 'Vorlesen',
         fullscreen: 'Vollbild',
         exitFullscreen: 'Vollbild beenden',
-        quit: 'Abbrechen',
-        confirmQuit: 'Übung abbrechen? Der bisherige Lernstand bleibt.',
+        quit: 'Beenden',
+        confirmQuit: 'Übung beenden? Der bisherige Lernstand bleibt.',
         // Ende
         done: 'Fertig!',
         result: (ok, n) => `${ok} von ${n} beim ersten Versuch richtig`,
@@ -351,7 +371,8 @@
         errHalfWord: 'Every word needs both sides.',
         editorHint: () => (
           <>Separate several correct answers with {code('/')}: {code('go / walk')}. Optional parts in brackets:
-          {' '}{code('(the) house')} counts with and without the article.</>
+          {' '}{code('(the) house')} counts with and without the article. Mark the form in a sentence with asterisks
+          when it differs from the word: {code('She *went* home.')} — that becomes the gap.</>
         ),
         overview: 'Overview',
         toOverview: 'Back to the overview',
@@ -361,6 +382,25 @@
         modeWriteHint: 'Type the word — keyboard or pen (iPad: Scribble). Checked automatically.',
         modeCards: 'Flashcards',
         modeCardsHint: 'Flip and rate yourself.',
+        modeChoice: 'Multiple choice',
+        modeChoiceHint: 'Tap the right one of four answers — the wrong ones come from the same set.',
+        modeMatch: 'Matching',
+        modeMatchHint: 'Connect pairs: tap a word on the left, its translation on the right.',
+        modeGap: 'Gap fill',
+        modeGapHint: 'The example sentence with a gap — type the word in the fitting form.',
+        modeGapNone: 'No sentences containing the word — add “S:” lines in the editor.',
+        modeListen: 'Listening',
+        modeListenHint: 'The word is read aloud — write down what you hear.',
+        modeListenNone: 'Read-aloud is not available on this device or for this language.',
+        modeScramble: 'Scrambled letters',
+        modeScrambleHint: 'Tap the letters in the right order.',
+        sentence: 'Sentence',
+        hear: 'Listen',
+        hearAgain: 'Listen again',
+        clearTiles: 'Reset',
+        matchLeft: (name) => name,
+        wrongPair: 'Not a pair',
+        groupN: (i, n) => `Group ${i} of ${n}`,
         direction: 'Direction',
         dirAB: (a, b) => `${a} → ${b}`,
         dirMix: 'mixed',
@@ -469,7 +509,7 @@
           { a: 'das Haus', b: 'la maison', s: ['J\'habite dans une grande maison.'], h: 'f.' },
           { a: 'die Schule', b: 'l\'école', s: ['L\'école commence à huit heures.'], h: 'f.' },
           { a: 'der Freund', b: 'l\'ami', s: ['Marc est mon meilleur ami.'], h: 'm.' },
-          { a: 'gehen', b: 'aller / marcher', s: ['Je vais à l\'école à pied.'] },
+          { a: 'gehen', b: 'aller / marcher', s: ['Je *vais* à l\'école à pied.'] },
           { a: 'essen', b: 'manger', s: ['Nous mangeons à midi.'] },
           { a: 'der Hund', b: 'le chien', s: ['Le chien dort dans le jardin.'], h: 'm.' },
           { a: 'die Katze', b: 'le chat', s: ['Le chat est sur la table.'], h: 'm.' },
@@ -553,6 +593,8 @@
       "- «S: » ist ein kurzer Anwendungssatz in Sprache B, in dem das Wort genau so",
       "  vorkommt (bei Verben darf es konjugiert sein). Ein Satz pro Wort, nur wenn",
       "  oben «Anwendungssätze: ja» steht. Niveau der Klasse, nur bekannte Wörter.",
+      "  Weicht die Form im Satz stark vom Wort ab (je *vais* zu aller, *went* zu go),",
+      "  setze sie zwischen Sternchen — so wird die Lücke im Lückentext gefunden.",
       "- «H: » ist ein optionaler Hinweis: Genus (m./f.), Wortart, «unregelmässig».",
       "  Weglassen, wenn es nichts zu sagen gibt.",
       "- Jedes Wort nur einmal. Keine Nummerierung, keine Fettschrift, keine Erklärungen.",
@@ -617,6 +659,8 @@
       "- «S: » is a short example sentence in language B containing the word exactly",
       "  (verbs may be conjugated). One sentence per word, only if «Example",
       "  sentences: yes» above. Level of the class, known words only.",
+      "  If the form in the sentence differs a lot from the word (*went* for go,",
+      "  je *vais* for aller), put it between asterisks — that marks the gap.",
       "- «H: » is an optional hint: gender (m./f.), part of speech, «irregular».",
       "  Omit it when there is nothing to say.",
       "- Every word once. No numbering, no bold, no explanations.",
@@ -973,13 +1017,42 @@
     );
 
     // Das Wort im Satz hervorheben (Wortstamm reicht: «marchons» zu «marcher»)
+    // Gesucht wird der Wortstamm ohne Artikel und ohne typische Endung, am
+    // Wortanfang; zurück kommt die Form im Satz («marchons»). Vollständige
+    // Treffer gewinnen vor Stamm-Treffern («la maison» vor «mais…»).
+    const stripAnyArticle = (s) => Object.keys(ARTICLES).reduce((acc, l) => stripArticle(acc, l), s);
+    // Zerlegt einen Satz in {before, form, after}. Steht im Satz eine Markierung
+    // «*vais*», gilt genau die (für Formen, die kein Stamm findet); sonst wird
+    // gesucht. Ohne Treffer null — der Satz wird dann nur angezeigt.
+    const splitSentence = (sentence, word) => {
+      const star = sentence.match(/\*([^*]+)\*/);
+      if (star) {
+        const clean = sentence.replace(/\*/g, '');
+        return { before: clean.slice(0, star.index), form: star[1], after: clean.slice(star.index + star[1].length) };
+      }
+      const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const forms = variants(word).map((v) => stripAnyArticle(v.toLowerCase())).filter((v) => v.length >= 2);
+      const stems = forms.map((v) => v.replace(/(er|ir|re|en|e|s)$/i, '')).filter((v) => v.length >= 3);
+      for (const list of [forms, stems]) {
+        if (!list.length) continue;
+        const re = new RegExp(`(?<!\\p{L})(${list.map(esc).join('|')})[\\p{L}]*`, 'iu');
+        const m = sentence.match(re);
+        if (m) return { before: sentence.slice(0, m.index), form: m[0], after: sentence.slice(m.index + m[0].length) };
+      }
+      return null;
+    };
     const markWord = (sentence, word) => {
-      const stems = variants(word).map((v) => stripArticle(v.toLowerCase(), null)).filter((v) => v.length >= 3);
-      const stem = stems.map((v) => v.replace(/(er|ir|re|en|e|s)$/i, '')).filter((v) => v.length >= 3);
-      const re = stem.length ? new RegExp(`(${stem.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\w*`, 'i') : null;
-      const m = re && sentence.match(re);
-      if (!m) return sentence;
-      return <>{sentence.slice(0, m.index)}<b>{m[0]}</b>{sentence.slice(m.index + m[0].length)}</>;
+      const m = splitSentence(sentence, word);
+      if (!m) return sentence.replace(/\*/g, '');
+      return <>{m.before}<b>{m.form}</b>{m.after}</>;
+    };
+    // Lückentext: der erste Satz, in dem das Wort (Sprache B) vorkommt
+    const gapFor = (word) => {
+      for (const s of word.s || []) {
+        const m = splitSentence(s, word.b);
+        if (m) return m;
+      }
+      return null;
     };
 
     // ---------- Vorlesen ----------
@@ -1540,9 +1613,19 @@
       </div>
     );
 
+    // Welche Modi gibt es, und was braucht ein Modus vom Set?
+    const MODES = ['write', 'cards', 'choice', 'match', 'gap', 'listen', 'scramble'];
+    const MODE_LABEL = { write: 'modeWrite', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', scramble: 'modeScramble' };
+    const TYPED_MODES = ['write', 'gap', 'listen']; // Eingabefeld + Toleranz + Abschreiben
+    const DIRECTIONLESS = ['gap', 'match']; // Satz ist immer Sprache B, Zuordnen zeigt beide
+    // Hören: gehört wird die Antwortseite — bei «gemischt» müssen beide gehen
+    const listenLangs = (set, dir) => (set.langs ? (dir === 'ab' ? [set.langs[1]] : dir === 'ba' ? [set.langs[0]] : set.langs) : []);
+    const canListen = (set, dir) => { const l = listenLangs(set, dir); return l.length > 0 && l.every(canSpeak); };
+
     const selectWords = (set, opts, prog) => {
       const recs = set.words.map((w) => prog[wordKey(w)]);
       return set.words.filter((w, i) => {
+        if (opts.mode === 'gap' && !gapFor(w)) return false;
         if (opts.sel === 'wrong') return isWrong(recs[i]);
         if (opts.sel === 'due') return isDue(recs[i]);
         if (opts.sel === 'range') return i + 1 >= Math.min(opts.from, opts.to) && i + 1 <= Math.max(opts.from, opts.to);
@@ -1564,6 +1647,10 @@
       const boxes = [0, 0, 0, 0, 0, 0];
       recs.forEach((r) => { boxes[r ? Math.min(r.box, 5) : 0]++; });
       const seen = recs.filter(Boolean).length;
+      const gapN = set.words.filter(gapFor).length;
+      // Ein gemerkter Modus, der bei diesem Set nicht geht, fällt auf Schreiben zurück
+      const modeOk = !((opts.mode === 'gap' && !gapN) || (opts.mode === 'listen' && !canListen(set, opts.dir)));
+      useEffect(() => { if (!modeOk) set_({ mode: 'write' }); }, [modeOk]);
       const chosen = selectWords(set, opts, prog);
       const A = sideName(set, 0), B = sideName(set, 1);
       const BOX_COLORS = ['bg-gray-300', 'bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-lime-400', 'bg-green-500'];
@@ -1585,14 +1672,19 @@
               <div className="space-y-4">
                 <div>
                   <div className={`${LABEL} mb-2`}>{t('mode')}</div>
-                  <Choice value={opts.mode} onChange={(mode) => set_({ mode })} options={[['write', t('modeWrite')], ['cards', t('modeCards')]]} />
-                  <p className="text-sm text-gray-500 mt-1">{opts.mode === 'write' ? t('modeWriteHint') : t('modeCardsHint')}</p>
+                  <Choice value={opts.mode} onChange={(mode) => set_({ mode })}
+                    options={MODES.map((m) => [m, t(MODE_LABEL[m]), (m === 'gap' && !gapN) || (m === 'listen' && !canListen(set, opts.dir))])} />
+                  <p className="text-sm text-gray-500 mt-1">{t(MODE_LABEL[opts.mode] + 'Hint')}</p>
+                  {!gapN && <p className="text-sm text-gray-400 mt-1">{t('modeGapNone')}</p>}
+                  {!canListen(set, opts.dir) && <p className="text-sm text-gray-400 mt-1">{t('modeListenNone')}</p>}
                 </div>
-                <div>
-                  <div className={`${LABEL} mb-2`}>{t('direction')}</div>
-                  <Choice value={opts.dir} onChange={(dir) => set_({ dir })}
-                    options={[['ab', t('dirAB', A, B)], ['ba', t('dirAB', B, A)], ['mix', t('dirMix')]]} />
-                </div>
+                {!DIRECTIONLESS.includes(opts.mode) && (
+                  <div>
+                    <div className={`${LABEL} mb-2`}>{t('direction')}</div>
+                    <Choice value={opts.dir} onChange={(dir) => set_({ dir })}
+                      options={[['ab', t('dirAB', A, B)], ['ba', t('dirAB', B, A)], ['mix', t('dirMix')]]} />
+                  </div>
+                )}
                 <div>
                   <div className={`${LABEL} mb-2`}>{t('selection')}</div>
                   <Choice value={opts.sel} onChange={(sel) => set_({ sel })}
@@ -1611,7 +1703,7 @@
                   <div className={`${LABEL} mb-2`}>{t('order')}</div>
                   <Choice value={opts.order} onChange={(order) => set_({ order })} options={[['random', t('orderRandom')], ['file', t('orderFile')]]} />
                 </div>
-                {opts.mode === 'write' && (
+                {TYPED_MODES.includes(opts.mode) && (
                   <div>
                     <div className={`${LABEL} mb-2`}>{t('tolerance')}</div>
                     <Choice value={opts.level} onChange={(level) => set_({ level })}
@@ -1621,7 +1713,7 @@
                 )}
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                   <label className="flex items-center gap-2"><input type="checkbox" checked={opts.hints} onChange={(e) => set_({ hints: e.target.checked })} /> {t('showHints')}</label>
-                  {opts.mode === 'write' && (
+                  {TYPED_MODES.includes(opts.mode) && (
                     <label className="flex items-center gap-2"><input type="checkbox" checked={opts.copy} onChange={(e) => set_({ copy: e.target.checked })} /> {t('copyWrong')}</label>
                   )}
                 </div>
@@ -1676,7 +1768,8 @@
     // ---------- Üben ----------
     // Eine Runde ist eine Warteschlange aus {word, dir}. Falsch beantwortete
     // Wörter kommen einmal hinten wieder dran (retry) — der Lernstand zählt nur
-    // den ersten Versuch.
+    // den ersten Versuch. Zuordnen läuft in Gruppen und hat seine eigene
+    // Komponente (MatchRound), alle anderen Modi teilen sich Practice.
     const buildQueue = (words, opts) => {
       const list = opts.order === 'random' ? shuffleArray(words) : words;
       return list.map((word) => ({
@@ -1687,6 +1780,71 @@
     const promptOf = (item) => (item.dir === 'ab' ? item.word.a : item.word.b);
     const solutionOf = (item) => (item.dir === 'ab' ? item.word.b : item.word.a);
     const langOf = (set, item, side) => set.langs && set.langs[(item.dir === 'ab') === (side === 'prompt') ? 0 : 1];
+    // Erste Alternative ohne Klammern: was vorgelesen und im Buchstabensalat gezeigt wird
+    const firstAlt = (solution) => solution.split(/\s*[\/;,]\s*/)[0].replace(/[()]/g, '').replace(/\s+/g, ' ').trim();
+    // Drei Ablenker aus demselben Set, gleiche Seite, nie die Lösung selbst
+    const distractors = (set, item, n = 3) => {
+      const side = item.dir === 'ab' ? 'b' : 'a';
+      const pool = [...new Set(set.words.map((w) => w[side]).filter((x) => x !== solutionOf(item)))];
+      return shuffleArray(pool).slice(0, n);
+    };
+    const scrambleLetters = (text) => {
+      const letters = [...text.replace(/\s+/g, '')];
+      if (letters.length < 2) return letters;
+      let out = shuffleArray(letters);
+      for (let i = 0; i < 5 && out.join('') === letters.join(''); i++) out = shuffleArray(letters);
+      return out;
+    };
+
+    const PracticeFrame = ({ set, pos, queue, total, item, onQuit, children, extra }) => {
+      const [settingsButton, settingsPanel] = useSettings();
+      const [, redrawFs] = useState(0);
+      useEffect(() => {
+        const onFs = () => redrawFs((x) => x + 1);
+        document.addEventListener('fullscreenchange', onFs);
+        document.addEventListener('webkitfullscreenchange', onFs);
+        return () => { document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs); };
+      }, []);
+      return (
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center gap-2 mb-4">
+            <button onClick={onQuit} className="shrink-0 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">← {t('quit')}</button>
+            <div className="flex-1 min-w-0 text-center text-gray-500 truncate">{set.title}</div>
+            {canFullscreen() && (
+              <IconButton onClick={toggleFullscreen} title={fsElement() ? t('exitFullscreen') : t('fullscreen')}><ExpandIcon /></IconButton>
+            )}
+            {settingsButton}
+          </div>
+          {settingsPanel}
+          <div className="flex items-center gap-3 mb-4 text-sm text-gray-500">
+            <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all" style={{ width: `${(pos / queue) * 100}%` }} />
+            </div>
+            <span>
+              {Math.min(pos + 1, total)} / {total}
+              {item && item.retry && <span className="ml-2 px-1.5 rounded bg-orange-100 text-orange-700 text-xs font-semibold">{t('retryTag')}</span>}
+              {extra}
+            </span>
+          </div>
+          {children}
+        </div>
+      );
+    };
+
+    const STATUS_CLASS = {
+      right: 'bg-green-50 border-green-300 text-green-800',
+      almost: 'bg-yellow-50 border-yellow-300 text-yellow-800',
+      wrong: 'bg-red-50 border-red-300 text-red-800',
+    };
+    const SpeakButton = ({ text, lang, big }) => canSpeak(lang) && (
+      <button onClick={() => speak(text, lang)} title={t('speak')}
+        className={big ? `${BTN_PRIMARY} px-8 py-6 flex items-center justify-center gap-3 text-xl` : 'text-gray-400 hover:text-blue-500 align-middle'}>
+        <SpeakerIcon />{big && t('hear')}
+      </button>
+    );
+    const Sentences = ({ word, solution }) => (word.s || []).length > 0 && (
+      <ul className="mt-3 text-gray-700 space-y-1">{word.s.map((s, i) => <li key={i}>{markWord(s, solution)}</li>)}</ul>
+    );
 
     const Practice = ({ set, opts, words, onDone, onBack, onResult }) => {
       const [queue, setQueue] = useState(() => buildQueue(words, opts));
@@ -1696,183 +1854,351 @@
       const [copyInput, setCopyInput] = useState('');
       const [copyMiss, setCopyMiss] = useState(false);
       const [result, setResult] = useState(null);
+      const [picked, setPicked] = useState(null); // Multiple Choice: gewählte Antwort
+      const [built, setBuilt] = useState([]); // Buchstabensalat: Indizes der gesetzten Kacheln
       const [log, setLog] = useState([]); // { item, ok } nur erste Versuche
       const [startedAt] = useState(Date.now);
       const [dialog, setDialog] = useState(null);
-      const [, redrawFs] = useState(0);
       const inputRef = useRef(null);
-      const [settingsButton, settingsPanel] = useSettings();
 
       const item = queue[pos];
       const total = words.length;
-      const firstTries = log.length;
+      const mode = opts.mode;
       const answerLang = item && langOf(set, item, 'answer');
       const promptLang = item && langOf(set, item, 'prompt');
 
-      useEffect(() => {
-        const onFs = () => redrawFs((x) => x + 1);
-        document.addEventListener('fullscreenchange', onFs);
-        document.addEventListener('webkitfullscreenchange', onFs);
-        return () => { document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs); };
-      }, []);
+      // Was diese Aufgabe zeigt und verlangt — pro Modus verschieden
+      const task = useMemo(() => {
+        if (!item) return null;
+        const solution = solutionOf(item);
+        if (mode === 'gap') { const gap = gapFor(item.word); return { ...gap, solution: gap.form, prompt: item.word.a }; }
+        if (mode === 'listen') return { solution: firstAlt(solution), spoken: firstAlt(solution), prompt: promptOf(item) };
+        if (mode === 'choice') return { solution, prompt: promptOf(item), options: shuffleArray([solution, ...distractors(set, item)]) };
+        if (mode === 'scramble') return { solution: firstAlt(solution), prompt: promptOf(item), letters: scrambleLetters(firstAlt(solution)) };
+        return { solution, prompt: promptOf(item) };
+      }, [item]); // nicht an der Warteschlange: die wächst bei jedem Fehler, die Aufgabe bliebe sonst nicht stehen
 
-      // Fokus zurück ins Feld, sobald es wieder da ist
       useEffect(() => { if (phase === 'ask' || phase === 'copy') inputRef.current && inputRef.current.focus(); }, [phase, pos]);
+      // Hören: das Wort kommt von selbst, sobald die Aufgabe da ist
+      useEffect(() => { if (mode === 'listen' && item) setTimeout(() => speak(task.spoken, answerLang), 300); }, [pos]);
 
+      // Ergebnis verbuchen. Gibt den neuen Stand zurück, weil Karteikarten
+      // sofort weiterschalten — dort darf `next` nicht mit dem alten Zustand
+      // rechnen (sonst fehlt das letzte Wort in der Bilanz und die
+      // Wiederholung fällt weg).
       const finish = (ok) => {
-        if (!item.retry) {
-          onResult(item.word, ok);
-          setLog((l) => [...l, { item, ok }]);
-          if (!ok) setQueue((q) => [...q, { ...item, retry: true }]);
-        }
+        if (item.retry) return { nextLog: log, nextQueue: queue };
+        onResult(item.word, ok);
+        const nextLog = [...log, { item, ok }];
+        const nextQueue = ok ? queue : [...queue, { ...item, retry: true }];
+        setLog(nextLog);
+        setQueue(nextQueue);
+        return { nextLog, nextQueue };
       };
-
-      const check = () => {
-        if (!input.trim()) return;
-        const r = checkAnswer(input, solutionOf(item), { level: opts.level, lang: answerLang });
+      const settle = (r) => {
         setResult(r);
         finish(r.status !== 'wrong');
-        setPhase(r.status === 'wrong' && opts.copy ? 'copy' : 'feedback');
+        setPhase(r.status === 'wrong' && opts.copy && TYPED_MODES.includes(mode) ? 'copy' : 'feedback');
+      };
+      const check = () => {
+        if (!input.trim()) return;
+        settle(checkAnswer(input, task.solution, { level: opts.level, lang: answerLang }));
       };
       const checkCopy = () => {
-        const r = checkAnswer(copyInput, result.solution, { level: 'strict' });
-        if (r.status === 'wrong') { setCopyMiss(true); return; }
+        if (checkAnswer(copyInput, result.solution, { level: 'strict' }).status === 'wrong') { setCopyMiss(true); return; }
         setPhase('feedback');
       };
-      const rate = (ok) => { finish(ok); next(); };
-      const next = () => {
-        if (pos + 1 >= queue.length) { onDone({ log, seconds: Math.round((Date.now() - startedAt) / 1000) }); return; }
+      const pick = (option) => {
+        if (phase !== 'ask') return;
+        setPicked(option);
+        settle({ status: option === task.solution ? 'right' : 'wrong', solution: task.solution });
+      };
+      const addTile = (i) => {
+        if (phase !== 'ask' || built.includes(i)) return;
+        const next = [...built, i];
+        setBuilt(next);
+        if (next.length === task.letters.length) {
+          const typed = next.map((j) => task.letters[j]).join('');
+          settle(checkAnswer(typed, task.solution.replace(/\s+/g, ''), { level: 'strict' }));
+        }
+      };
+      const rate = (ok) => { const { nextLog, nextQueue } = finish(ok); next(nextQueue, nextLog); };
+      const next = (q = queue, l = log) => {
+        if (pos + 1 >= q.length) { onDone({ log: l, seconds: Math.round((Date.now() - startedAt) / 1000) }); return; }
         setPos(pos + 1);
         setPhase('ask');
         setInput('');
         setCopyInput('');
         setCopyMiss(false);
         setResult(null);
+        setPicked(null);
+        setBuilt([]);
       };
       const onKey = (e) => {
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        if (phase === 'ask') check();
+        if (phase === 'ask') { if (TYPED_MODES.includes(mode)) check(); }
         else if (phase === 'copy') checkCopy();
         else next();
       };
       const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
 
       if (!item) return null;
-      const solution = solutionOf(item);
-      const prompt = promptOf(item);
       const hint = opts.hints && item.word.h;
-      const sentences = item.word.s || [];
-      const STATUS = {
-        right: ['bg-green-50 border-green-300 text-green-800', t('right')],
-        almost: ['bg-yellow-50 border-yellow-300 text-yellow-800', t('almost')],
-        wrong: ['bg-red-50 border-red-300 text-red-800', t('wrong')],
-      };
+      const promptLabel = mode === 'gap' ? sideName(set, 0)
+        : (langOf(set, item, 'prompt') ? langName(promptLang) : (item.dir === 'ab' ? t('sideA') : t('sideB')));
 
-      const speakBtn = (text, lang) => canSpeak(lang) && (
-        <button onClick={() => speak(text, lang)} title={t('speak')} className="text-gray-400 hover:text-blue-500 align-middle"><SpeakerIcon /></button>
+      const inputField = (ref, value, onChange, cls = '') => (
+        <input ref={ref} type="text" value={value} onChange={onChange} placeholder={t('answerPh')}
+          autoCapitalize="off" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[answerLang] || undefined}
+          className={`flex-1 min-w-0 ${INPUT} text-2xl py-3 ${cls}`} />
       );
+
+      const feedbackBox = (typed) => (
+        <div className={`rounded-lg border-2 p-4 ${STATUS_CLASS[result.status]}`}>
+          <div className="font-bold text-lg mb-2">
+            {t(result.status)}{result.note && <span className="font-normal text-sm"> · {t(result.note)}</span>}
+          </div>
+          {result.status !== 'right' && typed !== null ? (() => {
+            const [A, B] = charDiff(baseNorm(typed), result.solution);
+            return (
+              <div className="space-y-1 text-lg">
+                <div><span className={`${LABEL} mr-2`}>{t('yourInput')}</span><DiffText parts={A} cls="diff-del" /></div>
+                <div><span className={`${LABEL} mr-2`}>{t('solution')}</span><b><DiffText parts={B} cls="diff-ins" /></b> <SpeakButton text={task.solution} lang={answerLang} /></div>
+              </div>
+            );
+          })() : (
+            <div className="text-lg"><b>{task.solution}</b> <SpeakButton text={task.solution} lang={answerLang} /></div>
+          )}
+          {mode === 'listen' && <div className="text-gray-700 mt-1">{promptLabel}: <b>{task.prompt}</b></div>}
+          {mode !== 'gap' && <Sentences word={item.word} solution={solutionOf(item)} />}
+        </div>
+      );
+
+      const nextButton = phase === 'feedback' && (
+        <button autoFocus onClick={() => next()} className={`w-full mt-4 ${BTN_PRIMARY} px-6 py-3 text-lg`}>{t('next')} →</button>
+      );
+      const copyBlock = phase === 'copy' && (
+        <div className="mt-4">
+          <div className="text-sm text-gray-600 mb-1">{t('copyPrompt2')}</div>
+          <div className="flex gap-2">
+            {inputField(inputRef, copyInput, (e) => { setCopyInput(e.target.value); setCopyMiss(false); }, copyMiss ? 'border-red-400' : '')}
+            <button onClick={checkCopy} className={`${BTN_PRIMARY} px-5`}>{t('check')}</button>
+          </div>
+          {copyMiss && <p className="text-sm text-red-600 mt-1">{t('copyNotYet')}</p>}
+        </div>
+      );
+
+      // ---- der Aufgabenteil je Modus ----
+      let body;
+      if (mode === 'cards') {
+        body = phase === 'ask' ? (
+          <button onClick={() => setPhase('back')} className={`w-full ${BTN_PRIMARY} px-6 py-6 text-xl`}>{t('flip')}</button>
+        ) : (
+          <>
+            <div className={`${LABEL} mb-1`}>{t('solution')}</div>
+            <div className="flex items-start gap-3">
+              <div className="flex-1 text-3xl font-bold text-blue-700 break-words">{task.solution}</div>
+              <SpeakButton text={task.solution} lang={answerLang} />
+            </div>
+            <Sentences word={item.word} solution={task.solution} />
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => rate(false)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 text-lg">{t('knewNot')}</button>
+              <button onClick={() => rate(true)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-green-100 text-green-700 hover:bg-green-200 text-lg">{t('knew')}</button>
+            </div>
+          </>
+        );
+      } else if (mode === 'choice') {
+        body = (
+          <>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {task.options.map((o) => {
+                const state = phase === 'ask' ? '' : o === task.solution ? 'bg-green-100 border-green-400 text-green-800'
+                  : o === picked ? 'bg-red-100 border-red-400 text-red-800' : 'opacity-50';
+                return (
+                  <button key={o} onClick={() => pick(o)} disabled={phase !== 'ask'}
+                    className={`px-4 py-4 rounded-lg border-2 border-gray-200 bg-white text-lg font-semibold text-gray-800 text-left break-words hover:border-blue-400 hover:bg-blue-50 transition-all ${state}`}>
+                    {o}
+                  </button>
+                );
+              })}
+            </div>
+            {phase === 'feedback' && <div className="mt-4">{feedbackBox(null)}</div>}
+            {nextButton}
+          </>
+        );
+      } else if (mode === 'scramble') {
+        body = (
+          <>
+            <div className="min-h-[3.5rem] flex flex-wrap gap-1 items-center p-2 rounded-lg border-2 border-dashed border-gray-300 mb-3">
+              {built.map((j, k) => (
+                <button key={k} onClick={() => phase === 'ask' && setBuilt(built.slice(0, k))}
+                  className="w-11 h-11 rounded-lg bg-blue-100 text-blue-800 text-xl font-bold">{task.letters[j]}</button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {task.letters.map((ch, j) => (
+                <button key={j} onClick={() => addTile(j)} disabled={built.includes(j) || phase !== 'ask'}
+                  className={`w-11 h-11 rounded-lg text-xl font-bold shadow transition-all ${built.includes(j) ? 'bg-gray-100 text-gray-300' : 'bg-white text-gray-800 hover:bg-blue-50'}`}>
+                  {ch}
+                </button>
+              ))}
+              {phase === 'ask' && built.length > 0 && (
+                <button onClick={() => setBuilt([])} className={`px-3 text-sm ${BTN_SECONDARY}`}>{t('clearTiles')}</button>
+              )}
+            </div>
+            {phase === 'feedback' && <div className="mt-4">{feedbackBox(built.map((j) => task.letters[j]).join(''))}</div>}
+            {nextButton}
+          </>
+        );
+      } else {
+        // Schreiben, Lückentext, Hören: Eingabefeld
+        body = (
+          <>
+            {phase === 'ask' && (
+              <div className="flex gap-2">
+                {inputField(inputRef, input, (e) => setInput(e.target.value))}
+                <button onClick={check} className={`${BTN_PRIMARY} px-5`}>{t('check')}</button>
+              </div>
+            )}
+            {(phase === 'feedback' || phase === 'copy') && feedbackBox(input)}
+            {copyBlock}
+            {nextButton}
+          </>
+        );
+      }
+
+      // ---- Kopf der Karte: Was wird gefragt? ----
+      let head;
+      if (mode === 'gap') {
+        head = (
+          <>
+            <div className={`${LABEL} mb-2`}>{t('sentence')}</div>
+            <div className="text-2xl sm:text-3xl font-semibold text-gray-800 leading-relaxed mb-3">
+              {task.before}<span className="inline-block min-w-[5rem] border-b-4 border-blue-400 text-blue-700 px-1 text-center">
+                {phase === 'ask' ? ' ' : task.solution}</span>{task.after}
+            </div>
+            <div className="text-gray-600"><span className={`${LABEL} mr-2`}>{promptLabel}</span><b className="text-xl">{task.prompt}</b>{hint && <span className="text-sm text-gray-500 ml-2">{hint}</span>}</div>
+          </>
+        );
+      } else if (mode === 'listen') {
+        head = (
+          <div className="flex flex-col items-center gap-3 py-2">
+            <SpeakButton text={task.spoken} lang={answerLang} big />
+            <div className="text-sm text-gray-400">{t('hearAgain')}: {langName(answerLang)}</div>
+            {hint && <div className="text-sm text-gray-500">{hint}</div>}
+          </div>
+        );
+      } else {
+        head = (
+          <>
+            <div className={`${LABEL} mb-2`}>{promptLabel}</div>
+            <div className="flex items-start gap-3 mb-1">
+              <div className="flex-1 text-3xl sm:text-4xl font-bold text-gray-800 break-words">{task.prompt}</div>
+              <SpeakButton text={task.prompt} lang={promptLang} />
+            </div>
+            {hint && <div className="text-sm text-gray-500 mb-2">{hint}</div>}
+          </>
+        );
+      }
 
       return (
         <div className={`${SCREEN} p-4 sm:p-8`} onKeyDown={onKey}>
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center gap-2 mb-4">
-              <button onClick={quit} className="shrink-0 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">← {t('quit')}</button>
-              <div className="flex-1 min-w-0 text-center text-gray-500 truncate">{set.title}</div>
-              {canFullscreen() && (
-                <IconButton onClick={toggleFullscreen} title={fsElement() ? t('exitFullscreen') : t('fullscreen')}><ExpandIcon /></IconButton>
-              )}
-              {settingsButton}
-            </div>
-            {settingsPanel}
-
-            <div className="flex items-center gap-3 mb-4 text-sm text-gray-500">
-              <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all" style={{ width: `${(pos / queue.length) * 100}%` }} />
-              </div>
-              <span>{Math.min(firstTries + (item.retry ? 0 : 1), total)} / {total}{item.retry && <span className="ml-2 px-1.5 rounded bg-orange-100 text-orange-700 text-xs font-semibold">{t('retryTag')}</span>}</span>
-            </div>
-
+          <PracticeFrame set={set} pos={pos} queue={queue.length} total={total} item={item} onQuit={quit}>
             <div className={`${CARD} p-6 sm:p-8 mb-4`}>
-              <div className={`${LABEL} mb-2`}>{langOf(set, item, 'prompt') ? langName(promptLang) : (item.dir === 'ab' ? t('sideA') : t('sideB'))}</div>
-              <div className="flex items-start gap-3 mb-1">
-                <div className="flex-1 text-3xl sm:text-4xl font-bold text-gray-800 break-words">{prompt}</div>
-                {speakBtn(prompt, promptLang)}
-              </div>
-              {hint && <div className="text-sm text-gray-500 mb-2">{hint}</div>}
-
-              {opts.mode === 'cards' ? (
-                <div className="mt-6">
-                  {phase === 'ask' ? (
-                    <button onClick={() => setPhase('back')} className={`w-full ${BTN_PRIMARY} px-6 py-6 text-xl`}>{t('flip')}</button>
-                  ) : (
-                    <>
-                      <div className={`${LABEL} mb-1`}>{t('solution')}</div>
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1 text-3xl font-bold text-blue-700 break-words">{solution}</div>
-                        {speakBtn(solution, answerLang)}
-                      </div>
-                      {sentences.length > 0 && (
-                        <ul className="mt-3 text-gray-600 space-y-1">{sentences.map((s, i) => <li key={i}>{markWord(s, solution)}</li>)}</ul>
-                      )}
-                      <div className="flex gap-3 mt-6">
-                        <button onClick={() => rate(false)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 text-lg">{t('knewNot')}</button>
-                        <button onClick={() => rate(true)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-green-100 text-green-700 hover:bg-green-200 text-lg">{t('knew')}</button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="mt-6">
-                  {phase === 'ask' && (
-                    <div className="flex gap-2">
-                      <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('answerPh')}
-                        autoCapitalize="off" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[answerLang] || undefined}
-                        className={`flex-1 min-w-0 ${INPUT} text-2xl py-3`} />
-                      <button onClick={check} className={`${BTN_PRIMARY} px-5`}>{t('check')}</button>
-                    </div>
-                  )}
-                  {(phase === 'feedback' || phase === 'copy') && (
-                    <div className={`rounded-lg border-2 p-4 ${STATUS[result.status][0]}`}>
-                      <div className="font-bold text-lg mb-2">
-                        {STATUS[result.status][1]}{result.note && <span className="font-normal text-sm"> · {t(result.note)}</span>}
-                      </div>
-                      {result.status !== 'right' && (() => {
-                        const [A, B] = charDiff(baseNorm(input), result.solution);
-                        return (
-                          <div className="space-y-1 text-lg">
-                            <div><span className={`${LABEL} mr-2`}>{t('yourInput')}</span><DiffText parts={A} cls="diff-del" /></div>
-                            <div><span className={`${LABEL} mr-2`}>{t('solution')}</span><b><DiffText parts={B} cls="diff-ins" /></b> {speakBtn(solution, answerLang)}</div>
-                          </div>
-                        );
-                      })()}
-                      {result.status === 'right' && (
-                        <div className="text-lg"><b>{solution}</b> {speakBtn(solution, answerLang)}</div>
-                      )}
-                      {sentences.length > 0 && (
-                        <ul className="mt-3 text-gray-700 space-y-1">{sentences.map((s, i) => <li key={i}>{markWord(s, solution)}</li>)}</ul>
-                      )}
-                    </div>
-                  )}
-                  {phase === 'copy' && (
-                    <div className="mt-4">
-                      <div className="text-sm text-gray-600 mb-1">{t('copyPrompt2')}</div>
-                      <div className="flex gap-2">
-                        <input ref={inputRef} type="text" value={copyInput} onChange={(e) => { setCopyInput(e.target.value); setCopyMiss(false); }}
-                          autoCapitalize="off" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[answerLang] || undefined}
-                          className={`flex-1 min-w-0 ${INPUT} text-2xl py-3 ${copyMiss ? 'border-red-400' : ''}`} />
-                        <button onClick={checkCopy} className={`${BTN_PRIMARY} px-5`}>{t('check')}</button>
-                      </div>
-                      {copyMiss && <p className="text-sm text-red-600 mt-1">{t('copyNotYet')}</p>}
-                    </div>
-                  )}
-                  {phase === 'feedback' && (
-                    <button autoFocus onClick={next} className={`w-full mt-4 ${BTN_PRIMARY} px-6 py-3 text-lg`}>{t('next')} →</button>
-                  )}
-                </div>
-              )}
+              {head}
+              <div className="mt-6">{body}</div>
             </div>
-          </div>
+          </PracticeFrame>
+          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+        </div>
+      );
+    };
+
+    // ---------- Zuordnen ----------
+    // Gruppen von bis zu MATCH_GROUP Paaren: links Sprache A, rechts Sprache B
+    // gemischt. Ein Wort gilt als gewusst, wenn sein erstes Antippen richtig
+    // zugeordnet wurde. Keine Wiederholungsschlange — die Gruppe ist erst
+    // fertig, wenn alle Paare stehen.
+    const MATCH_GROUP = 6;
+    const MatchRound = ({ set, opts, words, onDone, onBack, onResult }) => {
+      const [groups] = useState(() => {
+        const list = opts.order === 'random' ? shuffleArray(words) : words;
+        const out = [];
+        for (let i = 0; i < list.length; i += MATCH_GROUP) out.push(list.slice(i, i + MATCH_GROUP));
+        // Eine Restgruppe mit einem einzigen Paar wäre keine Aufgabe: ans Ende der vorigen
+        if (out.length > 1 && out[out.length - 1].length === 1) out[out.length - 2].push(...out.pop());
+        return out;
+      });
+      const [g, setG] = useState(0);
+      const [right, setRight] = useState(() => shuffleArray(groups[0]));
+      const [left, setLeft] = useState(null); // gewähltes Wort links
+      const [matched, setMatched] = useState([]); // Wörter (Objekte) dieser Gruppe
+      const [flash, setFlash] = useState(null); // { l, r } bei Fehlversuch
+      const [errored, setErrored] = useState([]); // Wörter mit Fehlversuch
+      const [log, setLog] = useState([]);
+      const [startedAt] = useState(Date.now);
+      const [dialog, setDialog] = useState(null);
+      const group = groups[g];
+      const doneBefore = groups.slice(0, g).reduce((n, gr) => n + gr.length, 0);
+
+      const pickRight = (w) => {
+        if (!left || flash || matched.includes(w)) return;
+        if (w === left) {
+          const ok = !errored.includes(w);
+          onResult(w, ok);
+          const nextLog = [...log, { item: { word: w, dir: 'ab' }, ok }];
+          setLog(nextLog);
+          const nextMatched = [...matched, w];
+          setMatched(nextMatched);
+          setLeft(null);
+          if (nextMatched.length === group.length) {
+            setTimeout(() => {
+              if (g + 1 >= groups.length) { onDone({ log: nextLog, seconds: Math.round((Date.now() - startedAt) / 1000) }); return; }
+              setG(g + 1);
+              setRight(shuffleArray(groups[g + 1]));
+              setMatched([]);
+              setErrored([]);
+            }, 500);
+          }
+        } else {
+          setErrored((e) => (e.includes(left) ? e : [...e, left]));
+          setFlash({ l: left, r: w });
+          setTimeout(() => { setFlash(null); setLeft(null); }, 700);
+        }
+      };
+      const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
+      const tile = (w, side, onClick, active) => {
+        const isMatched = matched.includes(w);
+        const isFlash = flash && (side === 'l' ? flash.l === w : flash.r === w);
+        return (
+          <button key={wordKey(w) + side} onClick={onClick} disabled={isMatched}
+            className={`w-full px-3 py-3 rounded-lg border-2 text-left font-semibold break-words transition-all ${
+              isMatched ? 'bg-green-100 border-green-300 text-green-800 opacity-60'
+              : isFlash ? 'bg-red-100 border-red-400 text-red-800'
+              : active ? 'bg-blue-100 border-blue-500 text-blue-900'
+              : 'bg-white border-gray-200 text-gray-800 hover:border-blue-400'}`}>
+            {side === 'l' ? w.a : w.b}
+          </button>
+        );
+      };
+
+      return (
+        <div className={`${SCREEN} p-4 sm:p-8`}>
+          <PracticeFrame set={set} pos={doneBefore + matched.length} queue={words.length} total={words.length} item={null} onQuit={quit}
+            extra={groups.length > 1 && <span className="ml-2 text-xs text-gray-400">{t('groupN', g + 1, groups.length)}</span>}>
+            <div className={`${CARD} p-4 sm:p-6 mb-4`}>
+              <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 mb-2">
+                <div className={LABEL}>{sideName(set, 0)}</div>
+                <div className={LABEL}>{sideName(set, 1)}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6">
+                <div className="space-y-2">{group.map((w) => tile(w, 'l', () => !flash && !matched.includes(w) && setLeft(left === w ? null : w), left === w))}</div>
+                <div className="space-y-2">{right.map((w) => tile(w, 'r', () => pickRight(w), false))}</div>
+              </div>
+              {flash && <p className="text-center text-red-600 font-semibold mt-3">{t('wrongPair')}</p>}
+            </div>
+          </PracticeFrame>
           {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
         </div>
       );
@@ -1924,8 +2250,9 @@
       const startRound = (opts, words) => setStage({ kind: 'run', opts, words, n: Date.now() });
 
       if (stage.kind === 'run') {
+        const Round = stage.opts.mode === 'match' ? MatchRound : Practice;
         return (
-          <Practice key={stage.n} set={set} opts={stage.opts} words={stage.words}
+          <Round key={stage.n} set={set} opts={stage.opts} words={stage.words}
             onResult={(word, ok) => onResult(setKey, word, ok)}
             onDone={({ log, seconds }) => setStage({ kind: 'done', opts: stage.opts, words: stage.words, log, seconds })}
             onBack={() => setStage({ kind: 'setup' })} />
