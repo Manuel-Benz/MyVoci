@@ -57,6 +57,10 @@ Set antippen → Einstellungen wählen → **Üben starten**.
 - **Handschrift**: mit Stift oder Finger auf die Schreibfläche schreiben, aufdecken,
   selbst bewerten – wie auf Papier, ohne Erkennung. Option «Nur Stift annehmen»
   gegen Handballen-Striche.
+- **Sprechen**: das Wort aussprechen, das Gerät hört zu (Spracherkennung von
+  Safari/Chrome) und vergleicht grosszügig.
+- **Blitzrunde**: «Zeit pro Wort» 5/10/20 s – läuft die Zeit ab, zählt das
+  Wort als falsch; was schon dasteht, wird noch gewertet.
 - **Prüfungsmodus** (Schreiben, Lückentext, Hören, Multiple Choice,
   Buchstabensalat): keine Rückmeldung während der Runde, keine Wiederholung,
   Lösungen erst am Ende als Tabelle. Startet im Vollbild; Verlassen des
@@ -78,6 +82,16 @@ Beim Geführten Zugriff Adressleiste und Tab-Leiste einkreisen.
 
 Wie in MyMemory: Direktlink (Set komprimiert im `#`-Fragment) und QR-Code,
 Ordner per Drag & Drop, Export als `.txt` oder alles als ZIP, Oberfläche DE/EN.
+
+**Übung teilen** (Kästchen auf der Set-Seite): der Link bringt das Set *und*
+die gewählten Einstellungen mit (Modus, Richtung, Auswahl, Toleranz, Zeit,
+Prüfungsmodus). Mit «Direkt starten» landet die Klasse ohne Einstellungsseite
+in der Übung – praktisch für die Prüfungssituation.
+
+**Sicherung** (Einstellungen → Sicherung): alle Sets, Ordner und der Lernstand
+als eine JSON-Datei, zum Umziehen auf ein anderes Gerät. Einlesen ergänzt, was
+fehlt, und behält pro Wort den neueren Lernstand. Die Datei kann auch einfach
+auf die Seite gezogen werden.
 
 ## Technik
 

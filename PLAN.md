@@ -157,13 +157,24 @@ ab `main`. Lokal: `python3 -m http.server` → http://localhost:8000.
   Start (die Geste vom Start-Knopf reicht), Vollbild-Verlassen und
   `visibilitychange` zählen als «Bildschirm verlassen». Vollbild-Aufrufe
   fangen das abgelehnte Promise (iPhone kann kein Element-Vollbild).
-- [ ] **5 — Feinschliff**: Link mit Voreinstellung (`&mode=…&dir=…`), Sprechen,
-  Blitzrunde mit Timer, Lernstand als Datei exportieren/importieren.
+- [x] **5 — Feinschliff** (08.09.2026): **Übung teilen** auf der Set-Seite —
+  Direktlink/QR mit allen Einstellungen als eigene Hash-Teile
+  (`…&mode=write&dir=ab&sel=range&from=1&to=10…`, `optsToHash`/`optsFromHash`,
+  `OPT_KEYS` hält die Route sauber), optional `go=1` = ohne Einstellungsseite
+  (zündet nur beim ersten Aufbau, sonst startete jede Runde die nächste).
+  Modus **Sprechen** (Web Speech Recognition, `recognizeOnce` mit fünf
+  Alternativen, Vergleich «locker», zehn Sekunden Zeitgrenze — ein offener
+  Mikrofon-Dialog meldet sonst nie etwas). **Blitzrunde**: Zeit pro Wort
+  (5/10/20 s) für automatisch prüfbare Modi, Balken oben an der Karte, der
+  Wecker liest den Stand aus einer Ref und wertet, was schon dasteht.
+  **Sicherung**: Sets + Ordner + Lernstand als JSON aus den Einstellungen
+  heraus oder per Datei-Ablage; Einlesen ergänzt (gleicher Titel = dasselbe
+  Set, Lernstand pro Wort der neuere Versuch).
 
 ## Backlog / Ideen
 
-- Lernstand geräteübergreifend (z. B. Export/Import als Datei; ein Sync via
-  GitHub/Gist bräuchte ein Token pro SchülerIn — eher nicht).
+- Lernstand geräteübergreifend live (ein Sync via GitHub/Gist bräuchte ein
+  Token pro SchülerIn — eher nicht; die Sicherung als Datei deckt den Umzug ab).
 - Bilder statt Wort A (Bild-URL) für Anfänger.
 - Konjugations-/Formen-Sets (mehrere Spalten) — eigenes Format, erst wenn nötig.
 - Offline (Service Worker) für Schul-iPads ohne stabiles WLAN.

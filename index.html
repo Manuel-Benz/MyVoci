@@ -22,6 +22,7 @@
     input, textarea, select { font-size: max(16px, 1em); }
     .diff-del { background: #fecaca; text-decoration: line-through; border-radius: 2px; }
     .diff-ins { background: #bbf7d0; border-radius: 2px; }
+    @keyframes shrink { from { width: 100%; } to { width: 0; } }
   </style>
 </head>
 <body>
@@ -190,6 +191,30 @@
         modeListenNone: 'Vorlesen geht auf diesem Gerät oder für diese Sprache nicht.',
         modeScramble: 'Buchstabensalat',
         modeScrambleHint: 'Die Buchstaben in die richtige Reihenfolge tippen.',
+        modeSpeak: 'Sprechen',
+        modeSpeakHint: 'Das Wort aussprechen — das Gerät hört zu und vergleicht (ungefähr, Akzente und Artikel egal).',
+        modeSpeakNone: 'Spracherkennung gibt es in diesem Browser nicht (Safari und Chrome können es).',
+        micStart: 'Sprechen',
+        micListening: 'Ich höre zu …',
+        micHeard: 'Verstanden',
+        micNothing: 'Nichts verstanden — nochmals versuchen.',
+        micDenied: 'Kein Zugriff aufs Mikrofon — in den Browser-Einstellungen erlauben.',
+        timerLabel: 'Zeit pro Wort',
+        timerOff: 'aus',
+        timerS: (s) => `${s} s`,
+        timerHint: 'Blitzrunde: läuft die Zeit ab, zählt das Wort als falsch.',
+        timeUp: 'Zeit abgelaufen',
+        shareTitle: 'Übung teilen',
+        shareHint: 'Der Link bringt das Set und genau diese Einstellungen mit — die Klasse landet direkt in der Übung.',
+        shareGo: 'Direkt starten, ohne Einstellungsseite',
+        shareCopy: 'Link kopieren',
+        shareCopied: 'Link zur Übung kopiert!',
+        backupTitle: 'Sicherung',
+        backupHint: 'Alle Sets, Ordner und der Lernstand als Datei — zum Umziehen auf ein anderes Gerät. Einlesen ergänzt, was fehlt, und behält den jeweils neueren Lernstand.',
+        backupExport: 'Sicherung herunterladen',
+        backupImport: 'Sicherung einlesen',
+        backupDone: (n) => `Sicherung eingelesen (${n} ${n === 1 ? 'Set' : 'Sets'})`,
+        backupBad: 'Das ist keine MyVoci-Sicherung.',
         modePen: 'Handschrift',
         modePenHint: 'Mit Stift oder Finger auf die Fläche schreiben, dann aufdecken und selbst bewerten — wie auf Papier.',
         penOnly: 'Nur Stift annehmen (Finger ignorieren)',
@@ -409,6 +434,30 @@
         modeListenNone: 'Read-aloud is not available on this device or for this language.',
         modeScramble: 'Scrambled letters',
         modeScrambleHint: 'Tap the letters in the right order.',
+        modeSpeak: 'Speaking',
+        modeSpeakHint: 'Say the word — the device listens and compares (roughly; accents and articles are ignored).',
+        modeSpeakNone: 'Speech recognition is not available in this browser (Safari and Chrome have it).',
+        micStart: 'Speak',
+        micListening: 'Listening …',
+        micHeard: 'Heard',
+        micNothing: 'Nothing understood — try again.',
+        micDenied: 'No microphone access — allow it in the browser settings.',
+        timerLabel: 'Time per word',
+        timerOff: 'off',
+        timerS: (s) => `${s} s`,
+        timerHint: 'Lightning round: when time runs out, the word counts as wrong.',
+        timeUp: 'time is up',
+        shareTitle: 'Share this exercise',
+        shareHint: 'The link carries the set and exactly these settings — the class lands right in the exercise.',
+        shareGo: 'Start right away, without the settings page',
+        shareCopy: 'Copy link',
+        shareCopied: 'Exercise link copied!',
+        backupTitle: 'Backup',
+        backupHint: 'All sets, folders and progress as one file — for moving to another device. Importing adds what is missing and keeps the newer progress.',
+        backupExport: 'Download backup',
+        backupImport: 'Import backup',
+        backupDone: (n) => `Backup imported (${n} ${n === 1 ? 'set' : 'sets'})`,
+        backupBad: 'This is not a MyVoci backup.',
         modePen: 'Handwriting',
         modePenHint: 'Write on the pad with a pen or finger, then reveal and rate yourself — like on paper.',
         penOnly: 'Pen only (ignore fingers)',
@@ -893,7 +942,25 @@
 
     // ---------- Routing über das URL-Fragment ----------
     const withLang = (hash, lang = currentLang) => `${hash}${hash.endsWith('#') ? '' : '&'}l=${lang || currentLang}`;
-    const routePart = () => hashParts().find((x) => !x.startsWith('l=')) || '';
+    // Ein geteilter Übungs-Link trägt die Einstellungen als eigene Teile
+    // (…&mode=write&dir=ab…); die Route ist der erste Teil, der weder Sprache
+    // noch Option ist. `go=1` startet die Übung ohne Einstellungsseite.
+    const OPT_KEYS = ['mode', 'dir', 'sel', 'from', 'to', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', 'go'];
+    const isOptPart = (x) => OPT_KEYS.includes(x.split('=')[0]);
+    const routePart = () => hashParts().find((x) => !x.startsWith('l=') && !isOptPart(x)) || '';
+    const OPT_NUM = ['from', 'to', 'timer'], OPT_BOOL = ['hints', 'copy', 'exam', 'penOnly', 'go'];
+    const optsFromHash = () => {
+      const out = {};
+      for (const part of hashParts().filter(isOptPart)) {
+        const [k, v = ''] = part.split('=');
+        out[k] = OPT_NUM.includes(k) ? +v || 0 : OPT_BOOL.includes(k) ? v === '1' : v;
+      }
+      return out;
+    };
+    const optsToHash = (opts, go) => {
+      const keep = ['mode', 'dir', 'sel', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', ...(opts.sel === 'range' ? ['from', 'to'] : [])];
+      return keep.map((k) => `&${k}=${typeof opts[k] === 'boolean' ? (opts[k] ? 1 : 0) : opts[k]}`).join('') + (go ? '&go=1' : '');
+    };
     const applyLang = (id) => {
       if (id === currentLang) return;
       currentLang = id;
@@ -1098,6 +1165,27 @@
       } catch {}
     };
 
+    // ---------- Spracherkennung (Modus Sprechen) ----------
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const canRecognize = (lang) => !!(SpeechRec && TTS_LOCALE[lang]);
+    // Hört einmal zu und liefert die Alternativen (beste zuerst) — oder wirft
+    // 'denied' / 'nothing'. Einmalig, kein Dauerlauschen.
+    const recognizeOnce = (lang) => new Promise((resolve, reject) => {
+      const rec = new SpeechRec();
+      rec.lang = TTS_LOCALE[lang];
+      rec.maxAlternatives = 5;
+      rec.interimResults = false;
+      let done = false;
+      // Ein offener Mikrofon-Dialog oder ein hängender Dienst melden nichts —
+      // nach zehn Sekunden brechen wir selber ab, sonst bliebe der Knopf grau.
+      const timer = setTimeout(() => { try { rec.abort(); } catch {} }, 10000);
+      const finish = (fn) => { if (done) return; done = true; clearTimeout(timer); fn(); };
+      rec.onresult = (e) => finish(() => resolve([...e.results[0]].map((r) => r.transcript)));
+      rec.onerror = (e) => finish(() => reject(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'denied' : 'nothing'));
+      rec.onend = () => finish(() => reject('nothing'));
+      try { rec.start(); } catch { finish(() => reject('nothing')); }
+    });
+
     // ---------- Vollbild ----------
     const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
     const canFullscreen = () => !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
@@ -1195,6 +1283,9 @@
     const SpeakerIcon = () => (
       <Icon><path d="M4 9v6h4l5 4V5L8 9z" /><path d="M16 9a4 4 0 0 1 0 6" /><path d="M18.5 6.5a8 8 0 0 1 0 11" /></Icon>
     );
+    const MicIcon = () => (
+      <Icon><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0" /><path d="M12 18v3" /><path d="M8 21h8" /></Icon>
+    );
     const ExpandIcon = () => (
       <Icon><path d="M4 9V4h5" /><path d="M20 9V4h-5" /><path d="M4 15v5h5" /><path d="M20 15v5h-5" /></Icon>
     );
@@ -1223,7 +1314,7 @@
       );
     };
 
-    const useSettings = () => {
+    const useSettings = (extra) => {
       const [open, setOpen] = useState(false);
       const button = <IconButton onClick={() => setOpen((v) => !v)} title={t('settings')}><SettingsIcon /></IconButton>;
       const panel = open && (
@@ -1238,6 +1329,7 @@
               ))}
             </div>
           </div>
+          {extra}
         </div>
       );
       return [button, panel];
@@ -1260,9 +1352,25 @@
     );
 
     // ---------- Auswahlseite ----------
-    const Selection = ({ own, folders, onOpen, onEdit, onNew, onImport, onDelete, folderApi }) => {
+    const Selection = ({ own, folders, onOpen, onEdit, onNew, onImport, onDelete, folderApi, backup }) => {
       const [toast, setToast] = useState(null);
-      const [settingsButton, settingsPanel] = useSettings();
+      const backupInput = useRef(null);
+      const importBackupText = (text) => {
+        const n = backup.restore(text);
+        showToast(n === null ? t('backupBad') : t('backupDone', n));
+      };
+      const [settingsButton, settingsPanel] = useSettings(
+        <div className="rounded-lg border border-gray-200 p-4 mt-4">
+          <div className={`${LABEL} mb-2`}>{t('backupTitle')}</div>
+          <p className="text-sm text-gray-500 mb-3">{t('backupHint')}</p>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={backup.save} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('backupExport')}</button>
+            <button onClick={() => backupInput.current.click()} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('backupImport')}</button>
+            <input ref={backupInput} type="file" accept=".json,application/json" className="hidden"
+              onChange={(e) => { for (const f of e.target.files) f.text().then(importBackupText); e.target.value = ''; }} />
+          </div>
+        </div>
+      );
       const [qr, setQr] = useState(null);
       const [createOpen, setCreateOpen] = useState(false);
       const [ipadOpen, setIpadOpen] = useState(false);
@@ -1302,7 +1410,10 @@
         return true;
       };
       const importFiles = (fileList, dir) => {
-        for (const file of fileList) file.text().then((text) => addImported(text, file.name, dir, t('noWordsInFile', file.name)));
+        for (const file of fileList) {
+          if (/\.json$/i.test(file.name)) { file.text().then(importBackupText); continue; } // Sicherung aufs Fenster gezogen
+          file.text().then((text) => addImported(text, file.name, dir, t('noWordsInFile', file.name)));
+        }
       };
       const importPasted = () => {
         if (!addImported(pasted, pastedTitle.trim() || 'Voci', undefined, t('noWordsFound'))) return;
@@ -1633,7 +1744,7 @@
 
     // ---------- Set-Seite: Einstellungen für die Runde + Lernstand ----------
     const OPTS_KEY = 'myvoci_practice';
-    const DEFAULT_OPTS = { mode: 'write', dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false };
+    const DEFAULT_OPTS = { mode: 'write', dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false, timer: 0 };
     const loadOpts = () => ({ ...DEFAULT_OPTS, ...(readLocal(OPTS_KEY, {}) || {}) });
 
     const Choice = ({ options, value, onChange }) => (
@@ -1648,14 +1759,17 @@
     );
 
     // Welche Modi gibt es, und was braucht ein Modus vom Set?
-    const MODES = ['write', 'pen', 'cards', 'choice', 'match', 'gap', 'listen', 'scramble'];
-    const MODE_LABEL = { write: 'modeWrite', pen: 'modePen', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', scramble: 'modeScramble' };
+    const MODES = ['write', 'pen', 'cards', 'choice', 'match', 'gap', 'listen', 'speak', 'scramble'];
+    const MODE_LABEL = { write: 'modeWrite', pen: 'modePen', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', speak: 'modeSpeak', scramble: 'modeScramble' };
+    const TIMED_MODES = ['write', 'gap', 'listen', 'choice', 'scramble']; // Blitzrunde: automatisch prüfbar
+    const TIMER_STEPS = [0, 5, 10, 20];
     const EXAM_MODES = ['write', 'gap', 'listen', 'choice', 'scramble']; // automatisch korrigierbar
     const TYPED_MODES = ['write', 'gap', 'listen']; // Eingabefeld + Toleranz + Abschreiben
     const DIRECTIONLESS = ['gap', 'match']; // Satz ist immer Sprache B, Zuordnen zeigt beide
     // Hören: gehört wird die Antwortseite — bei «gemischt» müssen beide gehen
     const listenLangs = (set, dir) => (set.langs ? (dir === 'ab' ? [set.langs[1]] : dir === 'ba' ? [set.langs[0]] : set.langs) : []);
     const canListen = (set, dir) => { const l = listenLangs(set, dir); return l.length > 0 && l.every(canSpeak); };
+    const canSpeakMode = (set, dir) => { const l = listenLangs(set, dir); return l.length > 0 && l.every(canRecognize); };
 
     const selectWords = (set, opts, prog) => {
       const recs = set.words.map((w) => prog[wordKey(w)]);
@@ -1668,11 +1782,23 @@
       });
     };
 
-    const SetPage = ({ set, prog, onStart, onReset, onBack }) => {
-      const [opts, setOpts] = useState(loadOpts);
+    const SetPage = ({ set, prog, preset, go, onStart, onReset, onBack }) => {
+      // Ein geteilter Link bringt seine Einstellungen mit (preset) — die gelten
+      // für diesen Besuch, gemerkt wird erst, was hier umgestellt wird.
+      const [opts, setOpts] = useState(() => ({ ...loadOpts(), ...preset }));
       const [settingsButton, settingsPanel] = useSettings();
       const [dialog, setDialog] = useState(null);
       const [listOpen, setListOpen] = useState(false);
+      const [shareGo, setShareGo] = useState(false);
+      const [qr, setQr] = useState(null);
+      const [toast, setToast] = useState(null);
+      const toastTimer = useRef(0);
+      const showToast = (msg) => { setToast(msg); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 2500); };
+      const shareLink = async () => (await directLink(set)) + optsToHash(opts, shareGo);
+      const copyShare = async () => {
+        try { await navigator.clipboard.writeText(await shareLink()); showToast(t('shareCopied')); }
+        catch { showToast(t('copyFailed')); }
+      };
       const set_ = (patch) => setOpts((o) => { const next = { ...o, ...patch }; writeLocal(OPTS_KEY, next); return next; });
 
       const n = set.words.length;
@@ -1684,9 +1810,11 @@
       const seen = recs.filter(Boolean).length;
       const gapN = set.words.filter(gapFor).length;
       // Ein gemerkter Modus, der bei diesem Set nicht geht, fällt auf Schreiben zurück
-      const modeOk = !((opts.mode === 'gap' && !gapN) || (opts.mode === 'listen' && !canListen(set, opts.dir)));
+      const modeOk = !((opts.mode === 'gap' && !gapN) || (opts.mode === 'listen' && !canListen(set, opts.dir)) || (opts.mode === 'speak' && !canSpeakMode(set, opts.dir)));
       useEffect(() => { if (!modeOk) set_({ mode: 'write' }); }, [modeOk]);
       const chosen = selectWords(set, opts, prog);
+      // «Direkt starten» aus dem Link — nur beim ersten Anzeigen (s. Trainer)
+      useEffect(() => { if (go && modeOk && chosen.length) onStart(opts, chosen); }, []);
       const A = sideName(set, 0), B = sideName(set, 1);
       const BOX_COLORS = ['bg-gray-300', 'bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-lime-400', 'bg-green-500'];
 
@@ -1708,10 +1836,11 @@
                 <div>
                   <div className={`${LABEL} mb-2`}>{t('mode')}</div>
                   <Choice value={opts.mode} onChange={(mode) => set_({ mode })}
-                    options={MODES.map((m) => [m, t(MODE_LABEL[m]), (m === 'gap' && !gapN) || (m === 'listen' && !canListen(set, opts.dir))])} />
+                    options={MODES.map((m) => [m, t(MODE_LABEL[m]), (m === 'gap' && !gapN) || (m === 'listen' && !canListen(set, opts.dir)) || (m === 'speak' && !canSpeakMode(set, opts.dir))])} />
                   <p className="text-sm text-gray-500 mt-1">{t(MODE_LABEL[opts.mode] + 'Hint')}</p>
                   {!gapN && <p className="text-sm text-gray-400 mt-1">{t('modeGapNone')}</p>}
                   {!canListen(set, opts.dir) && <p className="text-sm text-gray-400 mt-1">{t('modeListenNone')}</p>}
+                  {!canSpeakMode(set, opts.dir) && canListen(set, opts.dir) && <p className="text-sm text-gray-400 mt-1">{t('modeSpeakNone')}</p>}
                 </div>
                 {!DIRECTIONLESS.includes(opts.mode) && (
                   <div>
@@ -1755,6 +1884,13 @@
                     <label className="flex items-center gap-2"><input type="checkbox" checked={opts.penOnly} onChange={(e) => set_({ penOnly: e.target.checked })} /> {t('penOnly')}</label>
                   )}
                 </div>
+                {TIMED_MODES.includes(opts.mode) && (
+                  <div>
+                    <div className={`${LABEL} mb-2`}>{t('timerLabel')}</div>
+                    <Choice value={opts.timer} onChange={(timer) => set_({ timer })} options={TIMER_STEPS.map((s) => [s, s ? t('timerS', s) : t('timerOff')])} />
+                    {opts.timer > 0 && <p className="text-sm text-gray-500 mt-1">{t('timerHint')}</p>}
+                  </div>
+                )}
                 {EXAM_MODES.includes(opts.mode) && (
                   <div className={`rounded-lg border p-3 ${opts.exam ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
                     <label className="flex items-center gap-2 font-semibold text-gray-700"><input type="checkbox" checked={opts.exam} onChange={(e) => set_({ exam: e.target.checked })} /> {t('exam')}</label>
@@ -1767,6 +1903,16 @@
                 {t('start')} · {t('nWords', chosen.length)}
               </button>
               {!chosen.length && <p className="text-sm text-red-600 mt-2">{t('nothingSelected')}</p>}
+            </div>
+
+            <div className={`${CARD} p-6 mb-6`}>
+              <h2 className="text-lg font-semibold text-gray-700 mb-1">{t('shareTitle')}</h2>
+              <p className="text-sm text-gray-500 mb-3">{t('shareHint')}</p>
+              <label className="flex items-center gap-2 text-sm text-gray-600 mb-3"><input type="checkbox" checked={shareGo} onChange={(e) => setShareGo(e.target.checked)} /> {t('shareGo')}</label>
+              <div className="flex gap-2">
+                <button onClick={copyShare} className={`flex-1 ${BTN_PRIMARY} px-4 py-2 flex items-center justify-center gap-2`}><LinkIcon /> {t('shareCopy')}</button>
+                <IconButton onClick={async () => setQr({ title: set.title, url: await shareLink() })} title={t('showQr')}><QrIcon /></IconButton>
+              </div>
             </div>
 
             <div className={`${CARD} p-6 mb-6`}>
@@ -1805,6 +1951,8 @@
             </Collapsible>
           </div>
           {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+          {qr && <QrModal title={qr.title} url={qr.url} onClose={() => setQr(null)} onCopy={copyShare} />}
+          {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">{toast}</div>}
         </div>
       );
     };
@@ -1955,6 +2103,10 @@
       const [copyMiss, setCopyMiss] = useState(false);
       const [result, setResult] = useState(null);
       const [picked, setPicked] = useState(null); // Multiple Choice: gewählte Antwort
+      const [mic, setMic] = useState('idle'); // Sprechen: idle | listening | nothing | denied
+      const [heard, setHeard] = useState(''); // Sprechen: was verstanden wurde
+      const timed = opts.timer > 0 && TIMED_MODES.includes(opts.mode);
+      const latest = useRef({}); // aktueller Stand für den Wecker der Blitzrunde
       const [built, setBuilt] = useState([]); // Buchstabensalat: Indizes der gesetzten Kacheln
       const [log, setLog] = useState([]); // { item, ok, input, solution } nur erste Versuche
       const [sketchKey, setSketchKey] = useState(0); // Handschrift: Fläche leeren
@@ -2058,6 +2210,8 @@
         setResult(null);
         setPicked(null);
         setBuilt([]);
+        setMic('idle');
+        setHeard('');
       };
       const onKey = (e) => {
         if (e.key !== 'Enter') return;
@@ -2067,6 +2221,37 @@
         else next();
       };
       const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
+
+      // Sprechen: einmal zuhören, beste Alternative zählt. Nichts verstanden
+      // ist kein Fehler — nochmals versuchen.
+      const listenUp = async () => {
+        if (mic === 'listening' || phase !== 'ask') return;
+        setMic('listening');
+        try {
+          const alts = await recognizeOnce(answerLang);
+          const scored = alts.map((a) => ({ a, r: checkAnswer(a, task.solution, { level: 'loose', lang: answerLang }) }));
+          const best = scored.find((x) => x.r.status !== 'wrong') || scored[0];
+          setHeard(best.a);
+          setMic('idle');
+          settle(best.r, best.a);
+        } catch (why) { setMic(why === 'denied' ? 'denied' : 'nothing'); }
+      };
+
+      // Blitzrunde: der Wecker liest den Stand aus der Ref — die Closure wäre
+      // vom Moment des Stellens. Was schon dasteht, wird noch gewertet.
+      latest.current = { input, built, task };
+      useEffect(() => {
+        if (!timed || phase !== 'ask' || !item) return;
+        const id = setTimeout(() => {
+          const { input, built, task } = latest.current;
+          const typed = mode === 'scramble' ? built.map((j) => task.letters[j]).join('') : input;
+          const r = TYPED_MODES.includes(mode) && typed.trim()
+            ? checkAnswer(typed, task.solution, { level: opts.level, lang: answerLang })
+            : { status: 'wrong', solution: task.solution };
+          settle(r.status === 'wrong' ? { ...r, note: 'timeUp' } : r, typed);
+        }, opts.timer * 1000);
+        return () => clearTimeout(id);
+      }, [pos, phase]);
 
       if (!item) return null;
       const hint = opts.hints && !exam && item.word.h;
@@ -2139,6 +2324,29 @@
                 </div>
               </div>
             )}
+          </>
+        );
+      } else if (mode === 'speak') {
+        body = (
+          <>
+            {phase === 'ask' && (
+              <div className="flex flex-col items-center gap-3">
+                <button onClick={listenUp} disabled={mic === 'listening'}
+                  className={`${BTN_PRIMARY} px-10 py-6 text-xl flex items-center gap-3 ${mic === 'listening' ? 'animate-pulse' : ''}`}>
+                  <MicIcon /> {mic === 'listening' ? t('micListening') : t('micStart')}
+                </button>
+                <div className="text-sm text-gray-400">{langName(answerLang)}</div>
+                {mic === 'nothing' && <p className="text-sm text-orange-600">{t('micNothing')}</p>}
+                {mic === 'denied' && <p className="text-sm text-red-600">{t('micDenied')}</p>}
+              </div>
+            )}
+            {phase === 'feedback' && (
+              <>
+                <p className="text-sm text-gray-500 mb-2">{t('micHeard')}: <b className="text-gray-800">{heard}</b></p>
+                {feedbackBox(heard)}
+              </>
+            )}
+            {nextButton}
           </>
         );
       } else if (mode === 'cards') {
@@ -2256,7 +2464,10 @@
         <div className={`${SCREEN} p-4 sm:p-8`} onKeyDown={onKey}>
           <PracticeFrame set={set} pos={pos} queue={queue.length} total={total} item={item} onQuit={quit}
             extra={exam && <span className="ml-2 px-1.5 rounded bg-red-100 text-red-700 text-xs font-semibold">{t('examTag')}</span>}>
-            <div className={`${CARD} p-6 sm:p-8 mb-4`}>
+            <div className={`${CARD} p-6 sm:p-8 mb-4 relative overflow-hidden`}>
+              {timed && phase === 'ask' && (
+                <div key={pos} className="absolute left-0 top-0 h-1.5 bg-orange-400" style={{ animation: `shrink ${opts.timer}s linear forwards` }} />
+              )}
               {head}
               <div className="mt-6">{body}</div>
             </div>
@@ -2422,6 +2633,12 @@
     const Trainer = ({ set, setKey, progress, onResult, onReset, onBack }) => {
       const [stage, setStage] = useState({ kind: 'setup' });
       const prog = progress[setKey] || {};
+      // Einstellungen aus dem Link; «go» zündet nur beim ersten Aufbau der
+      // Set-Seite, sonst startete jede beendete Runde von selbst die nächste.
+      const [preset] = useState(optsFromHash);
+      const goRef = useRef(!!preset.go);
+      const go = goRef.current;
+      goRef.current = false;
       const startRound = (opts, words) => setStage({ kind: 'run', opts, words, n: Date.now() });
 
       if (stage.kind === 'run') {
@@ -2441,7 +2658,7 @@
             onBack={() => setStage({ kind: 'setup' })} />
         );
       }
-      return <SetPage set={set} prog={prog} onStart={startRound} onReset={() => onReset(setKey)} onBack={onBack} />;
+      return <SetPage set={set} prog={prog} preset={preset} go={go} onStart={startRound} onReset={() => onReset(setKey)} onBack={onBack} />;
     };
 
     // ---------- Set aus der Route laden ----------
@@ -2506,6 +2723,44 @@
         const old = prev.sets.find((s) => s.title === set.title);
         return insertSet(prev, old ? { ...old, ...set, id: old.id } : set, (s) => s.title !== set.title);
       });
+      // ---- Sicherung: Sets + Ordner + Lernstand in einer Datei ----
+      // Einlesen ergänzt: gleicher Titel = dasselbe Set (id des alten Stands
+      // bleibt, sein Lernstand wird darauf umgehängt), Lernstand pro Wort
+      // gewinnt der neuere Versuch.
+      const backup = {
+        save: () => download('MyVoci-Sicherung.json', JSON.stringify({ app: 'myvoci', version: 1, ...store, progress }, null, 1)),
+        restore: (text) => {
+          let data;
+          try { data = JSON.parse(text); } catch { return null; }
+          if (!data || data.app !== 'myvoci' || !Array.isArray(data.sets)) return null;
+          const idMap = {};
+          updateStore((prev) => {
+            let next = { ...prev, folders: [...new Set([...prev.folders, ...(data.folders || [])])] };
+            for (const s of data.sets) {
+              if (!s || !s.title || !Array.isArray(s.words)) continue;
+              const old = next.sets.find((x) => x.title === s.title);
+              const merged = old ? { ...old, ...s, id: old.id } : { ...s, id: s.id || newId() };
+              idMap[s.id] = merged.id;
+              next = insertSet(next, merged, (x) => x.title !== s.title);
+            }
+            return next;
+          });
+          updateProgress((prev) => {
+            const next = { ...prev };
+            for (const [key, words] of Object.entries(data.progress || {})) {
+              const target = idMap[key] || key;
+              const mine = { ...(next[target] || {}) };
+              for (const [wk, rec] of Object.entries(words || {})) {
+                if (!mine[wk] || (rec && rec.last > mine[wk].last)) mine[wk] = rec;
+              }
+              next[target] = mine;
+            }
+            return next;
+          });
+          return data.sets.length;
+        },
+      };
+
       const saveSet = (set) => {
         const saved = set.id ? set : { ...set, id: newId() };
         updateStore((prev) => insertSet(prev, saved, (s) => s.id !== saved.id));
@@ -2571,7 +2826,7 @@
         ? <Open key={JSON.stringify(route)} route={route} own={own} progress={progress} onResult={recordResult} onReset={resetProgress} onBack={back} />
         : (
           <Selection own={own} folders={folders} onOpen={openSet} onEdit={editSet} onNew={newSet}
-            onImport={importSet} onDelete={deleteSet} folderApi={folderApi} />
+            onImport={importSet} onDelete={deleteSet} folderApi={folderApi} backup={backup} />
         );
     };
 
