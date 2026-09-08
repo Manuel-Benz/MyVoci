@@ -86,6 +86,30 @@ verzweigen, wenn es um Inhalte geht.
   Route.
 - **Der Lückentext braucht die Form im Satz.** `splitSentence` sucht per
   Wortstamm; wo das nicht reicht, markiert die Datei sie: `Je *vais* à l'école.`
+  Gesucht wird in einer Fassung mit geraden Apostrophen (`straightQuotes`,
+  zeichengleich, damit die Fundstelle auf das Original passt) und **ohne
+  Lookbehind** — `(?<!…)` kennt Safari erst ab 16.4 und wirft sonst mitten im
+  Aufbau der Set-Seite, ohne Error Boundary also weisse Seite.
+- **Nur `/` trennt Alternativen.** Komma und Semikolon gehören zur Wendung;
+  wer daran trennt, lässt «comment ça va» als Antwort auf «Bonjour, comment ça
+  va ?» durchgehen.
+- **`checkAnswer` bekommt die übrigen Lösungen der Runde** (`others`): wer exakt
+  ein anderes Wort des Sets tippt (vous/nous), hat verwechselt, nicht sich
+  vertippt — sonst zählt die Ein-Zeichen-Toleranz das als gewusst.
+- **Richtungslose Modi bekommen in `buildQueue` fest `dir: 'ab'`.** Sonst
+  schlägt im Lückentext eine alte Richtungswahl durch, die dort gar nicht
+  angeboten wird: falsche Stimme, falsche Artikel-Toleranz.
+- **`set_` merkt nur die eigene Wahl**, aufgesetzt auf den gespeicherten Stand.
+  Merkte es das ganze Objekt, würden Prüfungsmodus und Timer eines geteilten
+  Links zum Standard des fremden Geräts.
+- **Der Datei-Listener am Fenster hängt nur einmal** und hielte sonst die Liste
+  vom ersten Rendern fest — die Rückfrage «gibt es schon» liest deshalb aus
+  einer Ref, nicht aus der Closure.
+- **Prüfung meldet nur, was sie wirklich gesehen hat.** Ohne aktives Vollbild
+  überwacht niemand; dann steht das auch so da, statt eines grünen «nie
+  verlassen».
+- **`writeLocal` meldet Fehlschläge** (`storageBroken` → Warnstreifen): ein
+  stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
 
 ## Was nicht ins Repo gehört
 

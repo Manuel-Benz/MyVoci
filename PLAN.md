@@ -4,10 +4,14 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
-**Stand (08.09.2026):** Phasen 0–5 sind fertig — neun Übungsmodi, automatische
+**Stand (08.09.2026):** Phasen 0–5 sind fertig, dazu ein Review über die ganze
+App mit 15 behobenen Befunden (Korrektur-Regeln, Tastatur, geteilte Links,
+Prüfungsmodus, Import und Ordner, Schreibfläche; Einzelheiten in CLAUDE.md unter
+«Stolpersteine»). Phasen — neun Übungsmodi, automatische
 Korrektur, Lernstand mit Leitner-Fächern, Prüfungsmodus, Teilen-Links mit
 Voreinstellung, Sicherung als Datei. Offen ist nur noch der Backlog zuunterst;
-auf dem iPad geprüft werden müssen Handschrift, Hören und Sprechen.
+auf dem iPad geprüft werden müssen Handschrift, Hören, Sprechen und das
+Kopieren der Teilen-Links (Safari verlangt dafür `ClipboardItem`).
 
 ## Idee
 

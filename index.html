@@ -40,8 +40,13 @@
         return raw === null ? fallback : JSON.parse(raw);
       } catch { return fallback; }
     };
+    // Schlägt das Schreiben fehl (privates Fenster, volles Kontingent), darf
+    // die Oberfläche nicht weiter «gespeichert» melden: das Merkmal steht hier
+    // und wird als Warnstreifen angezeigt (s. StorageWarning).
+    let storageBroken = false;
     const writeLocal = (key, value) => {
-      try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+      try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+      catch { storageBroken = true; return false; }
     };
 
     // ---------- Sprache der Oberfläche (wie in MyMemory) ----------
@@ -109,6 +114,10 @@
         noWordsInFile: (name) => `«${name}»: keine Wörter gefunden (Format F:/A:/---)`,
         noWordsFound: 'Keine Wörter gefunden (Format F:/A:/---)',
         folderNotEmpty: 'Ordner ist nicht leer — zuerst ausräumen.',
+        folderExists: (name) => `Es gibt hier schon einen Ordner «${name}».`,
+        confirmReplace: (title) => `«${title}» gibt es schon. Die vorhandenen Wörter werden ersetzt.`,
+        replace: 'Ersetzen',
+        storageBroken: 'Achtung: Dieser Browser speichert nichts (privates Fenster oder Speicher voll). Sets und Lernstand sind nach dem Neuladen weg — lade deine Sets als Datei herunter.',
         // iPad-Hilfe
         ipadTitle: 'Üben auf dem iPad (und einsperren)',
         ipadSteps: (
@@ -225,6 +234,8 @@
         examTag: 'Prüfung',
         examLeaves: (n) => `Bildschirm verlassen: ${n}×`,
         examNoLeaves: 'Bildschirm nie verlassen',
+        examUnwatched: 'Das Vollbild liess sich nicht starten — diese Runde war nicht überwacht.',
+        examNoFs: 'Auf diesem Gerät gibt es kein Vollbild: die Runde läuft im Fenster und wird nicht überwacht.',
         examResults: 'Alle Antworten',
         colQuestion: 'Frage',
         colAnswer: 'Antwort',
@@ -234,7 +245,6 @@
         hear: 'Anhören',
         hearAgain: 'Nochmals anhören',
         clearTiles: 'Zurücksetzen',
-        matchLeft: (name) => name,
         wrongPair: 'Kein Paar',
         groupN: (i, n) => `Gruppe ${i} von ${n}`,
         direction: 'Richtung',
@@ -356,6 +366,10 @@
         noWordsInFile: (name) => `“${name}”: no words found (format F:/A:/---)`,
         noWordsFound: 'No words found (format F:/A:/---)',
         folderNotEmpty: 'Folder is not empty — clear it out first.',
+        folderExists: (name) => `There is already a folder “${name}” here.`,
+        confirmReplace: (title) => `“${title}” already exists. Its words will be replaced.`,
+        replace: 'Replace',
+        storageBroken: 'Careful: this browser is not storing anything (private window or storage full). Sets and progress are gone after a reload — download your sets as files.',
         ipadTitle: 'Practising on an iPad (and locking it)',
         ipadSteps: (
           <>
@@ -468,6 +482,8 @@
         examTag: 'Exam',
         examLeaves: (n) => `Left the screen: ${n}×`,
         examNoLeaves: 'Never left the screen',
+        examUnwatched: 'Full screen could not be started — this round was not supervised.',
+        examNoFs: 'This device has no full screen: the round runs in the window and is not supervised.',
         examResults: 'All answers',
         colQuestion: 'Question',
         colAnswer: 'Answer',
@@ -477,7 +493,6 @@
         hear: 'Listen',
         hearAgain: 'Listen again',
         clearTiles: 'Reset',
-        matchLeft: (name) => name,
         wrongPair: 'Not a pair',
         groupN: (i, n) => `Group ${i} of ${n}`,
         direction: 'Direction',
@@ -1013,8 +1028,11 @@
       pt: ['o', 'a', 'os', 'as', 'um', 'uma'],
     };
     const stripAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const baseNorm = (s) => s
-      .replace(/[’‘`´]/g, "'").replace(/ß/g, 'ss').replace(/\s*'\s*/g, "'")
+    // Zeichengleich (gleiche Länge): darf auch dort laufen, wo hinterher noch
+    // Positionen im Originaltext gebraucht werden — s. splitSentence.
+    const straightQuotes = (s) => s.replace(/[’‘`´]/g, "'");
+    const baseNorm = (s) => straightQuotes(s)
+      .replace(/ß/g, 'ss').replace(/\s*'\s*/g, "'")
       .replace(/\s+/g, ' ').replace(/[.!?…]+$/, '').trim();
     const stripArticle = (s, lang) => {
       for (const art of ARTICLES[lang] || []) {
@@ -1026,7 +1044,7 @@
     // «aller / marcher» → zwei Lösungen; «(la) maison» → mit und ohne Klammerteil.
     const variants = (solution) => {
       const out = [];
-      for (const alt of solution.split(/\s*[\/;,]\s*/)) {
+      for (const alt of solution.split(/\s*\/\s*/)) {
         if (!alt.trim()) continue;
         let forms = [alt];
         while (forms.some((f) => /\([^()]*\)/.test(f))) {
@@ -1051,7 +1069,7 @@
       return prev[b.length];
     };
 
-    const checkAnswer = (input, solution, { level = 'normal', lang } = {}) => {
+    const checkAnswer = (input, solution, { level = 'normal', lang, others = [] } = {}) => {
       const inp = baseNorm(input || '');
       const vars = variants(solution);
       const wrong = () => {
@@ -1081,7 +1099,10 @@
           if (stripArticle(lo, lang) === stripArticle(v.toLowerCase(), lang)) return { status: 'almost', solution: v, note: 'noteArticle' };
         }
       }
-      // Ein Tippfehler bei Wörtern ab vier Zeichen: fast richtig
+      // Ein Tippfehler bei Wörtern ab vier Zeichen: fast richtig. Wer aber
+      // exakt ein ANDERES Wort desselben Sets tippt, hat sich nicht vertippt,
+      // sondern verwechselt (vous/nous, kein/sein) — das darf nicht durchgehen.
+      if (others.some((o) => variants(o).some((v) => v.toLowerCase() === lo))) return wrong();
       for (const v of vars) {
         const a = level === 'loose' ? stripArticle(stripAccents(lo), lang) : lo;
         const b = level === 'loose' ? stripArticle(stripAccents(v.toLowerCase()), lang) : v.toLowerCase();
@@ -1130,11 +1151,19 @@
       const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const forms = variants(word).map((v) => stripAnyArticle(v.toLowerCase())).filter((v) => v.length >= 2);
       const stems = forms.map((v) => v.replace(/(er|ir|re|en|e|s)$/i, '')).filter((v) => v.length >= 3);
+      // Gesucht wird in einer Fassung mit geraden Apostrophen — genau wie das
+      // Wort, das durch `variants` schon normalisiert ist. Der Ersatz ist
+      // zeichengleich, die gefundenen Stellen passen also auf das Original.
+      const hay = straightQuotes(sentence);
       for (const list of [forms, stems]) {
         if (!list.length) continue;
-        const re = new RegExp(`(?<!\\p{L})(${list.map(esc).join('|')})[\\p{L}]*`, 'iu');
-        const m = sentence.match(re);
-        if (m) return { before: sentence.slice(0, m.index), form: m[0], after: sentence.slice(m.index + m[0].length) };
+        // Kein Lookbehind: das Zeichen davor wird mitgelesen und wieder
+        // abgezogen — Safari kennt `(?<!…)` erst ab 16.4 und wirft sonst beim
+        // Bauen des Ausdrucks, mitten im Aufbau der Set-Seite.
+        const m = hay.match(new RegExp(`(^|[^\\p{L}])(${list.map(esc).join('|')})[\\p{L}]*`, 'iu'));
+        if (!m) continue;
+        const at = m.index + m[1].length, form = m[0].slice(m[1].length);
+        return { before: sentence.slice(0, at), form: sentence.substr(at, form.length), after: sentence.slice(at + form.length) };
       }
       return null;
     };
@@ -1208,6 +1237,22 @@
     const CARD = 'bg-white rounded-lg shadow-lg';
     const LABEL = 'text-xs uppercase tracking-wide text-gray-400';
     const INPUT = 'px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:border-blue-400';
+
+    // Safari lässt `writeText` nur in derselben Aufgabe wie der Tap zu — nach
+    // einem `await` (der Link wird ja erst komprimiert) lehnt es jedes Mal ab.
+    // Der dokumentierte Ausweg ist `ClipboardItem` mit einem Versprechen als
+    // Wert: der Zugriff wird sofort beantragt, der Inhalt kommt nach.
+    const copyLater = async (makeText) => {
+      if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+        try {
+          await navigator.clipboard.write([new ClipboardItem({
+            'text/plain': Promise.resolve(makeText()).then((s) => new Blob([s], { type: 'text/plain' })),
+          })]);
+          return true;
+        } catch {}
+      }
+      try { await navigator.clipboard.writeText(await makeText()); return true; } catch { return false; }
+    };
 
     const Modal = ({ children, onClose }) => (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -1335,6 +1380,28 @@
       return [button, panel];
     };
 
+    // Kurzmeldung unten am Rand. Zwei Seiten brauchen sie (Übersicht und
+    // Set-Seite) — eine Stelle bestimmt Dauer und Aussehen.
+    const useToast = () => {
+      const [toast, setToast] = useState(null);
+      const timer = useRef(0);
+      const showToast = (msg) => {
+        setToast(msg);
+        clearTimeout(timer.current); // sonst räumt der Timer der ersten Meldung die zweite ab
+        timer.current = setTimeout(() => setToast(null), 2500);
+      };
+      useEffect(() => () => clearTimeout(timer.current), []);
+      const node = toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">{toast}</div>
+      );
+      return [showToast, node];
+    };
+
+    // Sichtbarer Hinweis statt stiller Datenverlust (s. writeLocal).
+    const StorageWarning = () => storageBroken && (
+      <div className="mb-6 rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900">{t('storageBroken')}</div>
+    );
+
     const Collapsible = ({ title, open, onToggle, children }) => (
       <div className={`${CARD} mb-8`}>
         <button onClick={onToggle} className="w-full flex items-center justify-between gap-2 px-6 py-4 text-left">
@@ -1353,8 +1420,13 @@
 
     // ---------- Auswahlseite ----------
     const Selection = ({ own, folders, onOpen, onEdit, onNew, onImport, onDelete, folderApi, backup }) => {
-      const [toast, setToast] = useState(null);
+      const [showToast, toastNode] = useToast();
       const backupInput = useRef(null);
+      // Der Datei-Listener am Fenster wird nur einmal angehängt (s. unten) und
+      // hielte sonst für immer die Liste vom ersten Rendern fest — genau die
+      // braucht aber die Rückfrage «gibt es schon».
+      const ownRef = useRef(own);
+      ownRef.current = own;
       const importBackupText = (text) => {
         const n = backup.restore(text);
         showToast(n === null ? t('backupBad') : t('backupDone', n));
@@ -1382,17 +1454,15 @@
       const [pastedTitle, setPastedTitle] = useState('');
       const fileInput = useRef(null);
 
-      const toastTimer = useRef(0);
-      const showToast = (msg) => {
-        setToast(msg);
-        clearTimeout(toastTimer.current);
-        toastTimer.current = setTimeout(() => setToast(null), 2500);
-      };
       const copyText = async (text, msg) => {
-        try { await navigator.clipboard.writeText(text); showToast(msg); }
-        catch { showToast(t('copyFailed')); }
+        if (await copyLater(() => text)) showToast(msg); else showToast(t('copyFailed'));
       };
-      const copyLink = async (set) => copyText(await directLink(set), t('linkCopied'));
+      // Klappt das Kopieren nicht (Safari, kein HTTPS), steht der Link
+      // wenigstens im QR-Fenster zum Abschreiben — statt einer Sackgasse.
+      const copyLink = async (set) => {
+        if (await copyLater(() => directLink(set))) showToast(t('linkCopied'));
+        else { showToast(t('copyFailed')); setQr({ title: set.title, url: await directLink(set) }); }
+      };
       const showQr = async (set) => setQr({ title: set.title, url: await directLink(set) });
       const exportOne = (set) => { download(`${safeName(set.title)}.txt`, toFile(set)); showToast(t('downloadedOne', set.title)); };
       const exportAll = async () => {
@@ -1405,8 +1475,15 @@
       const addImported = (text, name, dir, complain) => {
         const parsed = parseFile(text, name);
         if (!parsed.words.length) { showToast(complain); return false; }
-        onImport({ id: newId(), ...parsed, ...(dir === undefined ? {} : { dir }) });
-        showToast(t('imported', parsed.title, parsed.words.length));
+        const put = () => {
+          onImport({ id: newId(), ...parsed, ...(dir === undefined ? {} : { dir }) });
+          showToast(t('imported', parsed.title, parsed.words.length));
+        };
+        // Gleicher Titel heisst «neue Fassung desselben Sets» — die alten
+        // Wörter sind danach weg. Das ist einen Klick wert, es gibt kein Zurück.
+        if (ownRef.current.some((s) => s.title === parsed.title)) {
+          setDialog({ kind: 'confirm', ok: t('replace'), text: t('confirmReplace', parsed.title), onYes: put });
+        } else put();
         return true;
       };
       const importFiles = (fileList, dir) => {
@@ -1464,6 +1541,7 @@
           if (item.kind === 'set') folderApi.moveSet(item.id, dir);
           else {
             const target = folderApi.moveFolder(item.id, dir);
+            if (target === false) { showToast(t('folderExists', dirName(item.id))); return; }
             rememberOpen(openDirs.map((d) => (inside(d, item.id) ? target + d.slice(item.id.length) : d)));
           }
         },
@@ -1480,6 +1558,7 @@
         kind: 'prompt', ok: t('rename'), label: t('askRename'), preset: dirName(dir),
         onOk: (name) => {
           const target = folderApi.renameFolder(dir, name);
+          if (target === false) { showToast(t('folderExists', name)); return; }
           if (target) rememberOpen(openDirs.map((d) => (inside(d, dir) ? target + d.slice(dir.length) : d)));
         },
       });
@@ -1547,6 +1626,7 @@
               <div className="absolute right-0 top-1/2 -translate-y-1/2">{settingsButton}</div>
             </div>
             <p className="text-center text-gray-500 mb-8">{t('subtitle')}</p>
+            <StorageWarning />
             {settingsPanel}
 
             <Collapsible title={t('createTitle')} open={createOpen} onToggle={() => setCreateOpen((v) => !v)}>
@@ -1601,9 +1681,7 @@
 
           {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
           {qr && <QrModal title={qr.title} url={qr.url} onClose={() => setQr(null)} onCopy={() => copyText(qr.url, t('linkCopied'))} />}
-          {toast && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">{toast}</div>
-          )}
+          {toastNode}
         </div>
       );
     };
@@ -1620,19 +1698,24 @@
       const [error, setError] = useState('');
       const [dialog, setDialog] = useState(null);
 
-      const snapshot = JSON.stringify({ title, dir, lang, langA, langB, words });
-      const [openSnapshot] = useState(snapshot);
+      // Ein Merkmal statt eines JSON-Vergleichs des ganzen Sets bei jedem
+      // Zeichen: gefragt ist nur, ob überhaupt etwas angefasst wurde.
+      const [dirty, setDirty] = useState(false);
+      // Jede Änderung geht durch `touch` — eine Stelle, die das Merkmal setzt.
+      const touch = (fn) => (...args) => { setDirty(true); fn(...args); };
+      const editTitle = touch(setTitle), editDir = touch(setDir), editLang = touch(setLang);
+      const editLangA = touch(setLangA), editLangB = touch(setLangB);
 
-      const setWord = (i, key, value) => setWords((ws) => ws.map((w, j) => (j === i ? { ...w, [key]: value } : w)));
-      const addWord = () => setWords((ws) => [...ws, { a: '', b: '', s: '', h: '' }]);
-      const removeWord = (i) => setWords((ws) => ws.filter((_, j) => j !== i));
-      const moveWord = (i, delta) => setWords((ws) => {
+      const setWord = touch((i, key, value) => setWords((ws) => ws.map((w, j) => (j === i ? { ...w, [key]: value } : w))));
+      const addWord = touch(() => setWords((ws) => [...ws, { a: '', b: '', s: '', h: '' }]));
+      const removeWord = touch((i) => setWords((ws) => ws.filter((_, j) => j !== i)));
+      const moveWord = touch((i, delta) => setWords((ws) => {
         const j = i + delta;
         if (j < 0 || j >= ws.length) return ws;
         const next = [...ws];
         [next[i], next[j]] = [next[j], next[i]];
         return next;
-      });
+      }));
 
       const save = () => {
         const clean = words
@@ -1651,12 +1734,12 @@
         onSave({ ...set, title: name, dir, words: clean, lang: lang || undefined, langs: a && b ? [a, b] : undefined });
       };
       const cancel = () => {
-        if (snapshot === openSnapshot) return onCancel();
+        if (!dirty) return onCancel();
         setDialog({ kind: 'confirm', ok: t('discard'), text: t('confirmDiscard'), onYes: onCancel });
       };
       const newFolder = () => setDialog({
         kind: 'prompt', ok: t('create'), label: dir ? t('askSubfolder', dirName(dir)) : t('askFolder'),
-        onOk: (name) => { const path = onNewFolder(dir, name); if (path) setDir(path); },
+        onOk: (name) => { const path = onNewFolder(dir, name); if (path) editDir(path); },
       });
 
       const field = (i, key, label, placeholder) => (
@@ -1674,11 +1757,11 @@
             <div className={`${CARD} p-6 mb-6`}>
               <label className="block mb-4">
                 <span className={LABEL}>{t('titleLabel')}</span>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('titlePh')} className={`w-full mt-1 ${INPUT}`} />
+                <input type="text" value={title} onChange={(e) => editTitle(e.target.value)} placeholder={t('titlePh')} className={`w-full mt-1 ${INPUT}`} />
               </label>
               <span className={LABEL}>{t('folderLabel')}</span>
               <div className="flex gap-2 mt-1 mb-4">
-                <select value={dir} onChange={(e) => setDir(e.target.value)} className={`flex-1 min-w-0 ${INPUT}`}>
+                <select value={dir} onChange={(e) => editDir(e.target.value)} className={`flex-1 min-w-0 ${INPUT}`}>
                   <option value="">{t('rootFolder')}</option>
                   {folders.map((f) => <option key={f} value={f}>{'\u00a0\u00a0'.repeat(f.split('/').length - 1) + dirName(f)}</option>)}
                 </select>
@@ -1687,18 +1770,18 @@
               <div className="grid sm:grid-cols-2 gap-3">
                 <label className="block">
                   <span className={LABEL}>{t('langA')}</span>
-                  <input type="text" list="langlist" value={langA} onChange={(e) => setLangA(e.target.value)} placeholder={t('langPh')} className={`w-full mt-1 ${INPUT}`} />
+                  <input type="text" list="langlist" value={langA} onChange={(e) => editLangA(e.target.value)} placeholder={t('langPh')} className={`w-full mt-1 ${INPUT}`} />
                 </label>
                 <label className="block">
                   <span className={LABEL}>{t('langB')}</span>
-                  <input type="text" list="langlist" value={langB} onChange={(e) => setLangB(e.target.value)} placeholder={t('langPh')} className={`w-full mt-1 ${INPUT}`} />
+                  <input type="text" list="langlist" value={langB} onChange={(e) => editLangB(e.target.value)} placeholder={t('langPh')} className={`w-full mt-1 ${INPUT}`} />
                 </label>
                 <datalist id="langlist">{Object.keys(LANG_NAMES).map((c) => <option key={c} value={c}>{langName(c)}</option>)}</datalist>
               </div>
               <span className="block mt-1 text-sm text-gray-500">{t('langsHint')}</span>
               <label className="block mt-4">
                 <span className={LABEL}>{t('uiLangLabel')}</span>
-                <select value={lang} onChange={(e) => setLang(e.target.value)} className={`w-full mt-1 ${INPUT}`}>
+                <select value={lang} onChange={(e) => editLang(e.target.value)} className={`w-full mt-1 ${INPUT}`}>
                   <option value="">{t('uiLangDefault')}</option>
                   {LANGS.map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
                 </select>
@@ -1761,9 +1844,10 @@
     // Welche Modi gibt es, und was braucht ein Modus vom Set?
     const MODES = ['write', 'pen', 'cards', 'choice', 'match', 'gap', 'listen', 'speak', 'scramble'];
     const MODE_LABEL = { write: 'modeWrite', pen: 'modePen', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', speak: 'modeSpeak', scramble: 'modeScramble' };
-    const TIMED_MODES = ['write', 'gap', 'listen', 'choice', 'scramble']; // Blitzrunde: automatisch prüfbar
+    // Modi, die der Rechner selber werten kann — Voraussetzung für Blitzrunde
+    // und Prüfung (beides braucht ein Urteil ohne Zutun des Übenden).
+    const AUTO_MODES = ['write', 'gap', 'listen', 'choice', 'scramble'];
     const TIMER_STEPS = [0, 5, 10, 20];
-    const EXAM_MODES = ['write', 'gap', 'listen', 'choice', 'scramble']; // automatisch korrigierbar
     const TYPED_MODES = ['write', 'gap', 'listen']; // Eingabefeld + Toleranz + Abschreiben
     const DIRECTIONLESS = ['gap', 'match']; // Satz ist immer Sprache B, Zuordnen zeigt beide
     // Hören: gehört wird die Antwortseite — bei «gemischt» müssen beide gehen
@@ -1791,15 +1875,21 @@
       const [listOpen, setListOpen] = useState(false);
       const [shareGo, setShareGo] = useState(false);
       const [qr, setQr] = useState(null);
-      const [toast, setToast] = useState(null);
-      const toastTimer = useRef(0);
-      const showToast = (msg) => { setToast(msg); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 2500); };
+      const [showToast, toastNode] = useToast();
       const shareLink = async () => (await directLink(set)) + optsToHash(opts, shareGo);
       const copyShare = async () => {
-        try { await navigator.clipboard.writeText(await shareLink()); showToast(t('shareCopied')); }
-        catch { showToast(t('copyFailed')); }
+        if (await copyLater(shareLink)) showToast(t('shareCopied'));
+        else { showToast(t('copyFailed')); setQr({ title: set.title, url: await shareLink() }); }
       };
-      const set_ = (patch) => setOpts((o) => { const next = { ...o, ...patch }; writeLocal(OPTS_KEY, next); return next; });
+      // Gemerkt wird nur, was hier von Hand umgestellt wurde — und zwar auf
+      // dem gespeicherten Stand, nicht auf dem eines geteilten Links. Sonst
+      // würden Prüfungsmodus und Timer einer fremden Übung zum Standard des
+      // Geräts. Der Rückfall auf «Schreiben» merkt sich gar nichts (remember).
+      // Geschrieben wird ausserhalb des Updaters: der darf mehrfach laufen.
+      const set_ = (patch, remember = true) => {
+        if (remember) writeLocal(OPTS_KEY, { ...loadOpts(), ...patch });
+        setOpts((o) => ({ ...o, ...patch }));
+      };
 
       const n = set.words.length;
       const recs = set.words.map((w) => prog[wordKey(w)]);
@@ -1808,11 +1898,16 @@
       const boxes = [0, 0, 0, 0, 0, 0];
       recs.forEach((r) => { boxes[r ? Math.min(r.box, 5) : 0]++; });
       const seen = recs.filter(Boolean).length;
-      const gapN = set.words.filter(gapFor).length;
+      // `gapFor` zerlegt jeden Satz und baut dabei Ausdrücke — das darf nicht
+      // an jedem Tastendruck in den Bereichsfeldern hängen.
+      const gapN = useMemo(() => set.words.filter(gapFor).length, [set]);
       // Ein gemerkter Modus, der bei diesem Set nicht geht, fällt auf Schreiben zurück
-      const modeOk = !((opts.mode === 'gap' && !gapN) || (opts.mode === 'listen' && !canListen(set, opts.dir)) || (opts.mode === 'speak' && !canSpeakMode(set, opts.dir)));
-      useEffect(() => { if (!modeOk) set_({ mode: 'write' }); }, [modeOk]);
-      const chosen = selectWords(set, opts, prog);
+      // Eine Stelle entscheidet, ob ein Modus geht — sonst können ausgegrauter
+      // Knopf und Rückfall auf «Schreiben» auseinanderlaufen.
+      const modeOff = (m) => (m === 'gap' && !gapN) || (m === 'listen' && !canListen(set, opts.dir)) || (m === 'speak' && !canSpeakMode(set, opts.dir)) || !MODES.includes(m);
+      const modeOk = !modeOff(opts.mode);
+      useEffect(() => { if (!modeOk) set_({ mode: 'write' }, false); }, [modeOk]);
+      const chosen = useMemo(() => selectWords(set, opts, prog), [set, opts, prog]);
       // «Direkt starten» aus dem Link — nur beim ersten Anzeigen (s. Trainer)
       useEffect(() => { if (go && modeOk && chosen.length) onStart(opts, chosen); }, []);
       const A = sideName(set, 0), B = sideName(set, 1);
@@ -1829,6 +1924,7 @@
               {settingsButton}
             </div>
             {settingsPanel}
+            <StorageWarning />
 
             <div className={`${CARD} p-6 mb-6`}>
               <h2 className="text-lg font-semibold text-gray-700 mb-4">{t('practiceTitle')}</h2>
@@ -1836,8 +1932,8 @@
                 <div>
                   <div className={`${LABEL} mb-2`}>{t('mode')}</div>
                   <Choice value={opts.mode} onChange={(mode) => set_({ mode })}
-                    options={MODES.map((m) => [m, t(MODE_LABEL[m]), (m === 'gap' && !gapN) || (m === 'listen' && !canListen(set, opts.dir)) || (m === 'speak' && !canSpeakMode(set, opts.dir))])} />
-                  <p className="text-sm text-gray-500 mt-1">{t(MODE_LABEL[opts.mode] + 'Hint')}</p>
+                    options={MODES.map((m) => [m, t(MODE_LABEL[m]), modeOff(m)])} />
+                  <p className="text-sm text-gray-500 mt-1">{t((MODE_LABEL[opts.mode] || MODE_LABEL.write) + 'Hint')}</p>
                   {!gapN && <p className="text-sm text-gray-400 mt-1">{t('modeGapNone')}</p>}
                   {!canListen(set, opts.dir) && <p className="text-sm text-gray-400 mt-1">{t('modeListenNone')}</p>}
                   {!canSpeakMode(set, opts.dir) && canListen(set, opts.dir) && <p className="text-sm text-gray-400 mt-1">{t('modeSpeakNone')}</p>}
@@ -1884,17 +1980,18 @@
                     <label className="flex items-center gap-2"><input type="checkbox" checked={opts.penOnly} onChange={(e) => set_({ penOnly: e.target.checked })} /> {t('penOnly')}</label>
                   )}
                 </div>
-                {TIMED_MODES.includes(opts.mode) && (
+                {AUTO_MODES.includes(opts.mode) && (
                   <div>
                     <div className={`${LABEL} mb-2`}>{t('timerLabel')}</div>
                     <Choice value={opts.timer} onChange={(timer) => set_({ timer })} options={TIMER_STEPS.map((s) => [s, s ? t('timerS', s) : t('timerOff')])} />
                     {opts.timer > 0 && <p className="text-sm text-gray-500 mt-1">{t('timerHint')}</p>}
                   </div>
                 )}
-                {EXAM_MODES.includes(opts.mode) && (
+                {AUTO_MODES.includes(opts.mode) && (
                   <div className={`rounded-lg border p-3 ${opts.exam ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
                     <label className="flex items-center gap-2 font-semibold text-gray-700"><input type="checkbox" checked={opts.exam} onChange={(e) => set_({ exam: e.target.checked })} /> {t('exam')}</label>
                     <p className="text-sm text-gray-500 mt-1">{t('examHint')}</p>
+                    {!canFullscreen() && <p className="text-sm text-amber-700 mt-1">{t('examNoFs')}</p>}
                   </div>
                 )}
               </div>
@@ -1952,7 +2049,7 @@
           </div>
           {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
           {qr && <QrModal title={qr.title} url={qr.url} onClose={() => setQr(null)} onCopy={copyShare} />}
-          {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">{toast}</div>}
+          {toastNode}
         </div>
       );
     };
@@ -1964,16 +2061,21 @@
     // Komponente (MatchRound), alle anderen Modi teilen sich Practice.
     const buildQueue = (words, opts) => {
       const list = opts.order === 'random' ? shuffleArray(words) : words;
+      // Richtungslose Modi (Lückentext) fragen immer Sprache B ab — die
+      // Richtung wird dort gar nicht angeboten, also darf auch keine alte
+      // Einstellung durchschlagen. Sonst zeigte `langOf` die falsche Sprache
+      // und `checkAnswer` prüfte mit den Artikeln der anderen Sprache.
+      const fixed = DIRECTIONLESS.includes(opts.mode) ? 'ab' : null;
       return list.map((word) => ({
         word, retry: false,
-        dir: opts.dir === 'mix' ? (Math.random() < 0.5 ? 'ab' : 'ba') : opts.dir,
+        dir: fixed || (opts.dir === 'mix' ? (Math.random() < 0.5 ? 'ab' : 'ba') : opts.dir),
       }));
     };
     const promptOf = (item) => (item.dir === 'ab' ? item.word.a : item.word.b);
     const solutionOf = (item) => (item.dir === 'ab' ? item.word.b : item.word.a);
     const langOf = (set, item, side) => set.langs && set.langs[(item.dir === 'ab') === (side === 'prompt') ? 0 : 1];
     // Erste Alternative ohne Klammern: was vorgelesen und im Buchstabensalat gezeigt wird
-    const firstAlt = (solution) => solution.split(/\s*[\/;,]\s*/)[0].replace(/[()]/g, '').replace(/\s+/g, ' ').trim();
+    const firstAlt = (solution) => solution.split(/\s*\/\s*/)[0].replace(/[()]/g, '').replace(/\s+/g, ' ').trim();
     // Drei Ablenker aus demselben Set, gleiche Seite, nie die Lösung selbst
     const distractors = (set, item, n = 3) => {
       const side = item.dir === 'ab' ? 'b' : 'a';
@@ -1988,7 +2090,10 @@
       return out;
     };
 
-    const PracticeFrame = ({ set, pos, queue, total, item, onQuit, children, extra }) => {
+    // `done` ist die Zahl, die im Kopf steht (erledigt bzw. laufende Aufgabe),
+    // `pos`/`queue` füllen den Balken. Die zwei Aufrufer zählen verschieden:
+    // Practice arbeitet Aufgabe für Aufgabe, MatchRound Paar für Paar.
+    const PracticeFrame = ({ set, pos, queue, done, total, item, onQuit, children, extra }) => {
       const [settingsButton, settingsPanel] = useSettings();
       const [, redrawFs] = useState(0);
       useEffect(() => {
@@ -2013,7 +2118,7 @@
               <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all" style={{ width: `${(pos / queue) * 100}%` }} />
             </div>
             <span>
-              {Math.min(pos + 1, total)} / {total}
+              {Math.min(done, total)} / {total}
               {item && item.retry && <span className="ml-2 px-1.5 rounded bg-orange-100 text-orange-700 text-xs font-semibold">{t('retryTag')}</span>}
               {extra}
             </span>
@@ -2048,10 +2153,15 @@
           const dpr = window.devicePixelRatio || 1;
           const w = Math.round(c.clientWidth * dpr), h = Math.round(c.clientHeight * dpr);
           if (c.width === w && c.height === h) return;
-          c.width = w; c.height = h; // löscht die Fläche — passiert nur beim Drehen/Grössenwechsel
+          // `canvas.width` zu setzen leert die Fläche. Beim Drehen des iPads
+          // wäre sonst die halbe Handschrift weg — also vorher abziehen und
+          // hinterher wieder auftragen (skaliert auf die neue Breite).
+          const old = c.width && c.height ? (() => { const t = document.createElement('canvas'); t.width = c.width; t.height = c.height; t.getContext('2d').drawImage(c, 0, 0); return t; })() : null;
+          c.width = w; c.height = h;
           const ctx = c.getContext('2d');
           ctx.scale(dpr, dpr);
           ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = '#1e3a8a';
+          if (old) ctx.drawImage(old, 0, 0, c.clientWidth, c.clientHeight);
         };
         resize();
         const ro = window.ResizeObserver && new ResizeObserver(resize);
@@ -2081,12 +2191,17 @@
           last.current = [x, y];
         }
       };
-      const up = () => { drawing.current = false; };
+      // Kein onPointerLeave: mit gefangenem Zeiger darf man über den Rand
+      // hinausschreiben und zurückkommen, ohne dass der Strich abreisst.
+      const up = (e) => {
+        drawing.current = false;
+        try { canvasRef.current.releasePointerCapture(e.pointerId); } catch {}
+      };
       return (
         <canvas ref={canvasRef}
           className="w-full h-48 sm:h-56 bg-white rounded-lg border-2 border-dashed border-gray-300 touch-none cursor-crosshair"
           style={{ backgroundImage: 'linear-gradient(to top, transparent 34%, #e5e7eb 34%, #e5e7eb calc(34% + 1px), transparent calc(34% + 1px))' }}
-          onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onPointerLeave={up} />
+          onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
       );
     };
 
@@ -2105,14 +2220,15 @@
       const [picked, setPicked] = useState(null); // Multiple Choice: gewählte Antwort
       const [mic, setMic] = useState('idle'); // Sprechen: idle | listening | nothing | denied
       const [heard, setHeard] = useState(''); // Sprechen: was verstanden wurde
-      const timed = opts.timer > 0 && TIMED_MODES.includes(opts.mode);
+      const timed = opts.timer > 0 && AUTO_MODES.includes(opts.mode);
       const latest = useRef({}); // aktueller Stand für den Wecker der Blitzrunde
       const [built, setBuilt] = useState([]); // Buchstabensalat: Indizes der gesetzten Kacheln
       const [log, setLog] = useState([]); // { item, ok, input, solution } nur erste Versuche
       const [sketchKey, setSketchKey] = useState(0); // Handschrift: Fläche leeren
       const leaves = useRef(0); // Prüfung: wie oft Vollbild/App verlassen
+      const watched = useRef(false); // war das Vollbild je aktiv? Sonst überwacht niemand
       const [startedAt] = useState(Date.now);
-      const exam = !!opts.exam && EXAM_MODES.includes(opts.mode);
+      const exam = !!opts.exam && AUTO_MODES.includes(opts.mode);
       const [dialog, setDialog] = useState(null);
       const inputRef = useRef(null);
 
@@ -2139,7 +2255,9 @@
         // Der Klick auf «Üben starten» liegt nur Millisekunden zurück — das
         // reicht dem Browser als Geste fürs Vollbild.
         if (canFullscreen() && !fsElement()) toggleFullscreen();
-        const onFs = () => { if (!fsElement()) leaves.current++; };
+        // Ein «nie verlassen» in Grün darf nur stehen, wenn das Vollbild
+        // wirklich lief. Sonst hat schlicht niemand hingeschaut.
+        const onFs = () => { if (fsElement()) watched.current = true; else if (watched.current) leaves.current++; };
         const onHide = () => { if (document.hidden) leaves.current++; };
         document.addEventListener('fullscreenchange', onFs);
         document.addEventListener('webkitfullscreenchange', onFs);
@@ -2173,9 +2291,12 @@
         setResult(r);
         setPhase(r.status === 'wrong' && opts.copy && TYPED_MODES.includes(mode) ? 'copy' : 'feedback');
       };
+      // Die übrigen Lösungen dieser Runde: wer eine davon exakt tippt, hat
+      // verwechselt, nicht sich vertippt (s. checkAnswer).
+      const others = useMemo(() => (item ? words.map((w) => (item.dir === 'ab' ? w.b : w.a)).filter((s) => s !== task.solution) : []), [item]);
       const check = () => {
         if (!input.trim()) return;
-        settle(checkAnswer(input, task.solution, { level: opts.level, lang: answerLang }), input);
+        settle(checkAnswer(input, task.solution, { level: opts.level, lang: answerLang, others }), input);
       };
       const checkCopy = () => {
         if (checkAnswer(copyInput, result.solution, { level: 'strict' }).status === 'wrong') { setCopyMiss(true); return; }
@@ -2199,7 +2320,7 @@
       const next = (q = queue, l = log) => {
         if (pos + 1 >= q.length) {
           if (exam && fsElement()) toggleFullscreen();
-          onDone({ log: l, seconds: Math.round((Date.now() - startedAt) / 1000), exam, leaves: leaves.current });
+          onDone({ log: l, seconds: Math.round((Date.now() - startedAt) / 1000), exam, leaves: leaves.current, watched: watched.current });
           return;
         }
         setPos(pos + 1);
@@ -2213,12 +2334,16 @@
         setMic('idle');
         setHeard('');
       };
+      // Enter wird nur abgefangen, wo es wirklich etwas auslöst. Sonst nähme
+      // das `preventDefault` jedem Knopf die Tastaturbedienung — und in der
+      // Kartenphase ('back') schaltete es sogar weiter, ohne zu werten.
+      // `e.repeat` hält gedrückt gehaltene Tasten davon ab, die Rückmeldung
+      // gleich wieder wegzuklicken.
       const onKey = (e) => {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-        if (phase === 'ask') { if (TYPED_MODES.includes(mode)) check(); }
-        else if (phase === 'copy') checkCopy();
-        else next();
+        if (e.key !== 'Enter' || e.repeat) return;
+        if (phase === 'ask' && TYPED_MODES.includes(mode)) { e.preventDefault(); check(); }
+        else if (phase === 'copy') { e.preventDefault(); checkCopy(); }
+        else if (phase === 'feedback') { e.preventDefault(); next(); }
       };
       const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
 
@@ -2255,8 +2380,7 @@
 
       if (!item) return null;
       const hint = opts.hints && !exam && item.word.h;
-      const promptLabel = mode === 'gap' ? sideName(set, 0)
-        : (langOf(set, item, 'prompt') ? langName(promptLang) : (item.dir === 'ab' ? t('sideA') : t('sideB')));
+      const promptLabel = sideName(set, item.dir === 'ab' ? 0 : 1);
 
       const inputField = (ref, value, onChange, cls = '') => (
         <input ref={ref} type="text" value={value} onChange={onChange} placeholder={t('answerPh')}
@@ -2462,7 +2586,7 @@
 
       return (
         <div className={`${SCREEN} p-4 sm:p-8`} onKeyDown={onKey}>
-          <PracticeFrame set={set} pos={pos} queue={queue.length} total={total} item={item} onQuit={quit}
+          <PracticeFrame set={set} pos={pos} queue={queue.length} done={pos + 1} total={total} item={item} onQuit={quit}
             extra={exam && <span className="ml-2 px-1.5 rounded bg-red-100 text-red-700 text-xs font-semibold">{t('examTag')}</span>}>
             <div className={`${CARD} p-6 sm:p-8 mb-4 relative overflow-hidden`}>
               {timed && phase === 'ask' && (
@@ -2501,12 +2625,19 @@
       const [log, setLog] = useState([]);
       const [startedAt] = useState(Date.now);
       const [dialog, setDialog] = useState(null);
+      // Beide Zeitgeber müssen beim Verlassen weg: sonst reisst der Wechsel
+      // zur nächsten Gruppe eine schon beendete Runde in die Bilanz.
+      const timers = useRef([]);
+      const later = (fn, ms) => timers.current.push(setTimeout(fn, ms));
+      useEffect(() => () => timers.current.forEach(clearTimeout), []);
       const group = groups[g];
       const doneBefore = groups.slice(0, g).reduce((n, gr) => n + gr.length, 0);
 
       const pickRight = (w) => {
         if (!left || flash || matched.includes(w)) return;
-        if (w === left) {
+        // Verglichen wird die Übersetzung, nicht das Objekt: zwei Wörter mit
+        // derselben Rückseite (Synonyme) sind sonst nicht lösbar.
+        if (w === left || w.b === left.b) {
           const ok = !errored.includes(w);
           onResult(w, ok);
           const nextLog = [...log, { item: { word: w, dir: 'ab' }, ok }];
@@ -2515,7 +2646,7 @@
           setMatched(nextMatched);
           setLeft(null);
           if (nextMatched.length === group.length) {
-            setTimeout(() => {
+            later(() => {
               if (g + 1 >= groups.length) { onDone({ log: nextLog, seconds: Math.round((Date.now() - startedAt) / 1000) }); return; }
               setG(g + 1);
               setRight(shuffleArray(groups[g + 1]));
@@ -2526,15 +2657,15 @@
         } else {
           setErrored((e) => (e.includes(left) ? e : [...e, left]));
           setFlash({ l: left, r: w });
-          setTimeout(() => { setFlash(null); setLeft(null); }, 700);
+          later(() => { setFlash(null); setLeft(null); }, 700);
         }
       };
       const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
-      const tile = (w, side, onClick, active) => {
+      const tile = (w, side, i, onClick, active) => {
         const isMatched = matched.includes(w);
         const isFlash = flash && (side === 'l' ? flash.l === w : flash.r === w);
         return (
-          <button key={wordKey(w) + side} onClick={onClick} disabled={isMatched}
+          <button key={side + i} onClick={onClick} disabled={isMatched}
             className={`w-full px-3 py-3 rounded-lg border-2 text-left font-semibold break-words transition-all ${
               isMatched ? 'bg-green-100 border-green-300 text-green-800 opacity-60'
               : isFlash ? 'bg-red-100 border-red-400 text-red-800'
@@ -2547,7 +2678,7 @@
 
       return (
         <div className={`${SCREEN} p-4 sm:p-8`}>
-          <PracticeFrame set={set} pos={doneBefore + matched.length} queue={words.length} total={words.length} item={null} onQuit={quit}
+          <PracticeFrame set={set} pos={doneBefore + matched.length} queue={words.length} done={doneBefore + matched.length} total={words.length} item={null} onQuit={quit}
             extra={groups.length > 1 && <span className="ml-2 text-xs text-gray-400">{t('groupN', g + 1, groups.length)}</span>}>
             <div className={`${CARD} p-4 sm:p-6 mb-4`}>
               <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 mb-2">
@@ -2555,8 +2686,8 @@
                 <div className={LABEL}>{sideName(set, 1)}</div>
               </div>
               <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6">
-                <div className="space-y-2">{group.map((w) => tile(w, 'l', () => !flash && !matched.includes(w) && setLeft(left === w ? null : w), left === w))}</div>
-                <div className="space-y-2">{right.map((w) => tile(w, 'r', () => pickRight(w), false))}</div>
+                <div className="space-y-2">{group.map((w, i) => tile(w, 'l', i, () => !flash && !matched.includes(w) && setLeft(left === w ? null : w), left === w))}</div>
+                <div className="space-y-2">{right.map((w, i) => tile(w, 'r', i, () => pickRight(w), false))}</div>
               </div>
               {flash && <p className="text-center text-red-600 font-semibold mt-3">{t('wrongPair')}</p>}
             </div>
@@ -2567,7 +2698,7 @@
     };
 
     // ---------- Rundenende ----------
-    const Summary = ({ set, log, seconds, exam, leaves, onRetry, onAgain, onBack }) => {
+    const Summary = ({ set, log, seconds, exam, leaves, watched, onRetry, onAgain, onBack }) => {
       const ok = log.filter((e) => e.ok).length;
       const wrong = log.filter((e) => !e.ok);
       const [settingsButton, settingsPanel] = useSettings();
@@ -2588,8 +2719,8 @@
               <p className="text-gray-600">{t('result', ok, log.length)}</p>
               <p className="text-gray-400 text-sm">{t('timeUsed', Math.floor(seconds / 60), seconds % 60)}</p>
               {exam && (
-                <p className={`mt-2 font-semibold ${leaves ? 'text-red-600' : 'text-green-700'}`}>
-                  {leaves ? t('examLeaves', leaves) : t('examNoLeaves')}
+                <p className={`mt-2 font-semibold ${!watched ? 'text-amber-700' : leaves ? 'text-red-600' : 'text-green-700'}`}>
+                  {!watched ? t('examUnwatched') : leaves ? t('examLeaves', leaves) : t('examNoLeaves')}
                 </p>
               )}
             </div>
@@ -2646,13 +2777,13 @@
         return (
           <Round key={stage.n} set={set} opts={stage.opts} words={stage.words}
             onResult={(word, ok) => onResult(setKey, word, ok)}
-            onDone={({ log, seconds, exam, leaves }) => setStage({ kind: 'done', opts: stage.opts, words: stage.words, log, seconds, exam, leaves })}
+            onDone={({ log, seconds, exam, leaves, watched }) => setStage({ kind: 'done', opts: stage.opts, words: stage.words, log, seconds, exam, leaves, watched })}
             onBack={() => setStage({ kind: 'setup' })} />
         );
       }
       if (stage.kind === 'done') {
         return (
-          <Summary set={set} log={stage.log} seconds={stage.seconds} exam={stage.exam} leaves={stage.leaves}
+          <Summary set={set} log={stage.log} seconds={stage.seconds} exam={stage.exam} leaves={stage.leaves} watched={stage.watched}
             onRetry={(words) => startRound(stage.opts, words)}
             onAgain={() => startRound(stage.opts, stage.words)}
             onBack={() => setStage({ kind: 'setup' })} />
@@ -2733,13 +2864,24 @@
           let data;
           try { data = JSON.parse(text); } catch { return null; }
           if (!data || data.app !== 'myvoci' || !Array.isArray(data.sets)) return null;
+          if (!Array.isArray(data.folders)) data.folders = [];
+          if (!data.progress || typeof data.progress !== 'object') data.progress = {};
           const idMap = {};
           updateStore((prev) => {
             let next = { ...prev, folders: [...new Set([...prev.folders, ...(data.folders || [])])] };
-            for (const s of data.sets) {
-              if (!s || !s.title || !Array.isArray(s.words)) continue;
+            for (let s of data.sets) {
+              if (!s || typeof s.title !== 'string' || !Array.isArray(s.words)) continue;
+              s = { ...s, dir: typeof s.dir === 'string' ? s.dir : '', words: s.words.filter((w) => w && typeof w.a === 'string' && typeof w.b === 'string') };
+              if (!s.words.length) continue;
               const old = next.sets.find((x) => x.title === s.title);
-              const merged = old ? { ...old, ...s, id: old.id } : { ...s, id: s.id || newId() };
+              // «Ergänzt, was fehlt» — genau das, was der Hilfetext verspricht:
+              // vorhandene Wörter bleiben in ihrer Reihenfolge stehen, neue
+              // kommen hinten dazu. Sonst warf eine ältere Sicherung die Arbeit
+              // seit dem Herunterladen weg.
+              const mergedWords = old
+                ? [...old.words, ...s.words.filter((w) => !old.words.some((o) => wordKey(o) === wordKey(w)))]
+                : s.words;
+              const merged = old ? { ...old, ...s, words: mergedWords, id: old.id } : { ...s, id: s.id || newId() };
               idMap[s.id] = merged.id;
               next = insertSet(next, merged, (x) => x.title !== s.title);
             }
@@ -2751,7 +2893,10 @@
               const target = idMap[key] || key;
               const mine = { ...(next[target] || {}) };
               for (const [wk, rec] of Object.entries(words || {})) {
-                if (!mine[wk] || (rec && rec.last > mine[wk].last)) mine[wk] = rec;
+                // Nur brauchbare Einträge: ein fehlendes `box`/`last` machte
+                // aus dem Fortschrittsbalken NaN-Breiten und «nie fällig».
+                if (!rec || typeof rec.box !== 'number' || typeof rec.last !== 'number') continue;
+                if (!mine[wk] || rec.last > mine[wk].last) mine[wk] = rec;
               }
               next[target] = mine;
             }
@@ -2783,16 +2928,22 @@
         updateStore((prev) => (prev.folders.includes(path) ? prev : { ...prev, folders: [...prev.folders, path] }));
         return path;
       };
+      // `false` heisst «am Ziel liegt schon ein Ordner dieses Namens» — ohne
+      // die Prüfung verschmölzen die beiden stillschweigend zu einem, und der
+      // Weg zurück fehlt (remapDir schreibt die Pfade um und dedupliziert).
+      const folderTaken = (target) => allFolders(store).includes(target);
       const renameFolder = (dir, rawName) => {
         const name = cleanName(rawName);
         if (!name) return null;
         const target = parentDir(dir) ? `${parentDir(dir)}/${name}` : name;
         if (target === dir) return null;
+        if (folderTaken(target)) return false;
         updateStore((prev) => remapDir(prev, dir, target));
         return target;
       };
       const moveFolder = (dir, parent) => {
         const target = parent ? `${parent}/${dirName(dir)}` : dirName(dir);
+        if (folderTaken(target)) return false;
         updateStore((prev) => remapDir(prev, dir, target));
         return target;
       };
