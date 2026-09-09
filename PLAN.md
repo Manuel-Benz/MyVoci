@@ -4,6 +4,12 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (09.09.2026, 11):** Neues **App-Icon**: zwei Karteikarten auf dem
+Verlauf der App, die vordere mit Doppelpfeil — ein Motiv wie MyMemorys
+Kartenpaar statt des Buchstabens «Vo», und der Pfeil sagt, was MyVoci vom
+Karteikasten unterscheidet. Die PNGs neu randlos, weil iOS ohnehin maskiert.
+In 96/60/32/16 px geprüft.
+
 **Stand (09.09.2026, 10):** Die Erklärtexte stehen jetzt in einer **Anleitung**
 hinter dem `?`-Knopf oben (iPad · Handschrift einrichten · Ordner · Codes
 scannen) statt verstreut in den Einstellungen und im Kasten zuunterst; die

@@ -316,6 +316,30 @@ verzweigen, wenn es um Inhalte geht.
 - **`writeLocal` meldet Fehlschläge** (`storageBroken` → Warnstreifen): ein
   stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
 
+## Icon
+
+Quelle ist `favicon.svg` (von Hand, 64×64): zwei Karteikarten auf dem
+Verlauf der App (Blau `#3b82f6` → Grün `#10b981`), die vordere weiss mit
+blauem **Doppelpfeil** — geübt wird in beide Richtungen, das unterscheidet
+MyVoci vom Karteikasten. Motiv statt Buchstabe, wie das Kartenpaar von
+MyMemory; die Familienähnlichkeit ist Absicht.
+
+Die **PNGs sind randlos** (kein `rx`): iOS und Android legen ihre eigene
+Maske darüber, eingebackene Ecken würden ein zweites Mal beschnitten. Nur
+das SVG rundet (`rx="14"`), es steht im Tab unmaskiert. Neu rendern:
+
+```bash
+# Chrome headless, weil ImageMagick SVG-Verläufe ohne librsvg verpfuscht
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
+  --screenshot=icon-512.png --window-size=512,512 file://…/icon.html
+magick icon-512.png -resize 180x180 apple-touch-icon.png
+```
+
+Bei 16 px wird das Motiv zum Farbfleck — bei MyMemorys zwei Karten genauso,
+für die Tab-Leiste reicht der Farbeindruck. Ändert sich ein Icon, wandert
+`?v=N` in `index.html` **und** `manifest.webmanifest` eins hoch: Dateinamen
+bleiben gleich, und Browser wie Home-Bildschirm halten Icons zäh fest.
+
 ## Was nicht ins Repo gehört
 
 Die **MyScript-Schlüssel** liegen im localStorage des Geräts, nicht im Code.
