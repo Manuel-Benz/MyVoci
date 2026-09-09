@@ -4,6 +4,14 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (09.09.2026, 9):** Review über den Scanner, sechs Befunde behoben: Der
+Knopf hängt nicht mehr an der Kamera (auf unsicherem Origin fiel sonst auch das
+Einfügen weg), `scanned` prüft die Route gegen `ROUTE_KEYS` statt jeden
+Anker-Link zu schlucken, die Kamera wird nach dem Schliessen nicht mehr gefragt,
+Schlüssel und Set gehen nicht mehr gegenseitig verloren, der Canvas wird nur bei
+Grössenwechsel neu angelegt. `scanned` mit 13 Fällen in Node geprüft, die Wege
+im Browser.
+
 **Stand (09.09.2026, 8):** QR-Codes lassen sich **in der App** scannen
 (Kamera-Knopf in der Übersicht, jsQR): Auf dem iPad öffnet die Kamera-App jeden
 Code in Safari, die Home-Screen-Webapp mit ihrem eigenen Speicher ging leer aus.

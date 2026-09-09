@@ -258,7 +258,7 @@
         myscriptShareTitle: 'Schlüssel weitergeben',
         myscriptShareHint: 'Dort scannen oder öffnen — die Schlüssel werden übernommen und sofort aus der Adresse gestrichen. Nur an Geräte der Familie, das Kontingent läuft auf dein Konto.',
         myscriptTaken: 'MyScript-Schlüssel übernommen — die Handschrift wird jetzt erkannt.',
-        scan: 'QR-Code scannen',
+        scan: 'Code scannen oder einfügen',
         scanHint: 'Set-Code oder Schlüssel-Code vor die Kamera halten. So landet beides in dieser App — auch auf dem Home-Bildschirm, wo ein Scan mit der Kamera-App nur Safari öffnen würde.',
         scanNoCam: 'Kamera nicht verfügbar oder nicht erlaubt.',
         scanNoLib: 'Scanner konnte nicht geladen werden — kein Netz?',
@@ -542,7 +542,7 @@
         myscriptShareTitle: 'Pass on the keys',
         myscriptShareHint: 'Scan or open it there — the keys are stored and removed from the address at once. Family devices only, the quota is charged to your account.',
         myscriptTaken: 'MyScript keys stored — handwriting is now recognised.',
-        scan: 'Scan QR code',
+        scan: 'Scan or paste a code',
         scanHint: 'Hold a set code or key code in front of the camera. Both end up in this app — also on the home screen, where scanning with the camera app would only open Safari.',
         scanNoCam: 'Camera not available or not allowed.',
         scanNoLib: 'Could not load the scanner — no network?',
@@ -1287,6 +1287,11 @@
       return demoById(set.id) ? base + toHash(set) : withLang(`${base}#v=${await encodeSet(set)}`, set.lang);
     };
     const safeDecode = (raw) => { try { return decodeURIComponent(raw); } catch { return raw; } };
+    // Welche Präfixe eine Route sind, steht an einer Stelle: `getRoute` liest
+    // daraus, und der Scanner prüft daran, ob ein fremder Code (jede Adresse
+    // hat ein Fragment: `#section`) überhaupt für diese App gedacht ist.
+    const ROUTE_KEYS = ['v', 'demo', 'local', 'edit', 'new'];
+    const isRoutePart = (x) => ROUTE_KEYS.includes(x.split('=')[0]);
     const getRoute = () => {
       const hash = routePart();
       if (hash.startsWith('v=')) return { type: 'data', data: hash.slice(2) };
@@ -1698,7 +1703,9 @@
       const parts = text.slice(i + 1).split('&').filter(Boolean);
       const keyPart = parts.find((x) => x.startsWith('k='));
       const rest = parts.filter((x) => x !== keyPart);
-      const route = rest.find((x) => !x.startsWith('l=') && !isOptPart(x));
+      // Nur eine Route, die `getRoute` auch kennt — sonst schluckte der
+      // Scanner jeden Anker-Link und täte danach still gar nichts.
+      const route = rest.some(isRoutePart);
       if (!keyPart && !route) return null;
       return { keyPart, hash: route ? rest.join('&') : '' };
     };
@@ -1708,6 +1715,7 @@
       const [pasted, setPasted] = useState(''); // ohne Kamera: Link von Hand einfügen
       const openPasted = () => { if (pasted.trim()) onCode(pasted.trim()); };
       useEffect(() => {
+        if (!scanSupported) return;
         let stream = null, stop = false, timer = 0;
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -1716,6 +1724,9 @@
           let jsQR;
           try { jsQR = await loadScript(JSQR_URL, () => window.jsQR); }
           catch { setError(t('scanNoLib')); return; }
+          // Die Bibliothek ist 257 KB; wer in der Zeit schliesst, soll nicht
+          // hinterher noch nach der Kamera gefragt werden.
+          if (stop) return;
           try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }); }
           catch { setError(t('scanNoCam')); return; }
           if (stop) { stopCam(); return; }
@@ -1726,9 +1737,12 @@
           const tick = () => {
             if (stop) return;
             if (video.readyState >= 2 && video.videoWidth) {
+              // Zuweisen an `width` verwirft den Bildspeicher — nur bei
+              // echter Änderung, sonst siebenmal pro Sekunde umsonst.
               const k = Math.min(1, 640 / video.videoWidth);
-              canvas.width = Math.round(video.videoWidth * k);
-              canvas.height = Math.round(video.videoHeight * k);
+              const w = Math.round(video.videoWidth * k), h = Math.round(video.videoHeight * k);
+              if (canvas.width !== w) canvas.width = w;
+              if (canvas.height !== h) canvas.height = h;
               ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
               const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
               const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
@@ -1744,9 +1758,11 @@
         <Modal onClose={onClose}>
           <h2 className="text-xl font-bold text-center mb-4 text-gray-800">{t('scan')}</h2>
           <p className="text-sm text-gray-500 text-center mb-4">{t('scanHint')}</p>
-          <div className="rounded-lg overflow-hidden bg-black aspect-square mb-4">
-            <video ref={videoRef} playsInline muted autoPlay className="w-full h-full object-cover" />
-          </div>
+          {scanSupported ? (
+            <div className="rounded-lg overflow-hidden bg-black aspect-square mb-4">
+              <video ref={videoRef} playsInline muted autoPlay className="w-full h-full object-cover" />
+            </div>
+          ) : <p className="text-sm text-orange-600 text-center mb-4">{t('scanNoCam')}</p>}
           {error && <p className="text-sm text-red-600 text-center mb-4">{error}</p>}
           <p className="text-sm text-gray-500 mb-2">{t('scanPaste')}</p>
           <div className="flex gap-2 mb-4">
@@ -1877,14 +1893,20 @@
       // In der App gescannt (s. Scanner): Schlüssel gleich übernehmen, ein Set
       // über seine Route öffnen — der Rest läuft wie bei einem geöffneten Link.
       const [scan, setScan] = useState(false);
+      // Schlüssel und Set stehen nebeneinander: ein kaputter Schlüsselteil
+      // darf das mitgelieferte Set nicht verwerfen, und die Meldung wird hier
+      // gezeigt statt über `keysArrived` — beim Öffnen eines Sets rendert
+      // `Open`, und nur die Übersicht räumt das Merkmal ab.
       const onCode = (text) => {
         setScan(false);
         const got = scanned(text);
         if (!got) { showToast(t('scanNotOurs')); return; }
-        const keysOk = !!got.keyPart && takeKeys(got.keyPart);
-        if (got.keyPart && !keysOk) showToast(t('scanBadKeys'));
-        else if (got.hash) { keysArrived = keysOk; location.hash = got.hash; }
-        else if (keysOk) showToast(t('myscriptTaken'));
+        const keysOk = got.keyPart ? takeKeys(got.keyPart) : null;
+        // Wird gleich ein Set geöffnet, rendert `Open` und diese Meldung wäre
+        // mit der Übersicht weg — dann übernimmt `keysArrived`, das die
+        // Übersicht beim Zurückkommen abräumt.
+        if (got.hash) { keysArrived = keysOk === true; location.hash = got.hash; }
+        else if (keysOk !== null) showToast(keysOk ? t('myscriptTaken') : t('scanBadKeys'));
       };
       const importBackupText = (text) => {
         const n = backup.restore(text);
@@ -2124,7 +2146,7 @@
             <div className="relative mb-2">
               <h1 className="text-4xl font-bold text-center text-gray-800">MyVoci</h1>
               <div className="absolute right-0 top-1/2 -translate-y-1/2 flex gap-2">
-                {scanSupported && <IconButton onClick={() => setScan(true)} title={t('scan')}><CameraIcon /></IconButton>}
+                <IconButton onClick={() => setScan(true)} title={t('scan')}><CameraIcon /></IconButton>
                 {settingsButton}
               </div>
             </div>

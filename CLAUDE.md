@@ -103,11 +103,12 @@ Wort liesse sich nicht richtigstellen.
 Ein mit der Kamera-App gescannter Code öffnet auf dem iPad **immer Safari**;
 die Home-Screen-Webapp hat einen eigenen Speicher und bekäme so weder Set noch
 Schlüssel. Darum liest die App den Code selbst: Kamera-Knopf in der Übersicht
-(nur bei `scanSupported`), `getUserMedia` mit Rückkamera, Bild für Bild auf
-640 px durch **jsQR** (jsdelivr, bei Bedarf über `loadScript`; die cdnjs-URL
-gibt es nicht). `scanned` deutet den Text: nur das Fragment zählt (die Adresse
-davor darf localhost oder Pages sein), zurück kommen `keyPart` (`k=`) und die
-Route samt Optionen. Unter dem Kamerabild nimmt ein Feld denselben Link auch
+(immer da), `getUserMedia` mit Rückkamera, Bild für Bild auf 640 px durch
+**jsQR** (jsdelivr, bei Bedarf über `loadScript`; die cdnjs-URL gibt es nicht).
+`scanned` deutet den Text: nur das Fragment zählt (die Adresse davor darf
+localhost oder Pages sein), zurück kommen `keyPart` (`k=`) und die Route samt
+Optionen — geprüft gegen `ROUTE_KEYS`/`isRoutePart`, dieselbe Stelle, aus der
+`getRoute` liest. Unter dem Kamerabild nimmt ein Feld denselben Link auch
 **eingefügt** an (Handoff: am Mac kopiert, auf dem iPad in der Zwischenablage)
 — die Home-Screen-Webapp hat keine Adresszeile, sonst käme dort kein Link
 hinein. `onCode` in `Selection`: Schlüssel über `takeKeys`
@@ -115,6 +116,17 @@ speichern, Set über `location.hash` öffnen — danach läuft alles wie bei ein
 geöffneten Link (`keepLink`). Bibliothek und Kamera melden getrennt
 (`scanNoLib` / `scanNoCam`). Die Kamera-Freigabe in der Home-Screen-App wurde
 noch nicht auf dem iPad geprüft.
+
+Stolpersteine hier: **Der Knopf hängt nicht an `scanSupported`.** Ohne
+Kamera-API (jeder unsichere Origin, also auch `http://192.168.x.x:8000` beim
+Testen im LAN) verschwand sonst mit dem Kamerabild auch das Einfügen — das
+einzige, was dort noch ginge. **`scanned` prüft die Route gegen `ROUTE_KEYS`**,
+sonst gilt jeder Anker-Link (`#section`) als MyVoci-Code und der Scanner tut
+danach still gar nichts. **Nach dem Nachladen wird `stop` geprüft**, bevor die
+Kamera gefragt wird: 257 KB dauern, und wer in der Zeit schliesst, bekäme sonst
+den Berechtigungsdialog für ein Fenster, das nicht mehr da ist. **Schlüssel und
+Route werden unabhängig behandelt** — ein kaputter Schlüsselteil verwarf sonst
+das mitgelieferte Set; wird navigiert, trägt `keysArrived` die Meldung nach.
 
 ## Modi
 
