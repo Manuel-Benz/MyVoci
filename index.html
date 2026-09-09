@@ -23,6 +23,9 @@
     .diff-del { background: #fecaca; text-decoration: line-through; border-radius: 2px; }
     .diff-ins { background: #bbf7d0; border-radius: 2px; }
     @keyframes shrink { from { width: 100%; } to { width: 0; } }
+    /* Handschrift: iPadOS deutet Striche neben Text sonst als Auswahl-Geste
+       (Wort wird markiert, Lupe erscheint, Strich reisst ab) */
+    .sketch, .sketch * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   </style>
 </head>
 <body>
@@ -239,7 +242,7 @@
         dirReconnect: 'Ordner freigeben',
         dirError: (name) => `Der Ordner «${name}» ist nicht erreichbar (verschoben, gelöscht oder Zugriff verweigert). Änderungen bleiben bis dahin nur im Browser.`,
         modePen: 'Handschrift',
-        modePenHint: 'Mit Stift oder Finger auf die Fläche schreiben, dann aufdecken und selbst bewerten — wie auf Papier.',
+        modePenHint: 'Mit Stift oder Finger auf die Fläche schreiben, dann aufdecken und selbst bewerten — wie auf Papier, ohne Erkennung. Automatisch korrigiert wird im Modus «Schreiben» (iPad: mit dem Pencil ins Feld schreiben, Scribble tippt es ein).',
         penOnly: 'Nur Stift annehmen (Finger ignorieren)',
         penClear: 'Fläche leeren',
         reveal: 'Aufdecken',
@@ -501,7 +504,7 @@
         dirReconnect: 'Grant access',
         dirError: (name) => `The folder “${name}” is not reachable (moved, deleted or access denied). Until then, changes stay in the browser only.`,
         modePen: 'Handwriting',
-        modePenHint: 'Write on the pad with a pen or finger, then reveal and rate yourself — like on paper.',
+        modePenHint: 'Write on the pad with a pen or finger, then reveal and rate yourself — like on paper, no recognition. For automatic checking use “Write” (iPad: write into the field with the Pencil, Scribble types it).',
         penOnly: 'Pen only (ignore fingers)',
         penClear: 'Clear pad',
         reveal: 'Reveal',
@@ -2458,7 +2461,13 @@
         resize();
         const ro = window.ResizeObserver && new ResizeObserver(resize);
         ro && ro.observe(c);
-        return () => ro && ro.disconnect();
+        // React registriert Touch-Listener passiv — preventDefault greift dort
+        // nicht. Safari braucht es aber nativ, sonst startet nach einem kurzen
+        // Halten die Textauswahl der Seite statt des Strichs.
+        const block = (e) => e.preventDefault();
+        c.addEventListener('touchstart', block, { passive: false });
+        c.addEventListener('touchmove', block, { passive: false });
+        return () => { ro && ro.disconnect(); c.removeEventListener('touchstart', block); c.removeEventListener('touchmove', block); };
       }, []);
       useEffect(() => {
         const c = canvasRef.current;
@@ -2493,7 +2502,7 @@
         <canvas ref={canvasRef}
           className="w-full h-48 sm:h-56 bg-white rounded-lg border-2 border-dashed border-gray-300 touch-none cursor-crosshair"
           style={{ backgroundImage: 'linear-gradient(to top, transparent 34%, #e5e7eb 34%, #e5e7eb calc(34% + 1px), transparent calc(34% + 1px))' }}
-          onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
+          onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onContextMenu={(e) => e.preventDefault()} />
       );
     };
 
@@ -2880,7 +2889,7 @@
         <div className={`${SCREEN} p-4 sm:p-8`} onKeyDown={onKey}>
           <PracticeFrame set={set} pos={pos} queue={queue.length} done={pos + 1} total={total} item={item} onQuit={quit}
             extra={exam && <span className="ml-2 px-1.5 rounded bg-red-100 text-red-700 text-xs font-semibold">{t('examTag')}</span>}>
-            <div className={`${CARD} p-6 sm:p-8 mb-4 relative overflow-hidden`}>
+            <div className={`${CARD} p-6 sm:p-8 mb-4 relative overflow-hidden ${mode === 'pen' ? 'sketch' : ''}`}>
               {timed && phase === 'ask' && (
                 <div key={pos} className="absolute left-0 top-0 h-1.5 bg-orange-400" style={{ animation: `shrink ${opts.timer}s linear forwards` }} />
               )}

@@ -194,6 +194,13 @@ verzweigen, wenn es um Inhalte geht.
   macht aus `const` ein `var`: eine später deklarierte Variable ist dort still
   `undefined` statt ein Fehler (der Haken «Beispiele anzeigen» blieb leer,
   obwohl die Beispiele standen).
+- **Handschrift auf dem iPad: `.sketch` (`user-select: none`) auf der ganzen
+  Karte, `touchstart` nativ mit `preventDefault`.** Safari deutet einen kurz
+  gehaltenen Strich neben Text als Auswahl-Geste — das Wort oben wurde
+  markiert, der Strich riss ab. `touch-action: none` stoppt nur das Scrollen,
+  und Reacts Touch-Listener sind passiv, dort greift `preventDefault` nicht.
+  Scribble gehört zu **Schreiben** (Textfeld), nicht zu Handschrift — die
+  Fläche ist absichtlich ohne Erkennung; der Hinweistext sagt das.
 - **`writeLocal` meldet Fehlschläge** (`storageBroken` → Warnstreifen): ein
   stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
 

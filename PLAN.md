@@ -4,6 +4,12 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (09.09.2026, 4):** Erster iPad-Test der Handschrift: Safari markierte
+beim Schreiben das Wort auf der Karte (Auswahl-Geste) — behoben mit
+`user-select: none` auf der Karte und nativem `touchstart`-`preventDefault`.
+Klargestellt: Scribble greift im Modus Schreiben, Handschrift bleibt Papier
+ohne Erkennung. Noch offen auf dem iPad: Hören, Sprechen, Link-Kopieren.
+
 **Stand (09.09.2026, 3):** Review über den Ordner-Anschluss mit zehn behobenen
 Befunden — allen voran: der Titel galt als eindeutiger Schlüssel, obwohl beide
 Kinder dieselben Set-Titel haben («dasselbe Set» ist jetzt Ordner + Titel, s.
