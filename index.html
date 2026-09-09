@@ -224,6 +224,8 @@
         backupImport: 'Sicherung einlesen',
         backupDone: (n) => `Sicherung eingelesen (${n} ${n === 1 ? 'Set' : 'Sets'})`,
         backupBad: 'Das ist keine MyVoci-Sicherung.',
+        showExamples: 'Beispiele anzeigen',
+        showExamplesHint: 'Die zwei eingebauten Beispiel-Sets in der Übersicht. Wer eigene Sets hat, braucht sie nicht mehr; für neue Nutzer bleiben sie der einfachste Einstieg.',
         dirTitle: 'Ordner auf dem Computer',
         dirHint: 'Wie die Quizzes in MyKahoot: Die Sets liegen als .txt-Dateien in einem Ordner deiner Wahl, Unterordner sind die Ordner hier. Was du in der App änderst, wird dort als Datei gespeichert; was du im Finder ablegst oder löschst, erscheint beim nächsten Wechsel ins Fenster. Der Browser-Speicher ist dann nur noch Zwischenspeicher.',
         dirUnsupported: 'Geht nur in Chrome oder Edge am Computer — Safari und iPad können keinen Ordner öffnen. Dort bleibt die Sicherung als Datei.',
@@ -482,6 +484,8 @@
         backupImport: 'Import backup',
         backupDone: (n) => `Backup imported (${n} ${n === 1 ? 'set' : 'sets'})`,
         backupBad: 'This is not a MyVoci backup.',
+        showExamples: 'Show examples',
+        showExamplesHint: 'The two built-in example sets in the list. Once you have your own sets you no longer need them; for new users they are the easiest way in.',
         dirTitle: 'Folder on this computer',
         dirHint: 'Like the quizzes in MyKahoot: the sets live as .txt files in a folder of your choice, subfolders are the folders here. What you change in the app is saved there as a file; what you add or delete in the Finder shows up the next time you switch to this window. Browser storage is then only a cache.',
         dirUnsupported: 'Only works in Chrome or Edge on a computer — Safari and iPad cannot open a folder. There, the backup file remains.',
@@ -920,6 +924,10 @@
       return { sets: store.sets.map((s) => ({ ...s, dir: move(s.dir || '') })), folders: [...new Set(store.folders.map(move))] };
     };
     const OPEN_KEY = 'myvoci_open_dirs';
+    // Die Beispiele bleiben für neue Nutzer der Einstieg; wer eigene Sets hat,
+    // blendet sie hier aus (Gerät für Gerät, wie die Sprache).
+    const DEMOS_KEY = 'myvoci_demos';
+    const loadShowDemos = () => readLocal(DEMOS_KEY, true) !== false;
     const loadOpen = () => readLocal(OPEN_KEY, []) || [];
     const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
 
@@ -961,10 +969,14 @@
             await walk(entry, path);
           } else if (isVociFile(name)) {
             const parsed = parseFile(await (await entry.getFile()).text(), name);
-            // `file` merkt sich den echten Dateinamen: heisst die Datei anders
-            // als der Titel (von Hand angelegt, «Fremd.txt» mit «# Von Hand»),
-            // schreibt die App weiter dorthin, statt eine zweite anzulegen.
-            if (parsed.words.length) sets.push({ ...parsed, dir, file: name });
+            // `file` merkt sich den echten Dateinamen — aber nur, wenn er vom
+            // Titel abweicht (von Hand angelegt, «Fremd.txt» mit «# Von Hand»):
+            // dann schreibt die App weiter dorthin, statt eine zweite anzulegen.
+            // Heisst die Datei wie der Titel, bleibt `file` leer, damit ein
+            // Umbenennen in der App die Datei mitnimmt statt Name und Titel
+            // auseinanderlaufen zu lassen.
+            const own = safeName(parsed.title) + '.txt';
+            if (parsed.words.length) sets.push({ ...parsed, dir, ...(name === own ? {} : { file: name }) });
           }
         }
       };
@@ -1590,8 +1602,23 @@
           {dir.status !== 'none' && dir.status !== 'unsupported' && <button onClick={dir.disconnect} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('dirDisconnect')}</button>}
         </div>
       );
+      // Muss VOR `useSettings` stehen: das Panel ist ein Argument, sein JSX wird
+      // also vorher ausgewertet. Babel macht aus `const` ein `var` — eine später
+      // deklarierte Variable wäre hier still `undefined` statt eines Fehlers
+      // (der Haken blieb leer, obwohl die Beispiele standen).
+      const [showDemos, setShowDemos] = useState(loadShowDemos);
       const [settingsButton, settingsPanel] = useSettings(
         <>
+        <div className="rounded-lg border border-gray-200 p-4 mt-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={showDemos} className="mt-1 h-4 w-4 accent-blue-500"
+              onChange={(e) => { setShowDemos(e.target.checked); writeLocal(DEMOS_KEY, e.target.checked); }} />
+            <span>
+              <span className="font-semibold text-gray-700">{t('showExamples')}</span>
+              <span className="block text-sm text-gray-500">{t('showExamplesHint')}</span>
+            </span>
+          </label>
+        </div>
         <div className="rounded-lg border border-gray-200 p-4 mt-4">
           <div className={`${LABEL} mb-2`}>{t('dirTitle')}</div>
           <p className="text-sm text-gray-500 mb-3">{dir.status === 'unsupported' ? t('dirUnsupported') : t('dirHint')}</p>
@@ -1848,10 +1875,12 @@
               {own.length > 0 && <p className="text-xs text-gray-400 mt-1">{t('storedHint')}</p>}
             </div>
 
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold text-gray-600 mb-1 pl-2.5">{t('examples')}</h2>
-              <div className="space-y-0.5">{DEMOS.map((s) => row(s, false))}</div>
-            </div>
+            {showDemos && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-gray-600 mb-1 pl-2.5">{t('examples')}</h2>
+                <div className="space-y-0.5">{DEMOS.map((s) => row(s, false))}</div>
+              </div>
+            )}
 
             <Collapsible title={t('ipadTitle')} open={ipadOpen} onToggle={() => setIpadOpen((v) => !v)}>
               <ol className="list-decimal list-inside text-sm text-gray-600 space-y-2">{t('ipadSteps')}</ol>

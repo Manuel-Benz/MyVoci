@@ -135,10 +135,26 @@ verzweigen, wenn es um Inhalte geht.
   Format. Alle Ordner-Zugriffe laufen über **eine** Promise-Kette
   (`enqueue`): ein Nachlesen beim Fokus darf nicht in ein halb geschriebenes
   Set hineinlesen.
+- **`file` steht nur bei abweichendem Dateinamen am Set.** Heisst die Datei wie
+  der Titel, bleibt es leer — sonst klebte der Dateiname nach dem ersten
+  Einlesen fest, und ein Umbenennen in der App liesse Titel und Datei
+  auseinanderlaufen. Von Hand benannte Dateien (`Fremd.txt` mit `# Von Hand`)
+  behalten so trotzdem ihren Namen, statt eine zweite Datei zu bekommen.
+- **Was ins Einstellungs-Panel geht, muss vor `useSettings` deklariert sein.**
+  Das Panel ist ein Argument, sein JSX wird also vorher ausgewertet, und Babel
+  macht aus `const` ein `var`: eine später deklarierte Variable ist dort still
+  `undefined` statt ein Fehler (der Haken «Beispiele anzeigen» blieb leer,
+  obwohl die Beispiele standen).
 - **`writeLocal` meldet Fehlschläge** (`storageBroken` → Warnstreifen): ein
   stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
 
 ## Was nicht ins Repo gehört
 
-Keine echten Voci-Sets: Inhalte leben im Browser der Lehrperson bzw. in ihren
-`.txt`-Dateien. Im Code stehen nur die zwei eingebauten Beispiele.
+Im Code stehen nur die zwei eingebauten Beispiele. Die **echten Sets liegen in
+`voci/`** — wie `quizzes/` in MyKahoot lebendes Material, das die App direkt von
+der Platte liest (kein Code hängt an einer bestimmten Datei). Der Ordner steht in
+`.gitignore` und wird **nie** committet; Änderungen dort nie proaktiv zum
+Committen anbieten, auch nicht bei `/git`. Wie die Sets heissen und wo sie darin
+liegen (`<Kind>/<Sprache>/<Lehrmittel>/`, Titel `Unité 3 – La maison`, Zusätze
+`– Sätze`, `– Verben (présent)`), steht in Manuels Anleitungen:
+`~/Documents/Unterricht/Anleitungen/Prozesse/MyVoci-Voci-Benennung/kurz.md`.

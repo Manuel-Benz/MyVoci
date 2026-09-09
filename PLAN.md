@@ -4,6 +4,11 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (09.09.2026, 2):** Übersicht schlank wie die Quiz-Auswahl in MyKahoot;
+Beispiele abschaltbar (Einstellungen, gemerkt pro Gerät); echte Sets liegen in
+`voci/` (ignoriert). Benennung der Sets: Anleitungen →
+`Prozesse/MyVoci-Voci-Benennung`.
+
 **Stand (09.09.2026):** Neu: **Ordner auf dem Computer** (Einstellungen) —
 wie die Quizzes in MyKahoot liegen die Sets als `.txt` in einem Ordner auf der
 Platte (Chrome/Edge, File System Access API), beide Richtungen; im Finder
