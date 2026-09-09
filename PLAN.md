@@ -6,7 +6,9 @@ Live: https://manuel-benz.github.io/MyVoci/
 
 **Stand (09.09.2026, 2):** Übersicht schlank wie die Quiz-Auswahl in MyKahoot;
 Beispiele abschaltbar (Einstellungen, gemerkt pro Gerät); echte Sets liegen in
-`voci/` (ignoriert). Benennung der Sets: Anleitungen →
+`voci/` (ignoriert). Der Ordner wird neu unter der Liste angeboten statt nur in
+den Einstellungen, und der Hinweis darunter nennt bei verbundenem Ordner die
+Dateien statt des Browsers. Benennung der Sets: Anleitungen →
 `Prozesse/MyVoci-Voci-Benennung`.
 
 **Stand (09.09.2026):** Neu: **Ordner auf dem Computer** (Einstellungen) —

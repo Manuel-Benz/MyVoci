@@ -91,6 +91,7 @@
         examples: 'Beispiele',
         emptyList: 'Noch nichts da — oben ein Set erstellen oder eine Datei hierher ziehen.',
         storedHint: 'Gespeichert in diesem Browser. Zum Teilen: Direktlink oder QR-Code — darin steckt das ganze Set. Sets und Ordner lassen sich per Ziehen umhängen.',
+        storedHintDir: (name) => `Gespeichert als Dateien im Ordner «${name}»; nur der Lernstand bleibt in diesem Browser. Zum Teilen: Direktlink oder QR-Code — darin steckt das ganze Set. Sets und Ordner lassen sich per Ziehen umhängen, die Dateien wandern mit.`,
         nWords: (n) => `${n} ${n === 1 ? 'Wort' : 'Wörter'}`,
         newSet: 'Neues Set',
         newSetHere: 'Neues Set in diesem Ordner',
@@ -224,6 +225,7 @@
         backupImport: 'Sicherung einlesen',
         backupDone: (n) => `Sicherung eingelesen (${n} ${n === 1 ? 'Set' : 'Sets'})`,
         backupBad: 'Das ist keine MyVoci-Sicherung.',
+        dirOffer: 'Die Sets können auch als Dateien in einem Ordner auf dem Computer liegen — dann bleiben sie, wenn der Browser aufräumt.',
         showExamples: 'Beispiele anzeigen',
         showExamplesHint: 'Die zwei eingebauten Beispiel-Sets in der Übersicht. Wer eigene Sets hat, braucht sie nicht mehr; für neue Nutzer bleiben sie der einfachste Einstieg.',
         dirTitle: 'Ordner auf dem Computer',
@@ -355,6 +357,7 @@
         examples: 'Examples',
         emptyList: 'Nothing here yet — create a set above or drag a file here.',
         storedHint: 'Stored in this browser. To share: direct link or QR code — the whole set is inside it. Sets and folders can be moved by dragging.',
+        storedHintDir: (name) => `Stored as files in the folder “${name}”; only your progress stays in this browser. To share: direct link or QR code — the whole set is inside it. Sets and folders can be moved by dragging, and the files move along.`,
         nWords: (n) => `${n} ${n === 1 ? 'word' : 'words'}`,
         newSet: 'New set',
         newSetHere: 'New set in this folder',
@@ -484,6 +487,7 @@
         backupImport: 'Import backup',
         backupDone: (n) => `Backup imported (${n} ${n === 1 ? 'set' : 'sets'})`,
         backupBad: 'This is not a MyVoci backup.',
+        dirOffer: 'Your sets can also live as files in a folder on this computer — then they survive a browser clean-up.',
         showExamples: 'Show examples',
         showExamplesHint: 'The two built-in example sets in the list. Once you have your own sets you no longer need them; for new users they are the easiest way in.',
         dirTitle: 'Folder on this computer',
@@ -1872,7 +1876,23 @@
                 className={`min-h-[2.5rem] rounded-lg space-y-0.5 transition-colors ${dropDir === '' ? 'outline outline-2 outline-dashed outline-blue-400 outline-offset-4' : ''}`}>
                 {own.length || folders.length ? treeOf('') : <p className="text-sm text-gray-400 px-2.5 py-2">{t('emptyList')}</p>}
               </div>
-              {own.length > 0 && <p className="text-xs text-gray-400 mt-1">{t('storedHint')}</p>}
+              {/* Bei verbundenem Ordner stimmt «in diesem Browser» nicht mehr:
+                  dort liegen die Sets als Dateien, im Browser nur der Lernstand. */}
+              {own.length > 0 && (
+                <p className="text-xs text-gray-400 mt-1">
+                  {dir.status === 'ok' ? t('storedHintDir', dir.name) : t('storedHint')}
+                </p>
+              )}
+              {/* Der Ordner ist ein einmaliger Einrichtungsschritt — in den
+                  Einstellungen findet ihn niemand. Nur wo er möglich ist
+                  (Chrome/Edge am Computer) und noch keiner hängt; die anderen
+                  Zustände melden sich oben von selbst. */}
+              {dir.status === 'none' && (
+                <p className="text-xs text-gray-400 mt-1">
+                  {t('dirOffer')}{' '}
+                  <button onClick={dir.connect} className="underline font-semibold hover:text-gray-600">{t('dirChoose')}</button>
+                </p>
+              )}
             </div>
 
             {showDemos && (

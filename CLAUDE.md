@@ -135,6 +135,14 @@ verzweigen, wenn es um Inhalte geht.
   Format. Alle Ordner-Zugriffe laufen über **eine** Promise-Kette
   (`enqueue`): ein Nachlesen beim Fokus darf nicht in ein halb geschriebenes
   Set hineinlesen.
+- **Der Ordner wird unter der Liste angeboten, nicht nur in den
+  Einstellungen** (`dirOffer`, nur bei `status === 'none'`): ein einmaliger
+  Einrichtungsschritt, den hinter dem Zahnrad niemand findet. Wo es nicht geht
+  (iPad, Safari → `unsupported`), steht nichts.
+- **Texte, die den Speicherort nennen, hängen am Ordner-Status.** Mit
+  verbundenem Ordner liegen die Sets als Dateien und nur der Lernstand im
+  Browser (`storedHint` / `storedHintDir` unter der Liste) — «gespeichert in
+  diesem Browser» wäre dort schlicht falsch.
 - **`file` steht nur bei abweichendem Dateinamen am Set.** Heisst die Datei wie
   der Titel, bleibt es leer — sonst klebte der Dateiname nach dem ersten
   Einlesen fest, und ein Umbenennen in der App liesse Titel und Datei
