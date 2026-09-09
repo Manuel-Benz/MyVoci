@@ -148,6 +148,42 @@ verzweigen, wenn es um Inhalte geht.
   verbundenem Ordner liegen die Sets als Dateien und nur der Lernstand im
   Browser (`storedHint` / `storedHintDir` unter der Liste) — «gespeichert in
   diesem Browser» wäre dort schlicht falsch.
+- **Der Titel ist nur im Ordner eindeutig, nicht in der App.** Zwei Kinder
+  haben dieselben Set-Titel — das ist die Ablage-Konvention. «Dasselbe Set»
+  steht deshalb an **einer** Stelle (`setPlace`/`samePlace`, Ordner + Titel);
+  Editor-Prüfung, Import-Rückfrage, `importSet`, Sicherung und `fromDisk`
+  fragen dort nach. Global geprüft liess sich ein Set gar nicht mehr
+  speichern, und ein Import überschrieb das gleichnamige Set des anderen
+  Kindes.
+- **`disk: true` heisst «lag schon einmal im Ordner».** Daran hängt, was beim
+  Nachlesen verschwindet: ein Set mit dem Merkmal, das dort fehlt, wurde im
+  Finder gelöscht; eines ohne wurde bloss noch nie geschrieben und bleibt.
+  Ohne diese Unterscheidung machte die Freigabe nach einem Neustart jede
+  Löschung im Finder wieder rückgängig. Nur das ausdrückliche Verbinden nimmt
+  mit `keepAll` alles mit (Ordnerwechsel).
+- **In `fromDisk` zählt der Ort, der Titel nur als zweite Chance.** Erst
+  Ordner+Titel, dann «verschoben» — und das nur für Sets, die schon einmal im
+  Ordner lagen und deren Titel auf beiden Seiten genau einmal vorkommt. Sonst
+  erbte die Datei des einen Kindes den Lernstand des gleichnamigen Sets des
+  anderen, das damit aus der Liste fiel.
+- **Beim Verbinden werden Wörter vereint, nicht ersetzt** (`mergeWords`, nur
+  bei `keepAll`): sonst verschluckte eine ältere Datei die im Browser
+  ergänzten Wörter. `onDisk` trägt dabei den **rohen** Dateiinhalt, sonst
+  schriebe mirrorDir die Ergänzung nie in die Datei.
+- **Ein Schreibweg für den Store: `commit`** (speichern, `storeRef` nachziehen,
+  rendern). `updateStore` und das Nachlesen aus dem Ordner gehen beide
+  darüber; sonst rechnet ein Ordner-Auftrag auf einem veralteten Stand oder
+  ein Updater setzt nebenbei `mirrored` — Updater dürfen mehrfach laufen oder
+  verworfen werden.
+- **`wanted` (Ref) hält fest, welcher Ordner gerade gelten soll.** Ein
+  Auftrag, der erst nach dem Trennen fertig wird, erkennt sich daran als
+  überholt: er lässt Store und Status in Ruhe, und `enqueue` schweigt mit
+  seiner Fehlermeldung, statt einen Streifen ohne Ordnernamen zu zeigen.
+- **Der Fokus liest nach, ändert aber nichts, wenn nichts anders ist.**
+  `takeDisk` vergleicht das Ergebnis mit dem Stand und ruft `commit` nur bei
+  Unterschied; `setDir` behält sein Objekt. Sonst rendert jeder
+  Fenster-Wechsel die Liste neu und stösst einen `mirrorDir`-Lauf an, der
+  jede Datei zweimal serialisiert, um Gleichheit festzustellen.
 - **`file` steht nur bei abweichendem Dateinamen am Set.** Heisst die Datei wie
   der Titel, bleibt es leer — sonst klebte der Dateiname nach dem ersten
   Einlesen fest, und ein Umbenennen in der App liesse Titel und Datei

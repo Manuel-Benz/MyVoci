@@ -172,7 +172,7 @@
         hintPh: 'z.B. f. / Verb / unregelmässig',
         addWord: 'Wort hinzufügen',
         errTitle: 'Der Titel fehlt.',
-        errTitleTaken: 'Ein Set mit diesem Titel gibt es schon.',
+        errTitleTaken: 'In diesem Ordner gibt es schon ein Set mit diesem Titel.',
         errNoWord: 'Mindestens ein Wort eintragen.',
         errHalfWord: 'Jedes Wort braucht beide Seiten.',
         editorHint: () => (
@@ -435,7 +435,7 @@
         hintPh: 'e.g. noun / verb / irregular',
         addWord: 'Add word',
         errTitle: 'The title is missing.',
-        errTitleTaken: 'A set with this title already exists.',
+        errTitleTaken: 'This folder already has a set with this title.',
         errNoWord: 'Enter at least one word.',
         errHalfWord: 'Every word needs both sides.',
         editorHint: () => (
@@ -918,6 +918,11 @@
     const parentDir = (dir) => (dir.includes('/') ? dir.slice(0, dir.lastIndexOf('/')) : '');
     const inside = (dir, ancestor) => dir === ancestor || dir.startsWith(ancestor + '/');
     const byTitle = (a, b) => a.title.localeCompare(b.title, 'de');
+    // Dasselbe Set heisst: gleicher Titel im gleichen Ordner. Zwei Kinder
+    // haben dieselben Set-Titel, der Titel allein taugt also nicht als
+    // Schlüssel — Editor, Import, Sicherung und Ordner fragen hier nach.
+    const setPlace = (s) => `${s.dir || ''}\u0001${s.title}`;
+    const samePlace = (a, b) => setPlace(a) === setPlace(b);
     const allFolders = ({ sets, folders }) => {
       const all = new Set(folders);
       for (const s of sets) for (let d = s.dir || ''; d; d = parentDir(d)) all.add(d);
@@ -963,7 +968,10 @@
     // Liest den ganzen Ordner: Sets noch ohne id (die vergibt fromDisk),
     // Ordnerpfade wie im Store («Unité 3/Verben»).
     const readDir = async (root) => {
-      const sets = [], folders = [];
+      const files = [], folders = [];
+      // Erst den Baum ablaufen, dann alle Dateien auf einmal lesen: einzeln
+      // abgewartet kostet jede Datei eine eigene Runde ins Dateisystem.
+      // Promise.all erhält die Reihenfolge, auf die sich fromDisk verlässt.
       const walk = async (handle, dir) => {
         for await (const [name, entry] of handle.entries()) {
           if (name.startsWith('.')) continue;
@@ -971,30 +979,33 @@
             const path = dir ? `${dir}/${name}` : name;
             folders.push(path);
             await walk(entry, path);
-          } else if (isVociFile(name)) {
-            const parsed = parseFile(await (await entry.getFile()).text(), name);
-            // `file` merkt sich den echten Dateinamen — aber nur, wenn er vom
-            // Titel abweicht (von Hand angelegt, «Fremd.txt» mit «# Von Hand»):
-            // dann schreibt die App weiter dorthin, statt eine zweite anzulegen.
-            // Heisst die Datei wie der Titel, bleibt `file` leer, damit ein
-            // Umbenennen in der App die Datei mitnimmt statt Name und Titel
-            // auseinanderlaufen zu lassen.
-            const own = safeName(parsed.title) + '.txt';
-            if (parsed.words.length) sets.push({ ...parsed, dir, ...(name === own ? {} : { file: name }) });
-          }
+          } else if (isVociFile(name)) files.push({ name, dir, entry });
         }
       };
       await walk(root, '');
-      return { sets, folders };
+      const read = await Promise.all(files.map(async ({ name, dir, entry }) => {
+        const parsed = parseFile(await (await entry.getFile()).text(), name);
+        // `file` merkt sich den echten Dateinamen — aber nur, wenn er vom
+        // Titel abweicht (von Hand angelegt, «Fremd.txt» mit «# Von Hand»):
+        // dann schreibt die App weiter dorthin, statt eine zweite anzulegen.
+        // Heisst die Datei wie der Titel, bleibt `file` leer, damit ein
+        // Umbenennen in der App die Datei mitnimmt statt Name und Titel
+        // auseinanderlaufen zu lassen. `disk` heisst «lag schon einmal im
+        // Ordner» — daran hängt, ob ein Set, das dort fehlt, im Finder
+        // gelöscht wurde oder nur noch nie geschrieben werden konnte.
+        return { ...parsed, dir, disk: true, ...(name === fileName(parsed) ? {} : { file: name }) };
+      }));
+      return { sets: read.filter((s) => s.words.length), folders };
     };
 
-    const setPath = (set) => `${set.dir ? safeDir(set.dir) + '/' : ''}${set.file || safeName(set.title) + '.txt'}`;
+    const fileName = (set) => set.file || `${safeName(set.title)}.txt`;
+    const setPath = (set) => `${set.dir ? safeDir(set.dir) + '/' : ''}${fileName(set)}`;
     const dirOf = async (root, path, create) => {
       let h = root;
       for (const part of path.split('/').filter(Boolean)) h = await h.getDirectoryHandle(part, { create });
       return h;
     };
-    const splitPath = (path) => { const parts = path.split('/'); return [parts.slice(0, -1).join('/'), parts[parts.length - 1]]; };
+    const splitPath = (path) => [parentDir(path), dirName(path)];
     const writeFile = async (root, path, text) => {
       const [dir, name] = splitPath(path);
       const fh = await (await dirOf(root, dir, true)).getFileHandle(name, { create: true });
@@ -1022,40 +1033,76 @@
       const after = new Set(next.sets.map((s) => s.id));
       const prevFolders = allFolders(prev), nextFolders = allFolders(next);
       for (const f of nextFolders) if (!prevFolders.includes(f)) await dirOf(root, safeDir(f), true);
+      // Ein Set pro Auftrag (alte Datei weg, dann die neue hin), die Aufträge
+      // nebeneinander: beim Verbinden oder beim Verschieben eines Ordners
+      // sind das sonst Dutzende Schreibvorgänge streng nacheinander.
+      const jobs = [];
       for (const s of next.sets) {
         const old = before.get(s.id);
+        if (old === s) continue; // unverändert — spart das Serialisieren
         const path = setPath(s), text = toFile(s);
         if (old && setPath(old) === path && toFile(old) === text) continue;
-        if (old && setPath(old) !== path) await removeFile(root, setPath(old));
-        await writeFile(root, path, text);
+        jobs.push((async () => {
+          if (old && setPath(old) !== path) await removeFile(root, setPath(old));
+          await writeFile(root, path, text);
+        })());
       }
-      for (const s of prev.sets) if (!after.has(s.id)) await removeFile(root, setPath(s));
+      for (const s of prev.sets) if (!after.has(s.id)) jobs.push(removeFile(root, setPath(s)));
+      await Promise.all(jobs);
+      // Ordner erst danach und von innen nach aussen: ein Ordner ist nur leer,
+      // wenn seine Dateien schon weg sind.
       const gone = prevFolders.filter((f) => !nextFolders.includes(f)).sort((a, b) => b.length - a.length);
       for (const f of gone) await removeEmptyDir(root, safeDir(f));
     };
 
-    // Vom Ordner in den Store. Die id bleibt über Ordner+Titel erhalten (daran
-    // hängt der Lernstand), sonst über den Titel allein (verschoben), sonst neu.
-    // `keepLocal` (beim Verbinden): Sets, die nur im Browser liegen, bleiben
-    // und wandern anschliessend per mirrorDir in den Ordner. Beim Nachlesen
-    // gilt der Ordner allein — was dort fehlt, wurde im Finder gelöscht.
-    // Zurück kommt neben dem neuen Stand auch `onDisk`: das, was der Ordner
-    // schon hat und deshalb nicht zurückgeschrieben werden muss.
-    const fromDisk = (prev, disk, keepLocal) => {
-      const place = (s) => `${s.dir}\u0001${s.title}`;
-      const byPlace = new Map(prev.sets.map((s) => [place(s), s]));
+    // Vom Ordner in den Store. Die id trägt den Lernstand, sie soll also am
+    // richtigen Set kleben bleiben. `keepAll` gilt nur beim ausdrücklichen
+    // Verbinden: dann bleibt auch mit, was schon einmal auf der Platte lag
+    // (Ordnerwechsel). Sonst bleiben nur Sets ohne `disk`-Merkmal — was dort
+    // fehlt und dort schon lag, wurde im Finder gelöscht.
+    // Zurück kommt neben dem neuen Stand auch `onDisk`: der reine Inhalt des
+    // Ordners, gegen den mirrorDir seine Differenz bildet.
+    const fromDisk = (prev, disk, keepAll) => {
+      const byPlace = new Map(prev.sets.map((s) => [setPlace(s), s]));
       const used = new Set();
-      const sets = disk.sets.map((d) => {
-        const old = byPlace.get(place(d)) || prev.sets.find((s) => s.title === d.title && !used.has(s.id));
-        const id = old && !used.has(old.id) ? old.id : newId();
-        used.add(id);
-        return { ...d, id };
+      const take = (d, old) => {
+        used.add(old.id);
+        // Beim Verbinden darf die Datei die im Browser bearbeitete Fassung
+        // nicht verschlucken: fehlende Wörter kommen hinten dazu, wie beim
+        // Einlesen einer Sicherung. Beim Nachlesen gilt die Datei.
+        return { ...d, id: old.id, ...(keepAll ? { words: mergeWords(d.words, old.words) } : {}) };
+      };
+      // Erst der sichere Treffer: gleicher Ordner, gleicher Titel.
+      const first = disk.sets.map((d) => {
+        const old = byPlace.get(setPlace(d));
+        return old && !used.has(old.id) ? take(d, old) : { ...d, id: null };
       });
-      const onDisk = { sets: [...sets].sort(byTitle), folders: disk.folders };
-      const local = keepLocal ? prev.sets.filter((s) => !used.has(s.id)) : [];
+      // Dann verschoben oder umbenannt. Dafür kommen nur Sets in Frage, die
+      // schon einmal im Ordner lagen (`disk`) und deren Titel auf beiden
+      // Seiten genau einmal vorkommt: sonst erbte die Datei des einen Kindes
+      // den Lernstand des gleichnamigen Sets des anderen, das nur im Browser
+      // liegt — und verschwände damit aus der Liste.
+      const free = new Map();
+      for (const s of prev.sets) if (!used.has(s.id) && s.disk) free.set(s.title, free.has(s.title) ? null : s);
+      const want = {};
+      for (const d of first) if (!d.id) want[d.title] = (want[d.title] || 0) + 1;
+      const sets = first.map((d) => {
+        // `free` enthält nur unbenutzte Sets und jeder Titel wird höchstens
+        // einmal beansprucht — ein zweiter Zugriff kann hier nicht auftreten.
+        const old = d.id ? null : want[d.title] === 1 ? free.get(d.title) : null;
+        return d.id ? d : old ? take(d, old) : { ...d, id: newId() };
+      });
+      // Was mirrorDir im Ordner vorfindet: die Dateien, mit den ids, die wir
+      // eben vergeben haben. Bewusst nicht aus `sets` abgeleitet — dort
+      // stecken beim Verbinden schon die ergänzten Wörter, und die soll
+      // mirrorDir ja gerade noch schreiben.
+      const onDisk = { sets: disk.sets.map((d, i) => ({ ...d, id: sets[i].id })).sort(byTitle), folders: disk.folders };
+      const local = prev.sets.filter((s) => !used.has(s.id) && (keepAll || !s.disk));
       const next = {
         sets: [...sets, ...local].sort(byTitle),
-        folders: [...new Set([...disk.folders, ...(keepLocal ? prev.folders : [])])],
+        // Beim Nachlesen gilt der Ordner: Ordner mit Inhalt stehen ohnehin in
+        // den `dir`-Feldern (allFolders), leere legt mirrorDir dort an.
+        folders: [...new Set([...disk.folders, ...(keepAll ? prev.folders : [])])],
       };
       return { next, onDisk };
     };
@@ -1066,6 +1113,13 @@
     const PROGRESS_KEY = 'myvoci_progress';
     const loadProgress = () => readLocal(PROGRESS_KEY, {}) || {};
     const wordKey = (w) => `${w.a}\u0001${w.b}`;
+    // «Ergänzt, was fehlt»: vorhandene bleiben in ihrer Reihenfolge stehen,
+    // neue kommen hinten dazu. Das Verbinden mit einem Ordner und das
+    // Einlesen einer Sicherung teilen sich diese Regel.
+    const mergeWords = (a, b) => {
+      const has = new Set(a.map(wordKey));
+      return [...a, ...b.filter((w) => !has.has(wordKey(w)))];
+    };
     const BOX_DAYS = [0, 1, 3, 7, 14];
     const isDue = (rec, now = Date.now()) =>
       !rec || !rec.box || now - rec.last >= BOX_DAYS[Math.min(rec.box, 5) - 1] * 864e5;
@@ -1631,8 +1685,8 @@
           <div className={`${LABEL} mb-2`}>{t('dirTitle')}</div>
           <p className="text-sm text-gray-500 mb-3">{dir.status === 'unsupported' ? t('dirUnsupported') : t('dirHint')}</p>
           {dir.status === 'ok' && <p className="text-sm text-emerald-700 mb-3">{t('dirConnected', dir.name, own.length)}</p>}
-          {dir.status === 'prompt' && <p className="text-sm text-amber-700 mb-3">{t('dirPrompt', dir.name)}</p>}
-          {dir.status === 'error' && <p className="text-sm text-red-700 mb-3">{t('dirError', dir.name)}</p>}
+          {/* «Freigeben» und «nicht erreichbar» stehen schon als Streifen über
+              der Liste — hier nur die Knöpfe, sonst liest man beides doppelt. */}
           {dirButtons}
         </div>
         <div className="rounded-lg border border-gray-200 p-4 mt-4">
@@ -1683,9 +1737,10 @@
           onImport({ id: newId(), ...parsed, ...(dir === undefined ? {} : { dir }) });
           showToast(t('imported', parsed.title, parsed.words.length));
         };
-        // Gleicher Titel heisst «neue Fassung desselben Sets» — die alten
-        // Wörter sind danach weg. Das ist einen Klick wert, es gibt kein Zurück.
-        if (ownRef.current.some((s) => s.title === parsed.title)) {
+        // Gleicher Titel im gleichen Ordner heisst «neue Fassung desselben
+        // Sets» — die alten Wörter sind danach weg. Das ist einen Klick wert,
+        // es gibt kein Zurück.
+        if (ownRef.current.some((s) => samePlace(s, { dir, title: parsed.title }))) {
           setDialog({ kind: 'confirm', ok: t('replace'), text: t('confirmReplace', parsed.title), onYes: put });
         } else put();
         return true;
@@ -1789,12 +1844,14 @@
           <RowTool onClick={() => exportOne(set)} title={t('exportOne')} extra="hidden sm:inline-flex"><DownloadIcon /></RowTool>
           <RowTool onClick={() => copyLink(set)} title={t('copyLink')}><LinkIcon /></RowTool>
           <RowTool onClick={() => showQr(set)} title={t('showQr')}><QrIcon /></RowTool>
-          {deletable && <RowTool onClick={() => onEdit(set)} title={t('edit')}><PenIcon /></RowTool>}
           {deletable && (
-            <RowTool title={t('del')} hover="hover:bg-red-50 hover:text-red-600"
-              onClick={() => setDialog({ kind: 'confirm', ok: t('del'), text: t('confirmDeleteSet', set.title), onYes: () => onDelete(set.id) })}>
-              <TrashIcon />
-            </RowTool>
+            <>
+              <RowTool onClick={() => onEdit(set)} title={t('edit')}><PenIcon /></RowTool>
+              <RowTool title={t('del')} hover="hover:bg-red-50 hover:text-red-600"
+                onClick={() => setDialog({ kind: 'confirm', ok: t('del'), text: t('confirmDeleteSet', set.title), onYes: () => onDelete(set.id) })}>
+                <TrashIcon />
+              </RowTool>
+            </>
           )}
         </div>
       );
@@ -1959,7 +2016,10 @@
           .map((w) => ({ a: w.a, b: w.b, ...(w.s.length ? { s: w.s } : {}), ...(w.h ? { h: w.h } : {}) }));
         const name = title.trim();
         if (!name) return setError(t('errTitle'));
-        if (sets.some((s) => s.id !== set.id && s.title === name)) return setError(t('errTitleTaken'));
+        // Nur im selben Ordner: seit die Sets in Ordnern liegen, tragen zwei
+        // Kinder gut denselben Set-Titel — global geprüft liess sich so ein
+        // Set gar nicht mehr speichern.
+        if (sets.some((s) => s.id !== set.id && samePlace(s, { dir, title: name }))) return setError(t('errTitleTaken'));
         if (!clean.length) return setError(t('errNoWord'));
         if (clean.some((w) => !w.a || !w.b)) return setError(t('errHalfWord'));
         const a = langCode(langA), b = langCode(langB);
@@ -3080,10 +3140,23 @@
       const editSet = (set) => { location.hash = withLang('#edit=' + set.id); };
       const newSet = (dir) => { location.hash = withLang('#new=' + encodeURIComponent(dir || '')); };
 
-      const updateStore = (fn) => setStore((prev) => { const next = fn(prev); saveStore(next); return next; });
+      // Der Store zum Nachschlagen ausserhalb des Renderns: was aus dem
+      // Ordner kommt, wird damit fertig berechnet, statt im setStore-Updater
+      // zu rechnen — ein Updater darf mehrfach laufen oder verworfen werden.
+      const storeRef = useRef(store);
+      storeRef.current = store;
+      // Ein Weg, den Store zu ändern: speichern, Ref nachziehen, rendern.
+      // Sonst vergisst eine Schreibstelle die Ref, und ein Nachlesen aus dem
+      // Ordner rechnet auf einem veralteten Stand weiter.
+      const commit = (next) => { saveStore(next); storeRef.current = next; setStore(next); };
+      const updateStore = (fn) => commit(fn(storeRef.current));
 
       // ---- Ordner auf der Platte (s. Abschnitt oben) ----
       const [dir, setDir] = useState({ handle: null, status: dirSupported ? 'none' : 'unsupported' });
+      // Der Ordner, der gerade gelten soll. Ein Auftrag, der erst fertig wird,
+      // nachdem der Nutzer getrennt oder gewechselt hat, erkennt sich daran
+      // als überholt und lässt Store wie Status in Ruhe.
+      const wanted = useRef(null);
       // Der Stand, den der Ordner zuletzt gesehen hat: mirrorDir schreibt nur
       // die Differenz dazu. Was vom Ordner kommt, wird darauf gesetzt, statt
       // zurückgeschrieben — sonst bügelte die App jede von Hand geschriebene
@@ -3092,17 +3165,24 @@
       // Alle Ordner-Zugriffe laufen hintereinander: ein Nachlesen darf nicht
       // in ein halb geschriebenes Set hineinlesen.
       const queue = useRef(Promise.resolve());
-      const enqueue = (job) => (queue.current = queue.current.then(job).catch((e) => { console.error(e); setDir((d) => ({ ...d, status: 'error' })); }));
-      const takeDisk = (handle, keepLocal) => enqueue(async () => {
-        const disk = await readDir(handle);
-        setStore((prev) => {
-          const { next, onDisk } = fromDisk(prev, disk, keepLocal);
-          saveStore(next);
+      const enqueue = (job) => (queue.current = queue.current.then(job).catch((e) => {
+        console.error(e);
+        if (wanted.current) setDir((d) => ({ ...d, status: 'error' })); // nach dem Trennen schweigen
+      }));
+      const takeDisk = (handle, keepAll) => {
+        wanted.current = handle;
+        return enqueue(async () => {
+          const disk = await readDir(handle);
+          if (wanted.current !== handle) return;
+          const { next, onDisk } = fromDisk(storeRef.current, disk, keepAll);
           mirrored.current = onDisk;
-          return next;
+          // Der Fokus-Effekt liest bei jedem Fenster-Wechsel nach; hat sich im
+          // Ordner nichts getan, sollen weder localStorage noch die Liste
+          // etwas davon merken.
+          if (JSON.stringify(next) !== JSON.stringify(storeRef.current)) commit(next);
+          setDir((d) => (d.status === 'ok' && d.handle === handle ? d : { handle, status: 'ok' }));
         });
-        setDir({ handle, status: 'ok' });
-      });
+      };
       useEffect(() => {
         if (!dirSupported) return;
         loadDirHandle().then(async (handle) => {
@@ -3113,9 +3193,13 @@
       }, []);
       useEffect(() => {
         if (dir.status !== 'ok' || !mirrored.current || mirrored.current === store) return;
-        const prev = mirrored.current;
+        const base = mirrored.current;
         mirrored.current = store;
-        enqueue(() => mirrorDir(dir.handle, prev, store));
+        // Nicht geschrieben heisst nicht gespiegelt: bleibt der neue Stand
+        // nach einem Fehler stehen, holt ihn kein späterer Lauf mehr nach und
+        // «Neu laden» verwürfe die Änderung auch im Browser.
+        enqueue(() => (wanted.current !== dir.handle ? null : mirrorDir(dir.handle, base, store))
+          .catch((e) => { mirrored.current = base; throw e; }));
       }, [store, dir]);
       // Im Finder abgelegte oder gelöschte Dateien erscheinen beim Wechsel
       // zurück ins Fenster — MyKahoot liest seine Quizzes ebenso live.
@@ -3124,7 +3208,7 @@
         const onFocus = () => takeDisk(dir.handle, false);
         window.addEventListener('focus', onFocus);
         return () => window.removeEventListener('focus', onFocus);
-      }, [dir]);
+      }, [dir.status, dir.handle]);
       const connectDir = async () => {
         let handle;
         try { handle = await window.showDirectoryPicker({ mode: 'readwrite', id: 'myvoci' }); }
@@ -3132,27 +3216,34 @@
         await saveDirHandle(handle);
         takeDisk(handle, true);
       };
+      // Kein `keepAll`: der Ordner ist die Wahrheit. Sets, die nur im Browser
+      // entstanden sind, bleiben trotzdem (sie tragen kein `disk`-Merkmal).
       const reconnectDir = async () => {
         try {
-          if ((await dir.handle.requestPermission({ mode: 'readwrite' })) === 'granted') takeDisk(dir.handle, true);
+          if ((await dir.handle.requestPermission({ mode: 'readwrite' })) === 'granted') takeDisk(dir.handle, false);
         } catch { setDir((d) => ({ ...d, status: 'error' })); }
       };
-      const disconnectDir = () => { saveDirHandle(null); mirrored.current = null; setDir({ handle: null, status: 'none' }); };
+      const disconnectDir = () => { wanted.current = null; saveDirHandle(null); mirrored.current = null; setDir({ handle: null, status: 'none' }); };
       const dirApi = {
         status: dir.status, name: dir.handle ? dir.handle.name : '',
         connect: connectDir, reconnect: reconnectDir, disconnect: disconnectDir, refresh: () => takeDisk(dir.handle, false),
       };
       const insertSet = (prev, set, dropBy) => ({ ...prev, sets: [...prev.sets.filter(dropBy), set].sort(byTitle) });
+      // Dasselbe Set = gleicher Ort (s. samePlace). Nur über den Titel
+      // ersetzte ein Import das gleichnamige Set eines anderen Kindes.
       const importSet = (set) => updateStore((prev) => {
-        const old = prev.sets.find((s) => s.title === set.title);
-        return insertSet(prev, old ? { ...old, ...set, id: old.id } : set, (s) => s.title !== set.title);
+        const old = prev.sets.find((s) => samePlace(s, set));
+        return insertSet(prev, old ? { ...old, ...set, id: old.id } : set, (s) => !samePlace(s, set));
       });
       // ---- Sicherung: Sets + Ordner + Lernstand in einer Datei ----
-      // Einlesen ergänzt: gleicher Titel = dasselbe Set (id des alten Stands
-      // bleibt, sein Lernstand wird darauf umgehängt), Lernstand pro Wort
-      // gewinnt der neuere Versuch.
+      // Einlesen ergänzt: gleicher Titel im gleichen Ordner = dasselbe Set
+      // (id des alten Stands bleibt, sein Lernstand wird darauf umgehängt),
+      // Lernstand pro Wort gewinnt der neuere Versuch.
       const backup = {
-        save: () => download('MyVoci-Sicherung.json', JSON.stringify({ app: 'myvoci', version: 1, ...store, progress }, null, 1)),
+        // `disk`/`file` sind Buchführung des Ordners, kein Inhalt: in einer
+        // Sicherung stünde sonst auf einem fremden Gerät «lag schon im Ordner».
+        save: () => download('MyVoci-Sicherung.json', JSON.stringify(
+          { app: 'myvoci', version: 1, ...store, sets: store.sets.map(({ disk, file, ...s }) => s), progress }, null, 1)),
         restore: (text) => {
           let data;
           try { data = JSON.parse(text); } catch { return null; }
@@ -3166,17 +3257,15 @@
               if (!s || typeof s.title !== 'string' || !Array.isArray(s.words)) continue;
               s = { ...s, dir: typeof s.dir === 'string' ? s.dir : '', words: s.words.filter((w) => w && typeof w.a === 'string' && typeof w.b === 'string') };
               if (!s.words.length) continue;
-              const old = next.sets.find((x) => x.title === s.title);
+              const old = next.sets.find((x) => samePlace(x, s));
               // «Ergänzt, was fehlt» — genau das, was der Hilfetext verspricht:
               // vorhandene Wörter bleiben in ihrer Reihenfolge stehen, neue
               // kommen hinten dazu. Sonst warf eine ältere Sicherung die Arbeit
               // seit dem Herunterladen weg.
-              const mergedWords = old
-                ? [...old.words, ...s.words.filter((w) => !old.words.some((o) => wordKey(o) === wordKey(w)))]
-                : s.words;
+              const mergedWords = old ? mergeWords(old.words, s.words) : s.words;
               const merged = old ? { ...old, ...s, words: mergedWords, id: old.id } : { ...s, id: s.id || newId() };
               idMap[s.id] = merged.id;
-              next = insertSet(next, merged, (x) => x.title !== s.title);
+              next = insertSet(next, merged, (x) => !samePlace(x, s));
             }
             return next;
           });

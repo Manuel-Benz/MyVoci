@@ -4,6 +4,14 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (09.09.2026, 3):** Review über den Ordner-Anschluss mit zehn behobenen
+Befunden — allen voran: der Titel galt als eindeutiger Schlüssel, obwohl beide
+Kinder dieselben Set-Titel haben («dasselbe Set» ist jetzt Ordner + Titel, s.
+`setPlace`). Dazu ein Vereinfachungs-Durchgang: ein Schreibweg für den Store,
+eine Stelle fürs Zusammenführen von Wörtern, spürbar weniger Arbeit bei jedem
+Fenster-Wechsel. Offen gelassen: ein Set per Ziehen in einen Ordner schieben,
+in dem sein Titel schon liegt, fragt nicht nach (Ordner tun das).
+
 **Stand (09.09.2026, 2):** Übersicht schlank wie die Quiz-Auswahl in MyKahoot;
 Beispiele abschaltbar (Einstellungen, gemerkt pro Gerät); echte Sets liegen in
 `voci/` (ignoriert). Der Ordner wird neu unter der Liste angeboten statt nur in
