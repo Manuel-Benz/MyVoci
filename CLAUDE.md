@@ -106,7 +106,8 @@ Schlüssel. Darum liest die App den Code selbst: Kamera-Knopf in der Übersicht
 (immer da), `getUserMedia` mit Rückkamera, Bild für Bild auf 640 px durch
 **jsQR** (jsdelivr, bei Bedarf über `loadScript`; die cdnjs-URL gibt es nicht).
 `scanned` deutet den Text: nur das Fragment zählt (die Adresse davor darf
-localhost oder Pages sein), zurück kommen `keyPart` (`k=`) und die Route samt
+localhost oder Pages sein), zerlegt wird es mit `hashParts`, das dafür auch
+einen fremden Hash annimmt. Zurück kommen `keyPart` (`k=`) und die Route samt
 Optionen — geprüft gegen `ROUTE_KEYS`/`isRoutePart`, dieselbe Stelle, aus der
 `getRoute` liest. Unter dem Kamerabild nimmt ein Feld denselben Link auch
 **eingefügt** an (Handoff: am Mac kopiert, auf dem iPad in der Zwischenablage)

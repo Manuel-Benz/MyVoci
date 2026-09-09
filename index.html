@@ -56,7 +56,7 @@
     const LANGS = [{ id: 'de', name: 'Deutsch' }, { id: 'en', name: 'English' }];
     const LANG_KEY = 'myvoci_lang';
     const loadLang = () => (readLocal(LANG_KEY) === 'en' ? 'en' : 'de');
-    const hashParts = () => location.hash.slice(1).split('&');
+    const hashParts = (hash = location.hash) => hash.slice(1).split('&').filter(Boolean);
     const langFromHash = () => {
       const part = hashParts().find((x) => x.startsWith('l=') && LANGS.some((l) => l.id === x.slice(2)));
       return part && part.slice(2);
@@ -1700,7 +1700,7 @@
     const scanned = (text) => {
       const i = text.indexOf('#');
       if (i < 0) return null;
-      const parts = text.slice(i + 1).split('&').filter(Boolean);
+      const parts = hashParts(text.slice(i));
       const keyPart = parts.find((x) => x.startsWith('k='));
       const rest = parts.filter((x) => x !== keyPart);
       // Nur eine Route, die `getRoute` auch kennt — sonst schluckte der
@@ -1714,6 +1714,8 @@
       const [error, setError] = useState(null);
       const [pasted, setPasted] = useState(''); // ohne Kamera: Link von Hand einfügen
       const openPasted = () => { if (pasted.trim()) onCode(pasted.trim()); };
+      // Fehlt die Kamera ganz, sagt das dasselbe wie ein gescheiterter Zugriff
+      const note = error || (!scanSupported && t('scanNoCam'));
       useEffect(() => {
         if (!scanSupported) return;
         let stream = null, stop = false, timer = 0;
@@ -1741,10 +1743,9 @@
               // echter Änderung, sonst siebenmal pro Sekunde umsonst.
               const k = Math.min(1, 640 / video.videoWidth);
               const w = Math.round(video.videoWidth * k), h = Math.round(video.videoHeight * k);
-              if (canvas.width !== w) canvas.width = w;
-              if (canvas.height !== h) canvas.height = h;
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+              ctx.drawImage(video, 0, 0, w, h);
+              const img = ctx.getImageData(0, 0, w, h);
               const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
               if (code && code.data) { stop = true; stopCam(); onCode(code.data); return; }
             }
@@ -1758,12 +1759,12 @@
         <Modal onClose={onClose}>
           <h2 className="text-xl font-bold text-center mb-4 text-gray-800">{t('scan')}</h2>
           <p className="text-sm text-gray-500 text-center mb-4">{t('scanHint')}</p>
-          {scanSupported ? (
+          {scanSupported && (
             <div className="rounded-lg overflow-hidden bg-black aspect-square mb-4">
               <video ref={videoRef} playsInline muted autoPlay className="w-full h-full object-cover" />
             </div>
-          ) : <p className="text-sm text-orange-600 text-center mb-4">{t('scanNoCam')}</p>}
-          {error && <p className="text-sm text-red-600 text-center mb-4">{error}</p>}
+          )}
+          {note && <p className="text-sm text-orange-600 text-center mb-4">{note}</p>}
           <p className="text-sm text-gray-500 mb-2">{t('scanPaste')}</p>
           <div className="flex gap-2 mb-4">
             <input type="text" value={pasted} placeholder={t('scanPastePh')} autoCapitalize="none" autoCorrect="off" spellCheck={false}
