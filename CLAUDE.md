@@ -19,6 +19,12 @@ Sprache/I18N → Beispiel-Sets → KI-Prompt → Parser/Export → Ordner → Le
 Direktlinks → Routing → **Korrektur** → Vorlesen/Spracherkennung/Vollbild →
 Bausteine (Modal, Icons, QR, Einstellungen) → Seiten.
 
+Die Übersicht ist gebaut wie die Quiz-Auswahl in MyKahoot: schlanke Zeilen
+statt Kacheln (`row`/`folderBox` in `Selection`), Titel in fester Spalte mit
+der Wortzahl dahinter in einer Flucht, rechts transparente Symbolknöpfe
+(`RowTool`, nicht `IconButton` — der bleibt für die Kacheln auf den anderen
+Seiten), Ordnerinhalt an einer Linie eingerückt.
+
 Seiten-Komponenten: `Selection` (Übersicht) · `SetEditor` · `SetPage`
 (Rundeneinstellungen + Lernstand + Teilen) · `Practice` (alle Modi ausser
 Zuordnen) · `MatchRound` (Zuordnen) · `Summary` · `Trainer` (Set-Seite → Runde →

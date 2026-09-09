@@ -1437,6 +1437,16 @@
       </button>
     );
 
+    // Schlanke Symbolknöpfe der Listenzeilen (wie .row-tool in MyKahoot):
+    // transparent, nur Hover getönt — eine Zeile bleibt eine Zeile, keine
+    // Reihe weisser Kacheln pro Set.
+    const RowTool = ({ onClick, title, hover = 'hover:bg-white hover:text-gray-800', extra = '', children }) => (
+      <button onClick={onClick} title={title}
+        className={`shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 transition-colors ${hover} ${extra}`}>
+        {children}
+      </button>
+    );
+
     const Icon = ({ children }) => (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
@@ -1729,24 +1739,27 @@
         });
       };
 
+      // Zeile wie in der Quiz-Auswahl von MyKahoot: schlanker Namens-Knopf,
+      // Titel in fester Spalte (kürzt bei Bedarf), Wortzahl dahinter in einer
+      // Flucht, rechts die Symbolknöpfe spaltenweise untereinander.
       const row = (set, deletable) => (
-        <div key={set.id} className="flex items-center gap-2 mb-2"
+        <div key={set.id} className="flex items-center gap-0.5"
           {...(deletable ? dragProps({ kind: 'set', id: set.id, dir: set.dir || '' }) : {})}>
           <button onClick={() => onOpen(set)}
-            className="flex-1 min-w-0 truncate text-left px-4 py-3 bg-white rounded-lg shadow hover:shadow-md hover:bg-blue-50 transition-all font-semibold text-gray-800">
-            {set.title}
+            className="flex-1 min-w-0 flex items-baseline text-left px-2.5 py-1.5 rounded-lg hover:bg-white transition-colors font-semibold text-gray-800">
+            <span className="min-w-0 truncate" style={{ flex: '0 1 17rem' }}>{set.title}</span>
+            <span className="ml-3 shrink-0 text-sm font-normal text-gray-400">{t('nWords', set.words.length)}</span>
             {langBadge(set)}
-            <span className="ml-2 text-sm font-normal text-gray-400">{t('nWords', set.words.length)}</span>
           </button>
-          <IconButton onClick={() => exportOne(set)} title={t('exportOne')} extra="hidden sm:block"><DownloadIcon /></IconButton>
-          <IconButton onClick={() => copyLink(set)} title={t('copyLink')}><LinkIcon /></IconButton>
-          <IconButton onClick={() => showQr(set)} title={t('showQr')}><QrIcon /></IconButton>
-          {deletable && <IconButton onClick={() => onEdit(set)} title={t('edit')}><PenIcon /></IconButton>}
+          <RowTool onClick={() => exportOne(set)} title={t('exportOne')} extra="hidden sm:inline-flex"><DownloadIcon /></RowTool>
+          <RowTool onClick={() => copyLink(set)} title={t('copyLink')}><LinkIcon /></RowTool>
+          <RowTool onClick={() => showQr(set)} title={t('showQr')}><QrIcon /></RowTool>
+          {deletable && <RowTool onClick={() => onEdit(set)} title={t('edit')}><PenIcon /></RowTool>}
           {deletable && (
-            <IconButton title={t('del')} hover="hover:bg-red-50"
+            <RowTool title={t('del')} hover="hover:bg-red-50 hover:text-red-600"
               onClick={() => setDialog({ kind: 'confirm', ok: t('del'), text: t('confirmDeleteSet', set.title), onYes: () => onDelete(set.id) })}>
               <TrashIcon />
-            </IconButton>
+            </RowTool>
           )}
         </div>
       );
@@ -1755,18 +1768,19 @@
         const isOpen = openDirs.includes(dir);
         return (
           <div key={dir} {...dropProps(dir)}
-            className={`mb-2 rounded-lg border-2 transition-colors ${dropDir === dir ? 'border-blue-400 bg-blue-50/60' : 'border-transparent'}`}>
+            className={`rounded-lg transition-colors ${dropDir === dir ? 'outline outline-2 outline-dashed outline-blue-400' : ''}`}>
             <div {...dragProps({ kind: 'dir', id: dir })} onClick={() => toggleDir(dir)}
-              className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow hover:shadow-md cursor-pointer select-none">
-              <span className="text-gray-400 w-3">{isOpen ? '▾' : '▸'}</span>
-              <span className="shrink-0 text-gray-400"><FolderIcon /></span>
+              className="flex items-center gap-0.5 pl-2.5 py-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer select-none">
+              <span className="w-3 text-xs text-gray-400">{isOpen ? '▾' : '▸'}</span>
+              <span className="shrink-0 text-gray-400 mr-1.5"><FolderIcon /></span>
               <span className="flex-1 min-w-0 truncate font-semibold text-gray-700">{dirName(dir)}</span>
-              <IconButton onClick={(e) => { e.stopPropagation(); onNew(dir); }} title={t('newSetHere')}><PlusIcon /></IconButton>
-              <IconButton onClick={(e) => { e.stopPropagation(); newFolder(dir); }} title={t('newSubfolder')}><FolderIcon /></IconButton>
-              <IconButton onClick={(e) => { e.stopPropagation(); renameFolder(dir); }} title={t('renameFolder')}><PenIcon /></IconButton>
-              <IconButton onClick={(e) => { e.stopPropagation(); dropFolder(dir); }} title={t('deleteFolder')} hover="hover:bg-red-50"><TrashIcon /></IconButton>
+              <RowTool onClick={(e) => { e.stopPropagation(); onNew(dir); }} title={t('newSetHere')}><PlusIcon /></RowTool>
+              <RowTool onClick={(e) => { e.stopPropagation(); newFolder(dir); }} title={t('newSubfolder')}><FolderIcon /></RowTool>
+              <RowTool onClick={(e) => { e.stopPropagation(); renameFolder(dir); }} title={t('renameFolder')}><PenIcon /></RowTool>
+              <RowTool onClick={(e) => { e.stopPropagation(); dropFolder(dir); }} title={t('deleteFolder')} hover="hover:bg-red-50 hover:text-red-600"><TrashIcon /></RowTool>
             </div>
-            {isOpen && <div className="ml-4 mt-2">{treeOf(dir)}</div>}
+            {/* Inhalt an einer Linie eingerückt — man sieht, was wohin gehört */}
+            {isOpen && <div className="ml-3.5 pl-2.5 my-0.5 border-l-2 border-gray-200 space-y-0.5">{treeOf(dir)}</div>}
           </div>
         );
       };
@@ -1821,22 +1835,22 @@
             </Collapsible>
 
             <div className="mb-8">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-0.5 mb-1 pl-2.5">
                 <h2 className="text-lg font-semibold text-gray-600 flex-1">{t('mySets')}</h2>
-                <IconButton onClick={() => onNew('')} title={t('newSet')}><PlusIcon /></IconButton>
-                <IconButton onClick={() => newFolder('')} title={t('newFolder')}><FolderIcon /></IconButton>
-                <IconButton onClick={exportAll} title={t('exportAll')}><DownloadIcon /></IconButton>
+                <RowTool onClick={() => onNew('')} title={t('newSet')}><PlusIcon /></RowTool>
+                <RowTool onClick={() => newFolder('')} title={t('newFolder')}><FolderIcon /></RowTool>
+                <RowTool onClick={exportAll} title={t('exportAll')}><DownloadIcon /></RowTool>
               </div>
               <div {...dropProps('')}
-                className={`min-h-[3rem] rounded-lg border-2 transition-colors ${dropDir === '' ? 'border-blue-400 bg-blue-50/60' : 'border-transparent'}`}>
-                {own.length || folders.length ? treeOf('') : <p className="text-sm text-gray-400 px-1 py-3">{t('emptyList')}</p>}
+                className={`min-h-[2.5rem] rounded-lg space-y-0.5 transition-colors ${dropDir === '' ? 'outline outline-2 outline-dashed outline-blue-400 outline-offset-4' : ''}`}>
+                {own.length || folders.length ? treeOf('') : <p className="text-sm text-gray-400 px-2.5 py-2">{t('emptyList')}</p>}
               </div>
               {own.length > 0 && <p className="text-xs text-gray-400 mt-1">{t('storedHint')}</p>}
             </div>
 
             <div className="mb-8">
-              <h2 className="text-lg font-semibold text-gray-600 mb-3">{t('examples')}</h2>
-              {DEMOS.map((s) => row(s, false))}
+              <h2 className="text-lg font-semibold text-gray-600 mb-1 pl-2.5">{t('examples')}</h2>
+              <div className="space-y-0.5">{DEMOS.map((s) => row(s, false))}</div>
             </div>
 
             <Collapsible title={t('ipadTitle')} open={ipadOpen} onToggle={() => setIpadOpen((v) => !v)}>
