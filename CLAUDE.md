@@ -135,6 +135,11 @@ verzweigen, wenn es um Inhalte geht.
   Format. Alle Ordner-Zugriffe laufen über **eine** Promise-Kette
   (`enqueue`): ein Nachlesen beim Fokus darf nicht in ein halb geschriebenes
   Set hineinlesen.
+- **Das Sprach-Badge zeigt `DE↔FR`, nicht `DE→FR`** (`langBadge`): geübt wird
+  in beide Richtungen, die Wahl trifft die Runde. Die Reihenfolge bleibt
+  trotzdem sichtbar — an ihr hängt, welche Seite `a` ist. In der Datei
+  (`Sprachen: de → fr`) und in der Richtungswahl der Runde (`dirAB`) steht
+  weiterhin der einfache Pfeil, dort ist er eine echte Festlegung.
 - **Der Ordner wird unter der Liste angeboten, nicht nur in den
   Einstellungen** (`dirOffer`, nur bei `status === 'none'`): ein einmaliger
   Einrichtungsschritt, den hinter dem Zahnrad niemand findet. Wo es nicht geht
