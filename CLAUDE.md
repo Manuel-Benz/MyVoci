@@ -75,15 +75,19 @@ schneiden und mit `node` prüfen (so entstanden die 26 Fälle in Phase 2).
 ## Handschrift-Erkennung (MyScript, optional)
 
 Mit zwei Schlüsseln aus developer.myscript.com (`myvoci_myscript` im
-localStorage, Eingabe in den Einstellungen; 2 000 Erkennungen/Monat gratis)
-erkennt der Handschrift-Modus das Geschriebene: `InkPad` lädt `iink-ts` erst
-bei Bedarf per CDN (`loadIink`), Variante `INK_V2` (eine HTTP-Anfrage pro
-Ruhepause, kein offener Kanal), Sprache aus `IINK_LANG`. «Prüfen» holt per
-`export()` den endgültigen Text und wertet ihn wie eine Eingabe (`checkInk` →
-`settle`). Ohne Schlüssel, bei einer Sprache ohne Paket oder wenn Laden/Anmelden
-scheitert (`inkFail`) bleibt die Fläche ohne Erkennung (`Sketch`). Die
-Schlüssel liegen in `keys/` (ignoriert) — nie in Code oder Link.
+localStorage, Eingabe in den Einstellungen jeder Seite, von der aus geübt wird —
+`MyScriptKeys`) erkennt der Handschrift-Modus das Geschriebene: `InkPad` lädt
+`iink-ts` erst bei Bedarf per CDN (`loadScript`), Variante `INK_V2`, Sprache aus
+`IINK_LANG`. Erkannt wird **nur auf Verlangen** (`exportContent: 'DEMAND'`):
+«Prüfen» holt per `export()` den Text und wertet ihn wie eine Eingabe
+(`checkInk` → `settle`). Ohne Schlüssel, bei einer Sprache ohne Paket
+(`inkNoLang`) oder wenn Laden/Anmelden scheitert (`inkFail`) bleibt die Fläche
+ohne Erkennung (`Sketch`). Beide Wege teilen **einen** Zweig in `Practice`:
+«Aufdecken» mit Selbstbewertung gibt es immer, «Prüfen» kommt nur dazu — sonst
+käme niemand an einem Wort vorbei, das er nicht weiss, und ein falsch gelesenes
+Wort liesse sich nicht richtigstellen.
 
+## Modi
 ## Modi
 
 `MODES` = write, pen, cards, choice, match, gap, listen, speak, scramble.
@@ -211,8 +215,35 @@ verzweigen, wenn es um Inhalte geht.
   gehaltenen Strich neben Text als Auswahl-Geste — das Wort oben wurde
   markiert, der Strich riss ab. `touch-action: none` stoppt nur das Scrollen,
   und Reacts Touch-Listener sind passiv, dort greift `preventDefault` nicht.
-  Scribble gehört zu **Schreiben** (Textfeld), nicht zu Handschrift — die
-  Fläche ist absichtlich ohne Erkennung; der Hinweistext sagt das.
+  Beide Flächen brauchen das, `InkPad` so gut wie `Sketch`. Scribble
+  (Textfeld) bleibt davon unberührt: das ist der Modus «Schreiben».
+- **Erkannt wird auf Verlangen, nicht nach jeder Pause.** `QUIET_PERIOD`
+  schickt 400 ms nach jedem Absetzen des Stifts eine abrechenbare Anfrage; ein
+  Wort kostete so drei bis sieben statt einer, und die 2 000 Gratis-Anfragen im
+  Monat waren nach zwei Wochen weg. Mit `DEMAND` fliegt genau eine pro
+  «Prüfen» — und die Vorschau «Erkannt: …» entfällt, samt dem Wettlauf
+  zwischen laufender Erkennung und Knopfdruck.
+- **`scored` (Ref) lässt jede Stelle der Warteschlange nur einmal zählen.**
+  Die Handschrift wertet über das Netz: der Knopf bleibt währenddessen
+  anklickbar, und fällt die Erkennung mitten in der Rückmeldung aus, stehen
+  auf einmal die Selbstbewertungs-Knöpfe unter einem gewerteten Wort. Beides
+  rief `finish` ein zweites Mal und buchte den Lernstand doppelt.
+- **Gesperrt wird mit einer Ref (`inkAsking`), nicht mit einem Zustand.** Zwei
+  Tipper kurz nacheinander lesen beide noch das alte `false` und schicken zwei
+  kostenpflichtige Anfragen los — im Test blieb die Wertung dank `scored`
+  einfach, die Anfragen wurden trotzdem verdreifacht.
+- **Alle Zugriffe auf die iink-Fläche laufen über eine Kette (`inkQueue`)**,
+  wie beim Ordner: `Canvas.load` ist statisch und zerstört die Vorgängerin
+  selbst. Ein nebenher laufendes `destroy()` traf sonst die eben aufgebaute
+  Fläche — bei Richtung «gemischt» wechselt die Sprache pro Wort, übrig blieb
+  eine Fläche, die zeichnet, aber nichts mehr erkennt.
+- **`loadScript` prüft, ob das Global wirklich da ist.** Ein Captive Portal
+  liefert HTTP 200 mit einer Fehlerseite, `onload` feuert, und die gemerkte
+  Promise stand für die ganze Sitzung auf `undefined` — kein späterer Versuch
+  lud je nach.
+- **Wer nach Toleranz gewertet wird, muss sie einstellen können** (`usesLevel`):
+  `checkInk` misst mit `opts.level`, die Wahl stand aber nur bei `TYPED_MODES`.
+  Still galt, was zuletzt in «Schreiben» gewählt war.
 - **iink bekommt ein absolut eingepasstes Wurzelelement in einem Rahmen
   fester Höhe.** Es setzt seiner Wurzel `height: 100%` und wuchs mit dem
   eigenen SVG bei jedem Rendern weiter (1 500 px und mehr).
@@ -220,6 +251,11 @@ verzweigen, wenn es um Inhalte geht.
   stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
 
 ## Was nicht ins Repo gehört
+
+Die **MyScript-Schlüssel** liegen im localStorage des Geräts, nicht im Code.
+Manuels Kopie (Schlüssel und Zertifikat) liegt in `keys/`; der Ordner steht in
+`.gitignore` und wird **nie** committet — wie `voci/` auch nicht proaktiv zum
+Committen anbieten.
 
 Im Code stehen nur die zwei eingebauten Beispiele. Die **echten Sets liegen in
 `voci/`** — wie `quizzes/` in MyKahoot lebendes Material, das die App direkt von

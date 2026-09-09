@@ -4,6 +4,18 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (09.09.2026, 6):** Review über die Handschrift-Erkennung, fünfzehn
+Befunde, die schwersten behoben: erkannt wird jetzt **auf Verlangen** statt nach
+jeder Schreibpause (eine Anfrage pro Wort statt drei bis sieben — sonst wäre das
+Gratiskontingent in zwei Wochen weg), jede Stelle der Warteschlange zählt nur
+noch einmal (`scored`), ein Fehler beim Erkennen sagt das, statt heimlich die
+vorige Erkennung zu werten, «Aufdecken» gibt es auch mit Erkennung, die Toleranz
+lässt sich für die Handschrift einstellen, «Nur Stift annehmen» wirkt endlich
+auch dort, und die Schlüsselfelder stehen auf jeder Seite, von der aus geübt
+wird. Dazu zusammengeführt: ein Zweig für beide Flächen, ein Lader für alle
+CDN-Bibliotheken. Im Browser geprüft (0 Anfragen beim Schreiben, 1 bei drei
+schnellen Klicks); mit dem Pencil auf dem iPad weiterhin offen.
+
 **Stand (09.09.2026, 5):** Handschrift-Erkennung über MyScript iink (Cloud,
 Gratiskontingent reicht für zwei Kinder) als Option: Schlüssel in den
 Einstellungen, dann korrigiert der Handschrift-Modus automatisch wie
