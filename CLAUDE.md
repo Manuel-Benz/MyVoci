@@ -107,7 +107,10 @@ Schlüssel. Darum liest die App den Code selbst: Kamera-Knopf in der Übersicht
 640 px durch **jsQR** (jsdelivr, bei Bedarf über `loadScript`; die cdnjs-URL
 gibt es nicht). `scanned` deutet den Text: nur das Fragment zählt (die Adresse
 davor darf localhost oder Pages sein), zurück kommen `keyPart` (`k=`) und die
-Route samt Optionen. `onCode` in `Selection`: Schlüssel über `takeKeys`
+Route samt Optionen. Unter dem Kamerabild nimmt ein Feld denselben Link auch
+**eingefügt** an (Handoff: am Mac kopiert, auf dem iPad in der Zwischenablage)
+— die Home-Screen-Webapp hat keine Adresszeile, sonst käme dort kein Link
+hinein. `onCode` in `Selection`: Schlüssel über `takeKeys`
 speichern, Set über `location.hash` öffnen — danach läuft alles wie bei einem
 geöffneten Link (`keepLink`). Bibliothek und Kamera melden getrennt
 (`scanNoLib` / `scanNoCam`). Die Kamera-Freigabe in der Home-Screen-App wurde

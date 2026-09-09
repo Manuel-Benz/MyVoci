@@ -7,8 +7,9 @@ Live: https://manuel-benz.github.io/MyVoci/
 **Stand (09.09.2026, 8):** QR-Codes lassen sich **in der App** scannen
 (Kamera-Knopf in der Übersicht, jsQR): Auf dem iPad öffnet die Kamera-App jeden
 Code in Safari, die Home-Screen-Webapp mit ihrem eigenen Speicher ging leer aus.
-Jetzt landen Set-Code und Schlüssel-Code dort, wo gescannt wird. Im Browser
-geprüft: Knopf, Modal, Nachladen und Dekodieren eines gezeichneten Codes; der
+Jetzt landen Set-Code und Schlüssel-Code dort, wo gescannt wird; im selben
+Fenster lässt sich der Link auch einfügen (Handoff vom Mac). Im Browser
+geprüft (Einfügen: Schlüssel, Fremdlink, Set-Route): Knopf, Modal, Nachladen und Dekodieren eines gezeichneten Codes; der
 Kamera-Zugriff selbst (Berechtigung, Rückkamera, Home-Screen-App) steht auf
 dem iPad noch aus.
 

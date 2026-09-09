@@ -264,6 +264,9 @@
         scanNoLib: 'Scanner konnte nicht geladen werden — kein Netz?',
         scanNotOurs: 'Das ist kein MyVoci-Code.',
         scanBadKeys: 'Schlüssel-Code nicht lesbar.',
+        scanPaste: 'Oder Link einfügen — vom Mac kopiert kommt er per Handoff auch auf dem iPad in die Zwischenablage.',
+        scanPastePh: 'Link hier einfügen',
+        scanOpen: 'Öffnen',
         reveal: 'Aufdecken',
         exam: 'Prüfungsmodus',
         examHint: 'Keine Rückmeldung während der Runde, Lösungen erst am Ende. Startet im Vollbild; wer es verlässt oder die App wechselt, wird gezählt.',
@@ -545,6 +548,9 @@
         scanNoLib: 'Could not load the scanner — no network?',
         scanNotOurs: 'This is not a MyVoci code.',
         scanBadKeys: 'Key code not readable.',
+        scanPaste: 'Or paste a link — copied on the Mac, Handoff puts it on the iPad clipboard too.',
+        scanPastePh: 'Paste link here',
+        scanOpen: 'Open',
         reveal: 'Reveal',
         exam: 'Exam mode',
         examHint: 'No feedback during the round, solutions only at the end. Starts in full screen; leaving it or switching apps is counted.',
@@ -1699,6 +1705,8 @@
     const Scanner = ({ onClose, onCode }) => {
       const videoRef = useRef(null);
       const [error, setError] = useState(null);
+      const [pasted, setPasted] = useState(''); // ohne Kamera: Link von Hand einfügen
+      const openPasted = () => { if (pasted.trim()) onCode(pasted.trim()); };
       useEffect(() => {
         let stream = null, stop = false, timer = 0;
         const canvas = document.createElement('canvas');
@@ -1740,6 +1748,13 @@
             <video ref={videoRef} playsInline muted autoPlay className="w-full h-full object-cover" />
           </div>
           {error && <p className="text-sm text-red-600 text-center mb-4">{error}</p>}
+          <p className="text-sm text-gray-500 mb-2">{t('scanPaste')}</p>
+          <div className="flex gap-2 mb-4">
+            <input type="text" value={pasted} placeholder={t('scanPastePh')} autoCapitalize="none" autoCorrect="off" spellCheck={false}
+              onChange={(e) => setPasted(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') openPasted(); }}
+              className={`flex-1 min-w-0 ${INPUT}`} />
+            <button onClick={openPasted} disabled={!pasted.trim()} className={`px-4 py-2 ${BTN_PRIMARY} ${pasted.trim() ? '' : 'opacity-50'}`}>{t('scanOpen')}</button>
+          </div>
           <button onClick={onClose} className={`w-full px-4 py-2 ${BTN_SECONDARY}`}>{t('close')}</button>
         </Modal>
       );
