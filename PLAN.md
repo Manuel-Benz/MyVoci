@@ -4,6 +4,14 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (09.09.2026, 8):** QR-Codes lassen sich **in der App** scannen
+(Kamera-Knopf in der Übersicht, jsQR): Auf dem iPad öffnet die Kamera-App jeden
+Code in Safari, die Home-Screen-Webapp mit ihrem eigenen Speicher ging leer aus.
+Jetzt landen Set-Code und Schlüssel-Code dort, wo gescannt wird. Im Browser
+geprüft: Knopf, Modal, Nachladen und Dekodieren eines gezeichneten Codes; der
+Kamera-Zugriff selbst (Berechtigung, Rückkamera, Home-Screen-App) steht auf
+dem iPad noch aus.
+
 **Stand (09.09.2026, 7):** Ein gescanntes Set bleibt im Browser: `#v=`-Links
 werden beim Öffnen übernommen (Wurzel, gleicher Titel = ersetzen) und als
 eigenes Set geöffnet, Lernstand vom alten `link:`-Schlüssel umgehängt. Dazu die

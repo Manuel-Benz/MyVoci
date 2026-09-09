@@ -98,7 +98,21 @@ ohne Erkennung (`Sketch`). Beide Wege teilen **einen** Zweig in `Practice`:
 käme niemand an einem Wort vorbei, das er nicht weiss, und ein falsch gelesenes
 Wort liesse sich nicht richtigstellen.
 
-## Modi
+## QR-Code in der App scannen (`Scanner`)
+
+Ein mit der Kamera-App gescannter Code öffnet auf dem iPad **immer Safari**;
+die Home-Screen-Webapp hat einen eigenen Speicher und bekäme so weder Set noch
+Schlüssel. Darum liest die App den Code selbst: Kamera-Knopf in der Übersicht
+(nur bei `scanSupported`), `getUserMedia` mit Rückkamera, Bild für Bild auf
+640 px durch **jsQR** (jsdelivr, bei Bedarf über `loadScript`; die cdnjs-URL
+gibt es nicht). `scanned` deutet den Text: nur das Fragment zählt (die Adresse
+davor darf localhost oder Pages sein), zurück kommen `keyPart` (`k=`) und die
+Route samt Optionen. `onCode` in `Selection`: Schlüssel über `takeKeys`
+speichern, Set über `location.hash` öffnen — danach läuft alles wie bei einem
+geöffneten Link (`keepLink`). Bibliothek und Kamera melden getrennt
+(`scanNoLib` / `scanNoCam`). Die Kamera-Freigabe in der Home-Screen-App wurde
+noch nicht auf dem iPad geprüft.
+
 ## Modi
 
 `MODES` = write, pen, cards, choice, match, gap, listen, speak, scramble.
