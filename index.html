@@ -242,9 +242,17 @@
         dirReconnect: 'Ordner freigeben',
         dirError: (name) => `Der Ordner «${name}» ist nicht erreichbar (verschoben, gelöscht oder Zugriff verweigert). Änderungen bleiben bis dahin nur im Browser.`,
         modePen: 'Handschrift',
-        modePenHint: 'Mit Stift oder Finger auf die Fläche schreiben, dann aufdecken und selbst bewerten — wie auf Papier, ohne Erkennung. Automatisch korrigiert wird im Modus «Schreiben» (iPad: mit dem Pencil ins Feld schreiben, Scribble tippt es ein).',
+        modePenHint: 'Mit Stift oder Finger auf die Fläche schreiben. Ohne Erkennung: aufdecken und selbst bewerten, wie auf Papier. Mit MyScript-Schlüssel (Einstellungen) wird die Schrift erkannt und automatisch korrigiert.',
         penOnly: 'Nur Stift annehmen (Finger ignorieren)',
         penClear: 'Fläche leeren',
+        inkFail: 'Erkennung nicht erreichbar — aufdecken und selbst bewerten.',
+        inkEmpty: 'Noch nichts erkannt — zuerst schreiben.',
+        inkRead: 'Erkannt',
+        myscriptTitle: 'Handschrift-Erkennung (MyScript)',
+        myscriptHint: 'Mit den zwei Schlüsseln eines MyScript-Entwicklerkontos (developer.myscript.com, 2 000 Erkennungen pro Monat gratis) erkennt der Handschrift-Modus das Geschriebene und korrigiert automatisch. Die Schlüssel bleiben in diesem Browser.',
+        myscriptApp: 'Application Key',
+        myscriptHmac: 'HMAC Key',
+        myscriptOn: 'Erkennung eingeschaltet.',
         reveal: 'Aufdecken',
         exam: 'Prüfungsmodus',
         examHint: 'Keine Rückmeldung während der Runde, Lösungen erst am Ende. Startet im Vollbild; wer es verlässt oder die App wechselt, wird gezählt.',
@@ -504,9 +512,17 @@
         dirReconnect: 'Grant access',
         dirError: (name) => `The folder “${name}” is not reachable (moved, deleted or access denied). Until then, changes stay in the browser only.`,
         modePen: 'Handwriting',
-        modePenHint: 'Write on the pad with a pen or finger, then reveal and rate yourself — like on paper, no recognition. For automatic checking use “Write” (iPad: write into the field with the Pencil, Scribble types it).',
+        modePenHint: 'Write on the pad with a pen or finger. Without recognition: reveal and rate yourself, like on paper. With MyScript keys (settings) the writing is recognised and checked automatically.',
         penOnly: 'Pen only (ignore fingers)',
         penClear: 'Clear pad',
+        inkFail: 'Recognition unavailable — reveal and rate yourself.',
+        inkEmpty: 'Nothing recognised yet — write first.',
+        inkRead: 'Recognised',
+        myscriptTitle: 'Handwriting recognition (MyScript)',
+        myscriptHint: 'With the two keys of a MyScript developer account (developer.myscript.com, 2,000 recognitions per month free) the handwriting mode recognises what you write and checks it automatically. The keys stay in this browser.',
+        myscriptApp: 'Application key',
+        myscriptHmac: 'HMAC key',
+        myscriptOn: 'Recognition enabled.',
         reveal: 'Reveal',
         exam: 'Exam mode',
         examHint: 'No feedback during the round, solutions only at the end. Starts in full screen; leaving it or switching apps is counted.',
@@ -625,6 +641,31 @@
     const langName = (code) => (code ? (LANG_NAMES[code] ? LANG_NAMES[code][currentLang] : code) : '');
     const sideName = (set, side) => (set.langs && set.langs[side] ? langName(set.langs[side]) : t(side === 0 ? 'sideA' : 'sideB'));
     const TTS_LOCALE = { de: 'de-DE', fr: 'fr-FR', en: 'en-GB', it: 'it-IT', es: 'es-ES', pt: 'pt-PT' };
+
+    // ---------- Handschrift-Erkennung (MyScript iink, Cloud) ----------
+    // Optional: mit den zwei Schlüsseln aus developer.myscript.com erkennt der
+    // Handschrift-Modus das Geschriebene und korrigiert wie beim Schreiben.
+    // Die Schlüssel liegen nur in diesem Browser (localStorage), nie im Code
+    // und nie im Link. Ohne Schlüssel, ohne Netz oder bei einer Sprache ohne
+    // Paket bleibt es beim Papier: aufdecken, selbst bewerten.
+    const MYSCRIPT_KEY = 'myvoci_myscript';
+    const IINK_LANG = { de: 'de_DE', fr: 'fr_FR', en: 'en_US', it: 'it_IT', es: 'es_ES', pt: 'pt_PT' };
+    const IINK_URL = 'https://cdn.jsdelivr.net/npm/iink-ts@4.1.0/dist/iink.min.js';
+    const loadMyScript = () => { const k = readLocal(MYSCRIPT_KEY, null); return k && k.app && k.hmac ? k : null; };
+    // Die Bibliothek (600 KB) wird erst geholt, wenn jemand sie wirklich
+    // braucht — Beispiele und Übersicht bleiben davon unberührt.
+    let iinkLoading = null;
+    const loadIink = () => {
+      if (window.iink) return Promise.resolve(window.iink);
+      if (!iinkLoading) iinkLoading = new Promise((ok, fail) => {
+        const el = document.createElement('script');
+        el.src = IINK_URL;
+        el.onload = () => ok(window.iink);
+        el.onerror = () => { iinkLoading = null; fail(new Error('iink')); };
+        document.head.appendChild(el);
+      });
+      return iinkLoading;
+    };
 
     // ---------- Eingebaute Beispiel-Sets ----------
     const DEMOS = [
@@ -1672,8 +1713,21 @@
       // deklarierte Variable wäre hier still `undefined` statt eines Fehlers
       // (der Haken blieb leer, obwohl die Beispiele standen).
       const [showDemos, setShowDemos] = useState(loadShowDemos);
+      const [msKeys, setMsKeys] = useState(() => readLocal(MYSCRIPT_KEY, null) || { app: '', hmac: '' });
+      const editMsKey = (k, v) => { const n = { ...msKeys, [k]: v.trim() }; setMsKeys(n); writeLocal(MYSCRIPT_KEY, n); };
       const [settingsButton, settingsPanel] = useSettings(
         <>
+        <div className="rounded-lg border border-gray-200 p-4 mt-4">
+          <div className={`${LABEL} mb-2`}>{t('myscriptTitle')}</div>
+          <p className="text-sm text-gray-500 mb-3">{t('myscriptHint')}</p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <label className="text-sm text-gray-600">{t('myscriptApp')}
+              <input type="text" value={msKeys.app} onChange={(e) => editMsKey('app', e.target.value)} autoCapitalize="none" autoCorrect="off" spellCheck={false} className={`w-full mt-1 ${INPUT}`} /></label>
+            <label className="text-sm text-gray-600">{t('myscriptHmac')}
+              <input type="text" value={msKeys.hmac} onChange={(e) => editMsKey('hmac', e.target.value)} autoCapitalize="none" autoCorrect="off" spellCheck={false} className={`w-full mt-1 ${INPUT}`} /></label>
+          </div>
+          {msKeys.app && msKeys.hmac && <p className="text-sm text-emerald-700 mt-3">{t('myscriptOn')}</p>}
+        </div>
         <div className="rounded-lg border border-gray-200 p-4 mt-4">
           <label className="flex items-start gap-3 cursor-pointer">
             <input type="checkbox" checked={showDemos} className="mt-1 h-4 w-4 accent-blue-500"
@@ -2506,6 +2560,49 @@
       );
     };
 
+    // Schreibfläche mit Erkennung: MyScript zeichnet und erkennt selbst
+    // (INK_V2 = eine HTTP-Anfrage pro Ruhepause, kein offener Kanal). `padRef`
+    // bekommt die Fläche, damit «Prüfen» den endgültigen Text abholen kann —
+    // wer gleich nach dem Absetzen tippt, wäre sonst schneller als die
+    // laufende Erkennung. Scheitert Laden oder Anmeldung, meldet `onFail`,
+    // und der Modus fällt auf die Fläche ohne Erkennung zurück.
+    const InkPad = ({ lang, keys, clearKey, padRef, onText, onFail }) => {
+      const rootRef = useRef(null);
+      useEffect(() => {
+        let gone = false, pad = null;
+        loadIink()
+          .then((iink) => iink.Canvas.load(rootRef.current, 'INK_V2', {
+            configuration: {
+              server: { scheme: 'https', host: 'cloud.myscript.com', applicationKey: keys.app, hmacKey: keys.hmac },
+              recognition: { type: 'TEXT', lang, text: { mimeTypes: ['text/plain'] } },
+              triggers: { exportContent: 'QUIET_PERIOD', exportContentDelay: 400 },
+              rendering: { guides: { enable: false } },
+              penStyle: { color: '#1e3a8a', width: 3 },
+              ui: { showConnectionState: false },
+            },
+          }))
+          .then((p) => {
+            if (gone) { p.destroy(); return; }
+            pad = p; padRef.current = p;
+            p.event.addEventListener('exported', (e) => onText((e.detail && e.detail['text/plain']) || ''));
+            p.event.addErrorListener(() => onFail());
+          })
+          .catch(() => { if (!gone) onFail(); });
+        return () => { gone = true; padRef.current = null; pad && pad.destroy(); };
+      }, [lang]);
+      useEffect(() => { padRef.current && padRef.current.clear(); }, [clearKey]);
+      // Die Höhe bestimmt der äussere Rahmen: iink setzt seinem Wurzelelement
+      // `height: 100%` und wuchs damit bei jedem Rendern mit dem eigenen
+      // SVG weiter (1500 px und mehr). Absolut eingepasst bleibt es bei der
+      // Fläche, die die Karte vorgibt.
+      return (
+        <div className="w-full h-48 sm:h-56 bg-white rounded-lg border-2 border-dashed border-gray-300 overflow-hidden relative"
+          style={{ backgroundImage: 'linear-gradient(to top, transparent 34%, #e5e7eb 34%, #e5e7eb calc(34% + 1px), transparent calc(34% + 1px))' }}>
+          <div ref={rootRef} className="absolute inset-0 touch-none" />
+        </div>
+      );
+    };
+
     const Sentences = ({ word, solution }) => (word.s || []).length > 0 && (
       <ul className="mt-3 text-gray-700 space-y-1">{word.s.map((s, i) => <li key={i}>{markWord(s, solution)}</li>)}</ul>
     );
@@ -2526,6 +2623,10 @@
       const [built, setBuilt] = useState([]); // Buchstabensalat: Indizes der gesetzten Kacheln
       const [log, setLog] = useState([]); // { item, ok, input, solution } nur erste Versuche
       const [sketchKey, setSketchKey] = useState(0); // Handschrift: Fläche leeren
+      const myscript = useMemo(loadMyScript, []); // Handschrift: Schlüssel für die Erkennung
+      const [inkText, setInkText] = useState(''); // Handschrift: zuletzt erkannter Text
+      const [inkFail, setInkFail] = useState(false); // Handschrift: Erkennung ausgefallen → Papier
+      const padRef = useRef(null);
       const leaves = useRef(0); // Prüfung: wie oft Vollbild/App verlassen
       const watched = useRef(false); // war das Vollbild je aktiv? Sonst überwacht niemand
       const [startedAt] = useState(Date.now);
@@ -2599,6 +2700,18 @@
         if (!input.trim()) return;
         settle(checkAnswer(input, task.solution, { level: opts.level, lang: answerLang, others }), input);
       };
+      // Handschrift mit Erkennung: den endgültigen Text holen, dann wie getippt werten
+      const checkInk = async () => {
+        let typed = inkText;
+        try {
+          const out = padRef.current && await padRef.current.export(['text/plain']);
+          if (out && typeof out['text/plain'] === 'string') typed = out['text/plain'];
+        } catch {}
+        typed = typed.trim();
+        if (!typed) { setInkText(''); return; }
+        setInkText(typed);
+        settle(checkAnswer(typed, task.solution, { level: opts.level, lang: answerLang, others }), typed);
+      };
       const checkCopy = () => {
         if (checkAnswer(copyInput, result.solution, { level: 'strict' }).status === 'wrong') { setCopyMiss(true); return; }
         setPhase('feedback');
@@ -2634,6 +2747,8 @@
         setBuilt([]);
         setMic('idle');
         setHeard('');
+        setInkText('');
+        setSketchKey((k) => k + 1);
       };
       // Enter wird nur abgefangen, wo es wirklich etwas auslöst. Sonst nähme
       // das `preventDefault` jedem Knopf die Tastaturbedienung — und in der
@@ -2685,7 +2800,7 @@
 
       const inputField = (ref, value, onChange, cls = '') => (
         <input ref={ref} type="text" value={value} onChange={onChange} placeholder={t('answerPh')}
-          autoCapitalize="off" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[answerLang] || undefined}
+          autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[answerLang] || undefined}
           className={`flex-1 min-w-0 ${INPUT} text-2xl py-3 ${cls}`} />
       );
 
@@ -2726,9 +2841,29 @@
 
       // ---- der Aufgabenteil je Modus ----
       let body;
-      if (mode === 'pen') {
+      const inkOn = mode === 'pen' && myscript && IINK_LANG[answerLang] && !inkFail;
+      if (inkOn) {
         body = (
           <>
+            <InkPad lang={IINK_LANG[answerLang]} keys={myscript} clearKey={sketchKey} padRef={padRef}
+              onText={setInkText} onFail={() => setInkFail(true)} />
+            {phase === 'ask' && (
+              <>
+                <div className="mt-2 text-sm text-gray-500 min-h-5">{inkText ? <>{t('inkRead')}: <b className="text-gray-800">{inkText}</b></> : null}</div>
+                <div className="flex gap-3 mt-2">
+                  <button onClick={() => { setSketchKey((k) => k + 1); setInkText(''); }} className={`px-4 py-3 ${BTN_SECONDARY}`}>{t('penClear')}</button>
+                  <button onClick={checkInk} className={`flex-1 ${BTN_PRIMARY} px-6 py-3 text-lg`}>{t('check')}</button>
+                </div>
+              </>
+            )}
+            {phase === 'feedback' && <div className="mt-4">{feedbackBox(inkText)}</div>}
+            {nextButton}
+          </>
+        );
+      } else if (mode === 'pen') {
+        body = (
+          <>
+            {inkFail && <p className="text-sm text-orange-600 mb-2">{t('inkFail')}</p>}
             <Sketch penOnly={opts.penOnly} clearKey={sketchKey} />
             {phase === 'ask' ? (
               <div className="flex gap-3 mt-3">

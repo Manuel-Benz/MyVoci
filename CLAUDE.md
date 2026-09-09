@@ -72,6 +72,18 @@ Drei Stufen: `strict` / `normal` / `loose`. Ergebnis
 Die reine Logik lässt sich ohne Browser testen: Abschnitte aus der Datei
 schneiden und mit `node` prüfen (so entstanden die 26 Fälle in Phase 2).
 
+## Handschrift-Erkennung (MyScript, optional)
+
+Mit zwei Schlüsseln aus developer.myscript.com (`myvoci_myscript` im
+localStorage, Eingabe in den Einstellungen; 2 000 Erkennungen/Monat gratis)
+erkennt der Handschrift-Modus das Geschriebene: `InkPad` lädt `iink-ts` erst
+bei Bedarf per CDN (`loadIink`), Variante `INK_V2` (eine HTTP-Anfrage pro
+Ruhepause, kein offener Kanal), Sprache aus `IINK_LANG`. «Prüfen» holt per
+`export()` den endgültigen Text und wertet ihn wie eine Eingabe (`checkInk` →
+`settle`). Ohne Schlüssel, bei einer Sprache ohne Paket oder wenn Laden/Anmelden
+scheitert (`inkFail`) bleibt die Fläche ohne Erkennung (`Sketch`). Die
+Schlüssel liegen in `keys/` (ignoriert) — nie in Code oder Link.
+
 ## Modi
 
 `MODES` = write, pen, cards, choice, match, gap, listen, speak, scramble.
@@ -201,6 +213,9 @@ verzweigen, wenn es um Inhalte geht.
   und Reacts Touch-Listener sind passiv, dort greift `preventDefault` nicht.
   Scribble gehört zu **Schreiben** (Textfeld), nicht zu Handschrift — die
   Fläche ist absichtlich ohne Erkennung; der Hinweistext sagt das.
+- **iink bekommt ein absolut eingepasstes Wurzelelement in einem Rahmen
+  fester Höhe.** Es setzt seiner Wurzel `height: 100%` und wuchs mit dem
+  eigenen SVG bei jedem Rendern weiter (1 500 px und mehr).
 - **`writeLocal` meldet Fehlschläge** (`storageBroken` → Warnstreifen): ein
   stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
 

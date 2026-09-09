@@ -3,3 +3,6 @@
 
 # Echte Voci-Sets: Unterrichts-/Familienmaterial, gehört nicht ins Repo (s. CLAUDE.md)
 voci/
+
+# MyScript-Zertifikat/Schlüssel: privat, nie committen
+keys/

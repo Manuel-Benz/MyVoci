@@ -4,6 +4,14 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (09.09.2026, 5):** Handschrift-Erkennung über MyScript iink (Cloud,
+Gratiskontingent reicht für zwei Kinder) als Option: Schlüssel in den
+Einstellungen, dann korrigiert der Handschrift-Modus automatisch wie
+«Schreiben»; ohne Schlüssel bleibt es beim Papier. Im Browser mit der Maus
+geprüft (Erkennung, Prüfen, Diff, Weiter, Leeren); mit dem Pencil auf dem iPad
+noch nicht. Die Wiederholung falscher Wörter am Rundenende ist fest eingebaut
+(ausser in der Prüfung) — ein Schalter dafür wäre möglich.
+
 **Stand (09.09.2026, 4):** Erster iPad-Test der Handschrift: Safari markierte
 beim Schreiben das Wort auf der Karte (Auswahl-Geste) — behoben mit
 `user-select: none` auf der Karte und nativem `touchstart`-`preventDefault`.
@@ -82,6 +90,7 @@ S: Je vais à l'école. | Nous marchons vite.
 | Modus | Eingabe | Korrektur |
 |---|---|---|
 | **Schreiben** | Tastatur oder Stift (s. u.) | automatisch, mit Toleranz |
+| **Handschrift** | Schreibfläche; mit MyScript-Schlüssel erkannt | selbst bewerten, mit Schlüssel automatisch |
 | **Karteikarten** | umdrehen, selbst bewerten (Gewusst/Nicht gewusst) | manuell |
 | **Multiple Choice** | 4 Optionen, Ablenker aus demselben Set | automatisch |
 | **Zuordnen** | 6–8 Paare per Tippen verbinden | automatisch |
