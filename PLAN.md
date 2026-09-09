@@ -4,6 +4,18 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (09.09.2026, 10):** Die Erklärtexte stehen jetzt in einer **Anleitung**
+hinter dem `?`-Knopf oben (iPad · Handschrift einrichten · Ordner · Codes
+scannen) statt verstreut in den Einstellungen und im Kasten zuunterst; die
+Einstellungen behalten die Bedienelemente und eine Zeile «Anleitung →». Für
+MyScript stehen die Einrichtungsschritte erstmals da (Konto, wo die zwei
+Schlüssel stehen, Weitergabe per QR) — die Schlüsselfelder tragen ihren
+Verweis selber, weil sie auch dort stehen, wo es keinen `?`-Knopf gibt. Der
+Scan-Knopf trägt neu einen Sucher-Rahmen statt einer Kamera (er nimmt einen
+Code auch eingefügt an). Im Browser geprüft, DE und EN. Offen: Ein Set von
+Hand anzulegen geht (`+` neben «Meine Voci»), ist aber schlecht auffindbar —
+der Kasten «Voci-Set erstellen» kennt nur den KI-Weg und die Datei.
+
 **Stand (09.09.2026, 9):** Review über den Scanner, sechs Befunde behoben: Der
 Knopf hängt nicht mehr an der Kamera (auf unsicherem Origin fiel sonst auch das
 Einfügen weg), `scanned` prüft die Route gegen `ROUTE_KEYS` statt jeden

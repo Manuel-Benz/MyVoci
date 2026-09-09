@@ -122,13 +122,42 @@
         confirmReplace: (title) => `«${title}» gibt es schon. Die vorhandenen Wörter werden ersetzt.`,
         replace: 'Ersetzen',
         storageBroken: 'Achtung: Dieser Browser speichert nichts (privates Fenster oder Speicher voll). Sets und Lernstand sind nach dem Neuladen weg — lade deine Sets als Datei herunter.',
-        // iPad-Hilfe
+        // Anleitung (Modal hinter dem ?-Knopf) — hier stehen die langen Texte,
+        // die vorher in den Einstellungen und im Kasten zuunterst verstreut waren.
+        helpTitle: 'Anleitung',
+        guide: 'Anleitung',
         ipadTitle: 'Üben auf dem iPad (und einsperren)',
         ipadSteps: (
           <>
             <li><b>Wie eine App:</b> In Safari das Teilen-Symbol tippen → <b>«Zum Home-Bildschirm»</b>. MyVoci startet dann ohne Adressleiste und Tabs. Das ist keine App-Installation und geht meist auch auf Schul-iPads.</li>
             <li><b>Einsperren:</b> Einstellungen → Bedienungshilfen → <b>Geführter Zugriff</b> einschalten und einen Code setzen. MyVoci öffnen, <b>3× Seitentaste</b> (bzw. Home-Taste) drücken → «Starten». Beenden: wieder 3× drücken und den Code eingeben.</li>
             <li><b>Nur Safari möglich?</b> Beim Starten des Geführten Zugriffs mit dem Finger die Adressleiste und die Tab-Leiste <b>einkreisen</b> — diese Bereiche reagieren dann nicht mehr.</li>
+          </>
+        ),
+        helpInkTitle: 'Handschrift-Erkennung einrichten',
+        helpInkSteps: (
+          <>
+            <li>Auf <b>developer.myscript.com</b> ein Entwicklerkonto anlegen — gratis, 2 000 Erkennungen pro Monat.</li>
+            <li>Im Dashboard stehen die zwei Schlüssel: <b>Application Key</b> und <b>HMAC Key</b>.</li>
+            <li>Beide in den Einstellungen einsetzen (dort, wo du übst). Sie bleiben in diesem Browser — nie im Code, nie in einem geteilten Link.</li>
+            <li>Zweites Gerät der Familie: <b>«Auf ein anderes Gerät bringen»</b> zeigt einen QR-Code, der nur die Schlüssel trägt. Dort mit dem Scan-Knopf oben einlesen. Das Kontingent läuft auf dein Konto.</li>
+            <li>Ohne Schlüssel bleibt «Handschrift» wie Papier: schreiben, aufdecken, selbst bewerten. Dasselbe, wenn es für die Sprache keine Erkennung gibt.</li>
+          </>
+        ),
+        helpDirSteps: (
+          <>
+            <li>Geht in <b>Chrome oder Edge am Computer</b>. Safari und iPad können keinen Ordner öffnen — dort bleibt die Sicherung als Datei.</li>
+            <li><b>«Ordner wählen»</b> — unter der Liste oder in den Einstellungen. Die Sets liegen dann als <b>.txt</b>-Dateien darin, Unterordner sind die Ordner in der App.</li>
+            <li>Was du in der App änderst, wird dort als Datei gespeichert; was du im Finder ablegst, umbenennst oder löschst, erscheint beim nächsten Wechsel ins Fenster.</li>
+            <li>Der Browser-Speicher ist dann nur noch Zwischenspeicher — nur der Lernstand bleibt dort.</li>
+          </>
+        ),
+        helpScanSteps: (
+          <>
+            <li>Der Knopf oben in der Übersicht öffnet die Kamera: Set-Code oder Schlüssel-Code davorhalten, fertig.</li>
+            <li><b>Warum nicht die Kamera-App?</b> Ein so gescannter Code öffnet auf dem iPad immer Safari. Die Webapp auf dem Home-Bildschirm hat einen eigenen Speicher und bekäme so weder Set noch Schlüssel.</li>
+            <li>Es geht auch ohne Kamera: den Link im selben Fenster ins Feld <b>einfügen</b>. Am Mac kopiert, liegt er per Handoff auch auf dem iPad in der Zwischenablage.</li>
+            <li>Ein Set aus einem Code wird übernommen wie ein Import und bleibt in diesem Browser — der Lernstand dazu ist von da an deiner.</li>
           </>
         ),
         // Dialoge
@@ -232,7 +261,7 @@
         showExamples: 'Beispiele anzeigen',
         showExamplesHint: 'Die zwei eingebauten Beispiel-Sets in der Übersicht. Wer eigene Sets hat, braucht sie nicht mehr; für neue Nutzer bleiben sie der einfachste Einstieg.',
         dirTitle: 'Ordner auf dem Computer',
-        dirHint: 'Wie die Quizzes in MyKahoot: Die Sets liegen als .txt-Dateien in einem Ordner deiner Wahl, Unterordner sind die Ordner hier. Was du in der App änderst, wird dort als Datei gespeichert; was du im Finder ablegst oder löschst, erscheint beim nächsten Wechsel ins Fenster. Der Browser-Speicher ist dann nur noch Zwischenspeicher.',
+        dirShort: 'Wie die Quizzes in MyKahoot: Die Sets liegen als .txt-Dateien in einem Ordner deiner Wahl statt nur im Browser.',
         dirUnsupported: 'Geht nur in Chrome oder Edge am Computer — Safari und iPad können keinen Ordner öffnen. Dort bleibt die Sicherung als Datei.',
         dirChoose: 'Ordner wählen',
         dirConnected: (name, n) => `Verbunden mit «${name}» — ${n} ${n === 1 ? 'Set' : 'Sets'}`,
@@ -250,7 +279,7 @@
         inkChecking: 'Wird gelesen …',
         inkNoLang: 'Für diese Sprache gibt es keine Erkennung — aufdecken und selbst bewerten.',
         myscriptTitle: 'Handschrift-Erkennung (MyScript)',
-        myscriptHint: 'Mit den zwei Schlüsseln eines MyScript-Entwicklerkontos (developer.myscript.com, 2 000 Erkennungen pro Monat gratis) erkennt der Handschrift-Modus das Geschriebene und korrigiert automatisch. Die Schlüssel bleiben in diesem Browser.',
+        myscriptShort: 'Erkennt im Modus «Handschrift» das Geschriebene und korrigiert automatisch. Die zwei Schlüssel bleiben in diesem Browser.',
         myscriptApp: 'Application Key',
         myscriptHmac: 'HMAC Key',
         myscriptOn: 'Erkennung eingeschaltet.',
@@ -410,12 +439,40 @@
         confirmReplace: (title) => `“${title}” already exists. Its words will be replaced.`,
         replace: 'Replace',
         storageBroken: 'Careful: this browser is not storing anything (private window or storage full). Sets and progress are gone after a reload — download your sets as files.',
+        helpTitle: 'Guide',
+        guide: 'Guide',
         ipadTitle: 'Practising on an iPad (and locking it)',
         ipadSteps: (
           <>
             <li><b>Like an app:</b> In Safari tap the share icon → <b>“Add to Home Screen”</b>. MyVoci then starts without address bar and tabs. This is not an app installation and usually works on school iPads too.</li>
             <li><b>Locking:</b> Settings → Accessibility → turn on <b>Guided Access</b> and set a passcode. Open MyVoci, press the <b>side button 3×</b> (or Home) → “Start”. To end: press 3× again and enter the passcode.</li>
             <li><b>Safari only?</b> When starting Guided Access, <b>circle</b> the address bar and the tab bar with your finger — those areas stop responding.</li>
+          </>
+        ),
+        helpInkTitle: 'Setting up handwriting recognition',
+        helpInkSteps: (
+          <>
+            <li>Create a developer account at <b>developer.myscript.com</b> — free, 2,000 recognitions per month.</li>
+            <li>The dashboard shows the two keys: <b>Application key</b> and <b>HMAC key</b>.</li>
+            <li>Put both into the settings (on the page you practise from). They stay in this browser — never in the code, never in a shared link.</li>
+            <li>Second family device: <b>“Bring to another device”</b> shows a QR code carrying only the keys. Read it there with the scan button at the top. The quota is charged to your account.</li>
+            <li>Without keys, “Handwriting” stays like paper: write, reveal, rate yourself. Same when there is no recognition for the language.</li>
+          </>
+        ),
+        helpDirSteps: (
+          <>
+            <li>Works in <b>Chrome or Edge on a computer</b>. Safari and iPad cannot open a folder — there the backup file remains.</li>
+            <li><b>“Choose folder”</b> — below the list or in the settings. The sets then live as <b>.txt</b> files in it, subfolders are the folders in the app.</li>
+            <li>What you change in the app is saved there as a file; what you add, rename or delete in the Finder shows up the next time you switch to this window.</li>
+            <li>Browser storage is then only a cache — only your progress stays there.</li>
+          </>
+        ),
+        helpScanSteps: (
+          <>
+            <li>The button at the top of the overview opens the camera: hold a set code or key code in front of it, done.</li>
+            <li><b>Why not the camera app?</b> A code scanned that way always opens Safari on an iPad. The web app on the home screen has its own storage and would get neither set nor keys.</li>
+            <li>It also works without a camera: <b>paste</b> the link into the field in the same window. Copied on a Mac, Handoff puts it on the iPad clipboard too.</li>
+            <li>A set from a code is imported like a file and stays in this browser — the progress for it is yours from then on.</li>
           </>
         ),
         cancel: 'Cancel',
@@ -516,7 +573,7 @@
         showExamples: 'Show examples',
         showExamplesHint: 'The two built-in example sets in the list. Once you have your own sets you no longer need them; for new users they are the easiest way in.',
         dirTitle: 'Folder on this computer',
-        dirHint: 'Like the quizzes in MyKahoot: the sets live as .txt files in a folder of your choice, subfolders are the folders here. What you change in the app is saved there as a file; what you add or delete in the Finder shows up the next time you switch to this window. Browser storage is then only a cache.',
+        dirShort: 'Like the quizzes in MyKahoot: the sets live as .txt files in a folder of your choice instead of only in the browser.',
         dirUnsupported: 'Only works in Chrome or Edge on a computer — Safari and iPad cannot open a folder. There, the backup file remains.',
         dirChoose: 'Choose folder',
         dirConnected: (name, n) => `Connected to “${name}” — ${n} ${n === 1 ? 'set' : 'sets'}`,
@@ -534,7 +591,7 @@
         inkChecking: 'Reading …',
         inkNoLang: 'No recognition for this language — reveal and rate yourself.',
         myscriptTitle: 'Handwriting recognition (MyScript)',
-        myscriptHint: 'With the two keys of a MyScript developer account (developer.myscript.com, 2,000 recognitions per month free) the handwriting mode recognises what you write and checks it automatically. The keys stay in this browser.',
+        myscriptShort: 'Recognises what you write in “Handwriting” mode and checks it automatically. The two keys stay in this browser.',
         myscriptApp: 'Application key',
         myscriptHmac: 'HMAC key',
         myscriptOn: 'Recognition enabled.',
@@ -1568,9 +1625,11 @@
       try { await navigator.clipboard.writeText(await makeText()); return true; } catch { return false; }
     };
 
-    const Modal = ({ children, onClose }) => (
+    // `max-h`/`overflow` für alle: die Anleitung ist länger als ein iPhone hoch,
+    // und auch der Scanner passte auf kleinen Schirmen knapp nicht.
+    const Modal = ({ children, onClose, wide }) => (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className={`bg-white rounded-2xl p-6 sm:p-8 ${wide ? 'max-w-2xl' : 'max-w-md'} w-full max-h-[85vh] overflow-y-auto shadow-2xl`} onClick={(e) => e.stopPropagation()}>
           {children}
         </div>
       </div>
@@ -1637,8 +1696,18 @@
       </Icon>
     );
     const PenIcon = () => <Icon><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z" /></Icon>;
-    const CameraIcon = () => (
-      <Icon><path d="M4 8a1 1 0 0 1 1-1h3l1.5-2h5L16 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" /><circle cx="12" cy="13" r="3.5" /></Icon>
+    // Sucher-Rahmen, nicht Kamera: der Knopf nimmt einen Code auf (gescannt
+    // oder eingefügt) — eine Kamera verspräche ein Foto und liesse das
+    // Einfügen aussen vor. `QrIcon` bleibt fürs Zeigen eines Codes.
+    const ScanIcon = () => (
+      <Icon>
+        <path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9" /><path d="M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9" />
+        <path d="M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15" /><path d="M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15" />
+        <rect x="9.5" y="9.5" width="5" height="5" rx="1" />
+      </Icon>
+    );
+    const HelpIcon = () => (
+      <Icon><circle cx="12" cy="12" r="9" /><path d="M9.6 9.4a2.5 2.5 0 1 1 2.9 2.9v1.2" /><path d="M12.5 16.6h.01" /></Icon>
     );
     const SettingsIcon = () => (
       <Icon><path d="M4 8h10M18 8h2M4 16h4M12 16h8" /><circle cx="16" cy="8" r="2" /><circle cx="10" cy="16" r="2" /></Icon>
@@ -1777,6 +1846,34 @@
       );
     };
 
+    // ---------- Anleitung ----------
+    // Die langen Erklärtexte standen verstreut: Handschrift und Ordner in den
+    // Einstellungen, «Üben auf dem iPad» als Kasten zuunterst. Hier stehen sie
+    // zusammen, hinter dem ?-Knopf; in den Einstellungen bleiben die
+    // Bedienelemente und eine Zeile mit Verweis hierher.
+    // `only` zeigt einen einzelnen Abschnitt: die Schlüsselfelder stehen auf
+    // jeder Seite, von der aus geübt wird (auch nach einem geteilten Link),
+    // die Übersicht mit dem ?-Knopf sieht dort aber niemand.
+    const HELP_SECTIONS = ['ipad', 'ink', 'dir', 'scan'];
+    const HELP_TITLE = { ipad: 'ipadTitle', ink: 'helpInkTitle', dir: 'dirTitle', scan: 'scan' };
+    const HELP_STEPS = { ipad: 'ipadSteps', ink: 'helpInkSteps', dir: 'helpDirSteps', scan: 'helpScanSteps' };
+    const Help = ({ only, onClose }) => (
+      <Modal wide onClose={onClose}>
+        <h2 className="text-xl font-bold text-gray-800 mb-4">{only ? t(HELP_TITLE[only]) : t('helpTitle')}</h2>
+        {(only ? [only] : HELP_SECTIONS).map((id) => (
+          <div key={id} className="mb-6">
+            {!only && <h3 className="font-semibold text-gray-700 mb-2">{t(HELP_TITLE[id])}</h3>}
+            <ol className="list-decimal list-outside pl-5 text-sm text-gray-600 space-y-2">{t(HELP_STEPS[id])}</ol>
+          </div>
+        ))}
+        <button onClick={onClose} className={`w-full px-4 py-2 ${BTN_SECONDARY}`}>{t('close')}</button>
+      </Modal>
+    );
+    // Verweis von einem Einstellungs-Kasten in den passenden Abschnitt
+    const HelpLink = ({ onClick }) => (
+      <button onClick={onClick} className="underline font-semibold hover:text-gray-700">{t('guide')} →</button>
+    );
+
     const useSettings = (extra) => {
       const [open, setOpen] = useState(false);
       const button = <IconButton onClick={() => setOpen((v) => !v)} title={t('settings')}><SettingsIcon /></IconButton>;
@@ -1822,6 +1919,7 @@
     const MyScriptKeys = () => {
       const [keys, setKeys] = useState(() => readLocal(MYSCRIPT_KEY, null) || { app: '', hmac: '' });
       const [qr, setQr] = useState(false);
+      const [help, setHelp] = useState(false);
       const [showToast, toastNode] = useToast();
       const filled = !!(keys.app.trim() && keys.hmac.trim());
       const link = filled ? keysLink({ app: keys.app.trim(), hmac: keys.hmac.trim() }) : '';
@@ -1838,7 +1936,7 @@
       return (
         <div className="rounded-lg border border-gray-200 p-4 mt-4">
           <div className={`${LABEL} mb-2`}>{t('myscriptTitle')}</div>
-          <p className="text-sm text-gray-500 mb-3">{t('myscriptHint')}</p>
+          <p className="text-sm text-gray-500 mb-3">{t('myscriptShort')} <HelpLink onClick={() => setHelp(true)} /></p>
           <div className="grid sm:grid-cols-2 gap-3">
             {field('app', t('myscriptApp'))}
             {field('hmac', t('myscriptHmac'))}
@@ -1850,6 +1948,7 @@
             </div>
           )}
           {qr && <QrModal title={t('myscriptShareTitle')} hint={t('myscriptShareHint')} url={link} onClose={() => setQr(false)} onCopy={copy} />}
+          {help && <Help only="ink" onClose={() => setHelp(false)} />}
           {toastNode}
         </div>
       );
@@ -1925,7 +2024,10 @@
       // also vorher ausgewertet. Babel macht aus `const` ein `var` — eine später
       // deklarierte Variable wäre hier still `undefined` statt eines Fehlers
       // (der Haken blieb leer, obwohl die Beispiele standen).
+      // Dasselbe gilt für die Anleitung: der Ordner-Kasten im Panel verweist
+      // darauf. `null` | 'all' | Abschnitt.
       const [showDemos, setShowDemos] = useState(loadShowDemos);
+      const [help, setHelp] = useState(null);
       const [settingsButton, settingsPanel] = useSettings(
         <>
         <MyScriptKeys />
@@ -1941,7 +2043,9 @@
         </div>
         <div className="rounded-lg border border-gray-200 p-4 mt-4">
           <div className={`${LABEL} mb-2`}>{t('dirTitle')}</div>
-          <p className="text-sm text-gray-500 mb-3">{dir.status === 'unsupported' ? t('dirUnsupported') : t('dirHint')}</p>
+          <p className="text-sm text-gray-500 mb-3">
+            {dir.status === 'unsupported' ? t('dirUnsupported') : t('dirShort')} <HelpLink onClick={() => setHelp('dir')} />
+          </p>
           {dir.status === 'ok' && <p className="text-sm text-emerald-700 mb-3">{t('dirConnected', dir.name, own.length)}</p>}
           {/* «Freigeben» und «nicht erreichbar» stehen schon als Streifen über
               der Liste — hier nur die Knöpfe, sonst liest man beides doppelt. */}
@@ -1961,7 +2065,6 @@
       );
       const [qr, setQr] = useState(null);
       const [createOpen, setCreateOpen] = useState(false);
-      const [ipadOpen, setIpadOpen] = useState(false);
       const [openDirs, setOpenDirs] = useState(loadOpen);
       const [dropDir, setDropDir] = useState(null);
       const dragged = useRef(null);
@@ -2147,7 +2250,8 @@
             <div className="relative mb-2">
               <h1 className="text-4xl font-bold text-center text-gray-800">MyVoci</h1>
               <div className="absolute right-0 top-1/2 -translate-y-1/2 flex gap-2">
-                <IconButton onClick={() => setScan(true)} title={t('scan')}><CameraIcon /></IconButton>
+                <IconButton onClick={() => setScan(true)} title={t('scan')}><ScanIcon /></IconButton>
+                <IconButton onClick={() => setHelp('all')} title={t('helpTitle')}><HelpIcon /></IconButton>
                 {settingsButton}
               </div>
             </div>
@@ -2223,15 +2327,12 @@
                 <div className="space-y-0.5">{DEMOS.map((s) => row(s, false))}</div>
               </div>
             )}
-
-            <Collapsible title={t('ipadTitle')} open={ipadOpen} onToggle={() => setIpadOpen((v) => !v)}>
-              <ol className="list-decimal list-inside text-sm text-gray-600 space-y-2">{t('ipadSteps')}</ol>
-            </Collapsible>
           </div>
 
           {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
           {qr && <QrModal title={qr.title} url={qr.url} onClose={() => setQr(null)} onCopy={() => copyText(qr.url, t('linkCopied'))} />}
           {scan && <Scanner onClose={() => setScan(false)} onCode={onCode} />}
+          {help && <Help only={help === 'all' ? null : help} onClose={() => setHelp(null)} />}
           {toastNode}
         </div>
       );

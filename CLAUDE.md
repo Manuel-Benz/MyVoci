@@ -17,7 +17,7 @@ Ein einziges `<script type="text/babel">`, gegliedert durch
 `// ---------- Abschnitt ----------`-Kommentare. Reihenfolge grob: Speicher →
 Sprache/I18N → Beispiel-Sets → KI-Prompt → Parser/Export → Ordner → Lernstand →
 Direktlinks → Routing → **Korrektur** → Vorlesen/Spracherkennung/Vollbild →
-Bausteine (Modal, Icons, QR, Einstellungen) → Seiten.
+Bausteine (Modal, Icons, QR, Scanner, Anleitung, Einstellungen) → Seiten.
 
 Die Übersicht ist gebaut wie die Quiz-Auswahl in MyKahoot: schlanke Zeilen
 statt Kacheln (`row`/`folderBox` in `Selection`), Titel in fester Spalte mit
@@ -98,7 +98,31 @@ ohne Erkennung (`Sketch`). Beide Wege teilen **einen** Zweig in `Practice`:
 käme niemand an einem Wort vorbei, das er nicht weiss, und ein falsch gelesenes
 Wort liesse sich nicht richtigstellen.
 
+## Anleitung (`Help`, `?`-Knopf oben)
+
+Die langen Erklärtexte stehen **an einer Stelle**: ein Modal mit vier
+Abschnitten (`HELP_SECTIONS`: iPad · Handschrift-Erkennung einrichten · Ordner
+auf dem Computer · Codes scannen), Titel und Schritte je über eine Tabelle auf
+I18N-Schlüssel (`HELP_TITLE`/`HELP_STEPS`). Vorher lagen sie verstreut in den
+Einstellungen (`myscriptHint`, `dirHint` — beide zu `…Short` gekürzt) und im
+Kasten «Üben auf dem iPad» zuunterst in der Übersicht, den es nicht mehr gibt.
+In den Einstellungen bleiben die Bedienelemente plus eine Zeile mit `HelpLink`
+in den passenden Abschnitt (`only`).
+
+`only` ist kein Luxus: die Schlüsselfelder (`MyScriptKeys`) stehen auf **jeder**
+Seite, von der aus geübt wird — wer über einen geteilten Link kommt, sieht die
+Übersicht mit dem `?`-Knopf nie. Darum hält `MyScriptKeys` seinen eigenen
+`Help only="ink"`.
+
+`Modal` nimmt neu `wide` und begrenzt für alle die Höhe (`max-h-[85vh]`,
+scrollend) — die Anleitung ist länger als ein iPhone hoch, und der Scanner
+passte dort auch schon knapp nicht.
+
 ## QR-Code in der App scannen (`Scanner`)
+
+Der Knopf trägt einen **Sucher-Rahmen** (`ScanIcon`), keine Kamera: er nimmt
+einen Code auf — gescannt *oder* eingefügt, und eine Kamera verspräche ein Foto.
+`QrIcon` bleibt fürs Zeigen eines Codes.
 
 Ein mit der Kamera-App gescannter Code öffnet auf dem iPad **immer Safari**;
 die Home-Screen-Webapp hat einen eigenen Speicher und bekäme so weder Set noch
@@ -250,7 +274,8 @@ verzweigen, wenn es um Inhalte geht.
   Das Panel ist ein Argument, sein JSX wird also vorher ausgewertet, und Babel
   macht aus `const` ein `var`: eine später deklarierte Variable ist dort still
   `undefined` statt ein Fehler (der Haken «Beispiele anzeigen» blieb leer,
-  obwohl die Beispiele standen).
+  obwohl die Beispiele standen). Gilt auch für `help` — der Ordner-Kasten im
+  Panel verweist in die Anleitung.
 - **Handschrift auf dem iPad: `.sketch` (`user-select: none`) auf der ganzen
   Karte, `touchstart` nativ mit `preventDefault`.** Safari deutet einen kurz
   gehaltenen Strich neben Text als Auswahl-Geste — das Wort oben wurde
