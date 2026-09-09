@@ -254,6 +254,10 @@
         myscriptApp: 'Application Key',
         myscriptHmac: 'HMAC Key',
         myscriptOn: 'Erkennung eingeschaltet.',
+        myscriptShare: 'Auf ein anderes Gerät bringen',
+        myscriptShareTitle: 'Schlüssel weitergeben',
+        myscriptShareHint: 'Dort scannen oder öffnen — die Schlüssel werden übernommen und sofort aus der Adresse gestrichen. Nur an Geräte der Familie, das Kontingent läuft auf dein Konto.',
+        myscriptTaken: 'MyScript-Schlüssel übernommen — die Handschrift wird jetzt erkannt.',
         reveal: 'Aufdecken',
         exam: 'Prüfungsmodus',
         examHint: 'Keine Rückmeldung während der Runde, Lösungen erst am Ende. Startet im Vollbild; wer es verlässt oder die App wechselt, wird gezählt.',
@@ -525,6 +529,10 @@
         myscriptApp: 'Application key',
         myscriptHmac: 'HMAC key',
         myscriptOn: 'Recognition enabled.',
+        myscriptShare: 'Bring to another device',
+        myscriptShareTitle: 'Pass on the keys',
+        myscriptShareHint: 'Scan or open it there — the keys are stored and removed from the address at once. Family devices only, the quota is charged to your account.',
+        myscriptTaken: 'MyScript keys stored — handwriting is now recognised.',
         reveal: 'Reveal',
         exam: 'Exam mode',
         examHint: 'No feedback during the round, solutions only at the end. Starts in full screen; leaving it or switching apps is counted.',
@@ -674,6 +682,11 @@
     const IINK_LANG = { de: 'de_DE', fr: 'fr_FR', en: 'en_US', it: 'it_IT', es: 'es_ES', pt: 'pt_PT' };
     const IINK_URL = 'https://cdn.jsdelivr.net/npm/iink-ts@4.1.0/dist/iink.min.js';
     const myscriptKeys = () => { const k = readLocal(MYSCRIPT_KEY, null); return k && k.app && k.hmac ? k : null; };
+    // Weitergabe an ein zweites Gerät der Familie: ein Link, der nur die
+    // Schlüssel trägt (`#k=`), einmal gescannt, dann gespeichert und aus der
+    // Adresse gestrichen (s. takeKeysFromHash). Nie im Set-Link.
+    const keysLink = (keys) => `${location.origin}${location.pathname}#k=${b64urlEncode(new TextEncoder().encode(`${keys.app}\n${keys.hmac}`))}`;
+    let keysArrived = false; // eben per Link gekommen → einmalige Meldung
     // Die Bibliothek (600 KB) wird erst geholt, wenn jemand sie wirklich
     // braucht — Beispiele und Übersicht bleiben davon unberührt.
     const loadIink = () => loadScript(IINK_URL, () => window.iink);
@@ -1266,6 +1279,21 @@
       return null;
     };
 
+    // Schlüssel aus einem Weitergabe-Link (`#k=`, s. keysLink) übernehmen —
+    // beim Laden, bevor die App die Route liest, und sofort wieder aus der
+    // Adresse streichen: sie sollen im Verlauf nicht stehen bleiben.
+    const takeKeysFromHash = () => {
+      const part = hashParts().find((x) => x.startsWith('k='));
+      if (!part) return;
+      try {
+        const [app, hmac] = new TextDecoder().decode(b64urlDecode(part.slice(2))).split('\n');
+        if (app && hmac) keysArrived = writeLocal(MYSCRIPT_KEY, { app, hmac });
+      } catch {}
+      const rest = hashParts().filter((x) => x !== part);
+      try { history.replaceState(null, '', location.pathname + location.search + (rest.length ? '#' + rest.join('&') : '')); } catch {}
+    };
+    takeKeysFromHash();
+
     const shuffleArray = (array) => {
       const out = [...array];
       for (let i = out.length - 1; i > 0; i--) {
@@ -1605,7 +1633,7 @@
       <Icon><path d="M4 9V4h5" /><path d="M20 9V4h-5" /><path d="M4 15v5h5" /><path d="M20 15v5h-5" /></Icon>
     );
 
-    const QrModal = ({ title, url, onClose, onCopy }) => {
+    const QrModal = ({ title, hint, url, onClose, onCopy }) => {
       const svg = useMemo(() => {
         try {
           const qr = window.qrcode(0, 'M');
@@ -1617,6 +1645,7 @@
       return (
         <Modal onClose={onClose}>
           <h2 className="text-xl font-bold text-center mb-4 text-gray-800">{title}</h2>
+          {hint && <p className="text-sm text-gray-500 text-center mb-4">{hint}</p>}
           {svg ? (
             <div className="flex justify-center mb-4 [&>svg]:w-56 [&>svg]:h-56" dangerouslySetInnerHTML={{ __html: svg }} />
           ) : <div className="text-center text-red-600 mb-4">{t('qrTooBig')}</div>}
@@ -1650,12 +1679,34 @@
       return [button, panel];
     };
 
+    // Kurzmeldung unten am Rand. Zwei Seiten brauchen sie (Übersicht und
+    // Set-Seite) — eine Stelle bestimmt Dauer und Aussehen.
+    const useToast = () => {
+      const [toast, setToast] = useState(null);
+      const timer = useRef(0);
+      const showToast = (msg) => {
+        setToast(msg);
+        clearTimeout(timer.current); // sonst räumt der Timer der ersten Meldung die zweite ab
+        timer.current = setTimeout(() => setToast(null), 2500);
+      };
+      useEffect(() => () => clearTimeout(timer.current), []);
+      const node = toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">{toast}</div>
+      );
+      return [showToast, node];
+    };
+
     // Die zwei MyScript-Schlüssel. Stehen in den Einstellungen jeder Seite,
     // von der aus geübt wird — der Hinweis unter der Moduswahl zeigt dorthin,
     // und wer über einen geteilten Link kommt, sieht die Übersicht nie.
     // Geschrieben wird beim Verlassen des Feldes, nicht bei jedem Zeichen.
     const MyScriptKeys = () => {
       const [keys, setKeys] = useState(() => readLocal(MYSCRIPT_KEY, null) || { app: '', hmac: '' });
+      const [qr, setQr] = useState(false);
+      const [showToast, toastNode] = useToast();
+      const filled = !!(keys.app.trim() && keys.hmac.trim());
+      const link = filled ? keysLink({ app: keys.app.trim(), hmac: keys.hmac.trim() }) : '';
+      const copy = async () => showToast(t((await copyLater(() => link)) ? 'linkCopied' : 'copyFailed'));
       const field = (part, label) => (
         <label className="block">
           <span className={LABEL}>{label}</span>
@@ -1673,26 +1724,16 @@
             {field('app', t('myscriptApp'))}
             {field('hmac', t('myscriptHmac'))}
           </div>
-          {keys.app.trim() && keys.hmac.trim() && <p className="text-sm text-emerald-700 mt-3">{t('myscriptOn')}</p>}
+          {filled && (
+            <div className="flex flex-wrap items-center gap-3 mt-3">
+              <p className="text-sm text-emerald-700">{t('myscriptOn')}</p>
+              <button onClick={() => setQr(true)} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('myscriptShare')}</button>
+            </div>
+          )}
+          {qr && <QrModal title={t('myscriptShareTitle')} hint={t('myscriptShareHint')} url={link} onClose={() => setQr(false)} onCopy={copy} />}
+          {toastNode}
         </div>
       );
-    };
-
-    // Kurzmeldung unten am Rand. Zwei Seiten brauchen sie (Übersicht und
-    // Set-Seite) — eine Stelle bestimmt Dauer und Aussehen.
-    const useToast = () => {
-      const [toast, setToast] = useState(null);
-      const timer = useRef(0);
-      const showToast = (msg) => {
-        setToast(msg);
-        clearTimeout(timer.current); // sonst räumt der Timer der ersten Meldung die zweite ab
-        timer.current = setTimeout(() => setToast(null), 2500);
-      };
-      useEffect(() => () => clearTimeout(timer.current), []);
-      const node = toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">{toast}</div>
-      );
-      return [showToast, node];
     };
 
     // Sichtbarer Hinweis statt stiller Datenverlust (s. writeLocal).
@@ -1729,6 +1770,8 @@
       // braucht aber die Rückfrage «gibt es schon».
       const ownRef = useRef(own);
       ownRef.current = own;
+      // Schlüssel per Weitergabe-Link gekommen (s. takeKeysFromHash): einmal sagen
+      useEffect(() => { if (keysArrived) { keysArrived = false; showToast(t('myscriptTaken')); } }, []);
       const importBackupText = (text) => {
         const n = backup.restore(text);
         showToast(n === null ? t('backupBad') : t('backupDone', n));
@@ -3304,7 +3347,7 @@
     };
 
     // ---------- Set aus der Route laden ----------
-    const Open = ({ route, own, progress, onResult, onReset, onBack }) => {
+    const Open = ({ route, own, progress, onKeep, onResult, onReset, onBack }) => {
       const [set, setSet] = useState(null);
       const [error, setError] = useState(null);
       useEffect(() => {
@@ -3317,8 +3360,10 @@
           const s = own.find((m) => m.id === route.id);
           s ? setSet(s) : setError(t('errNotStored'));
         } else {
+          // Ein geteiltes Set wird nicht nur angezeigt, sondern übernommen
+          // (s. keepLink): die Route wechselt auf `local=`, dieses Open geht.
           decodeSet(route.data)
-            .then((s) => (s.words.length ? setSet(s) : setError(t('errLinkEmpty'))))
+            .then((s) => (s.words.length ? onKeep(s) : setError(t('errLinkEmpty'))))
             .catch(() => setError(t('errLinkBroken')));
         }
       }, [route.type, route.id, route.data]);
@@ -3333,9 +3378,8 @@
       }
       if (!set) return <div className={`${SCREEN} p-8 text-center text-gray-500`}>{t('loading')}</div>;
       // Der Lernstand hängt am Set: eigene über die id, Beispiele über ihren
-      // Namen, geteilte Links über den Titel (der Link selbst ändert bei jeder
-      // Korrektur der Lehrperson, der Titel bleibt).
-      const setKey = route.type === 'demo' ? `demo:${set.id}` : route.type === 'local' ? set.id : `link:${set.title}`;
+      // Namen. Geteilte Links laufen über `keepLink` und sind hier eigene.
+      const setKey = route.type === 'demo' ? `demo:${set.id}` : set.id;
       return <Trainer set={set} setKey={setKey} progress={progress} onResult={onResult} onReset={onReset} onBack={onBack} />;
     };
 
@@ -3521,6 +3565,33 @@
       });
       const resetProgress = (setKey) => updateProgress((prev) => { const next = { ...prev }; delete next[setKey]; return next; });
 
+      // Ein gescanntes Set bleibt im Browser: es wird übernommen wie ein
+      // Import und dann als eigenes geöffnet (`local=`, Optionen des Links
+      // bleiben). Gleicher Ort = dasselbe Set, ein korrigierter Link ersetzt
+      // es also. Der Link trägt keinen Ordner, landet darum zuoberst — es sei
+      // denn, das Set liegt unverändert schon irgendwo (die Lehrperson öffnet
+      // den eigenen Link): dann wird das geöffnet, ohne Zweitkopie. Ein
+      // Lernstand aus der Zeit, als Links nur angezeigt wurden (`link:`-
+      // Schlüssel), wandert auf die id.
+      const keepLink = (set) => {
+        const sets = storeRef.current.sets;
+        const here = sets.find((s) => samePlace(s, set));
+        const twins = here ? [] : sets.filter((s) => s.title === set.title);
+        const same = twins.length === 1 && JSON.stringify(twins[0].words) === JSON.stringify(set.words) ? twins[0] : null;
+        const id = here ? here.id : same ? same.id : newId();
+        if (!same) importSet({ ...set, id, dir: here ? here.dir || '' : '' });
+        updateProgress((prev) => {
+          const linkKey = `link:${set.title}`;
+          if (!prev[linkKey] || prev[id]) return prev;
+          const next = { ...prev, [id]: prev[linkKey] };
+          delete next[linkKey];
+          return next;
+        });
+        const rest = hashParts().filter((x) => x !== routePart());
+        history.replaceState(null, '', location.pathname + location.search + '#' + ['local=' + id, ...rest].join('&'));
+        setRoute(getRoute());
+      };
+
       const cleanName = (name) => (name || '').trim().replace(/\//g, '-').replace(/^\.+$/, '-');
       const makeFolder = (parent, rawName) => {
         const name = cleanName(rawName);
@@ -3575,7 +3646,7 @@
       }
 
       return route
-        ? <Open key={JSON.stringify(route)} route={route} own={own} progress={progress} onResult={recordResult} onReset={resetProgress} onBack={back} />
+        ? <Open key={JSON.stringify(route)} route={route} own={own} progress={progress} onKeep={keepLink} onResult={recordResult} onReset={resetProgress} onBack={back} />
         : (
           <Selection own={own} folders={folders} onOpen={openSet} onEdit={editSet} onNew={newSet}
             onImport={importSet} onDelete={deleteSet} folderApi={folderApi} backup={backup} dir={dirApi} />
