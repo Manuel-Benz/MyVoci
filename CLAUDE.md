@@ -56,9 +56,16 @@ liegen bleibt. Safari/iPad: kein Ordner, dort bleibt die Sicherung als Datei.
 
 **Lernstand** getrennt davon unter `myvoci_progress`:
 `{ <setKey>: { <wordKey>: { ok, bad, box, last, lastOk } } }`. `setKey` ist die
-id (eigene Sets), `demo:<id>` (Beispiele) oder `link:<titel>` (geteilte Links —
-der Link ändert bei jeder Korrektur, der Titel bleibt). `wordKey` ist
-`ab`. Leitner-Fächer 1–5, fällig nach `BOX_DAYS`. Steckt **nie** im Link.
+id (eigene Sets) oder `demo:<id>` (Beispiele). `wordKey` ist `ab`.
+Leitner-Fächer 1–5, fällig nach `BOX_DAYS`. Steckt **nie** im Link.
+
+**Geteilte Links bleiben** (`keepLink` in `App`): ein `#v=`-Link (Direktlink
+und QR-Code sind dieselbe Adresse) wird beim Öffnen übernommen wie ein Import
+und als eigenes Set unter `#local=<id>` geöffnet, die Optionen des Links
+(`&mode=…&go=1`) bleiben dran. Gleicher Ort (Wurzel + Titel) = dasselbe Set,
+ein korrigierter Link ersetzt es also; liegt das Set unverändert schon
+irgendwo (die Lehrperson öffnet den eigenen Link), wird das geöffnet, ohne
+Zweitkopie. Ein alter Lernstand unter `link:<titel>` wandert auf die id.
 
 ## Korrektur (`checkAnswer`) — kein Modell, nur Regeln
 
@@ -76,7 +83,11 @@ schneiden und mit `node` prüfen (so entstanden die 26 Fälle in Phase 2).
 
 Mit zwei Schlüsseln aus developer.myscript.com (`myvoci_myscript` im
 localStorage, Eingabe in den Einstellungen jeder Seite, von der aus geübt wird —
-`MyScriptKeys`) erkennt der Handschrift-Modus das Geschriebene: `InkPad` lädt
+`MyScriptKeys`; «Auf ein anderes Gerät bringen» zeigt einen QR-Code/Link
+`#k=…`, der nur die Schlüssel trägt: `takeKeysFromHash` speichert sie beim
+Laden und streicht den Teil sofort aus der Adresse, `keysArrived` löst die
+einmalige Meldung in der Übersicht aus — Familien-Geräte, nie der Set-Link)
+erkennt der Handschrift-Modus das Geschriebene: `InkPad` lädt
 `iink-ts` erst bei Bedarf per CDN (`loadScript`), Variante `INK_V2`, Sprache aus
 `IINK_LANG`. Erkannt wird **nur auf Verlangen** (`exportContent: 'DEMAND'`):
 «Prüfen» holt per `export()` den Text und wertet ihn wie eine Eingabe

@@ -4,6 +4,16 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (09.09.2026, 7):** Ein gescanntes Set bleibt im Browser: `#v=`-Links
+werden beim Öffnen übernommen (Wurzel, gleicher Titel = ersetzen) und als
+eigenes Set geöffnet, Lernstand vom alten `link:`-Schlüssel umgehängt. Dazu die
+MyScript-Schlüssel per QR-Code auf ein zweites Familien-Gerät bringen (`#k=`,
+wird nach dem Speichern aus der Adresse gestrichen). Beides im Browser geprüft
+(Übernahme, erneuter Link ohne Zweitkopie, korrigierter Link ersetzt, `go=1`
+zündet, Schlüssel-Roundtrip, Meldung). Offen: Weitergabe der App an Fremde —
+eigenes MyScript-Konto pro Nutzer (Kasten steht, Anleitung fehlt) oder ein
+kleiner Proxy mit Kontingent pro Nutzer.
+
 **Stand (09.09.2026, 6):** Review über die Handschrift-Erkennung, fünfzehn
 Befunde, die schwersten behoben: erkannt wird jetzt **auf Verlangen** statt nach
 jeder Schreibpause (eine Anfrage pro Wort statt drei bis sieben — sonst wäre das
