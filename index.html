@@ -224,6 +224,16 @@
         backupImport: 'Sicherung einlesen',
         backupDone: (n) => `Sicherung eingelesen (${n} ${n === 1 ? 'Set' : 'Sets'})`,
         backupBad: 'Das ist keine MyVoci-Sicherung.',
+        dirTitle: 'Ordner auf dem Computer',
+        dirHint: 'Wie die Quizzes in MyKahoot: Die Sets liegen als .txt-Dateien in einem Ordner deiner Wahl, Unterordner sind die Ordner hier. Was du in der App änderst, wird dort als Datei gespeichert; was du im Finder ablegst oder löschst, erscheint beim nächsten Wechsel ins Fenster. Der Browser-Speicher ist dann nur noch Zwischenspeicher.',
+        dirUnsupported: 'Geht nur in Chrome oder Edge am Computer — Safari und iPad können keinen Ordner öffnen. Dort bleibt die Sicherung als Datei.',
+        dirChoose: 'Ordner wählen',
+        dirConnected: (name, n) => `Verbunden mit «${name}» — ${n} ${n === 1 ? 'Set' : 'Sets'}`,
+        dirReload: 'Neu laden',
+        dirDisconnect: 'Trennen',
+        dirPrompt: (name) => `Der Ordner «${name}» braucht deine Freigabe, bevor die Sets dort gespeichert werden.`,
+        dirReconnect: 'Ordner freigeben',
+        dirError: (name) => `Der Ordner «${name}» ist nicht erreichbar (verschoben, gelöscht oder Zugriff verweigert). Änderungen bleiben bis dahin nur im Browser.`,
         modePen: 'Handschrift',
         modePenHint: 'Mit Stift oder Finger auf die Fläche schreiben, dann aufdecken und selbst bewerten — wie auf Papier.',
         penOnly: 'Nur Stift annehmen (Finger ignorieren)',
@@ -472,6 +482,16 @@
         backupImport: 'Import backup',
         backupDone: (n) => `Backup imported (${n} ${n === 1 ? 'set' : 'sets'})`,
         backupBad: 'This is not a MyVoci backup.',
+        dirTitle: 'Folder on this computer',
+        dirHint: 'Like the quizzes in MyKahoot: the sets live as .txt files in a folder of your choice, subfolders are the folders here. What you change in the app is saved there as a file; what you add or delete in the Finder shows up the next time you switch to this window. Browser storage is then only a cache.',
+        dirUnsupported: 'Only works in Chrome or Edge on a computer — Safari and iPad cannot open a folder. There, the backup file remains.',
+        dirChoose: 'Choose folder',
+        dirConnected: (name, n) => `Connected to “${name}” — ${n} ${n === 1 ? 'set' : 'sets'}`,
+        dirReload: 'Reload',
+        dirDisconnect: 'Disconnect',
+        dirPrompt: (name) => `The folder “${name}” needs your permission before the sets are saved there.`,
+        dirReconnect: 'Grant access',
+        dirError: (name) => `The folder “${name}” is not reachable (moved, deleted or access denied). Until then, changes stay in the browser only.`,
         modePen: 'Handwriting',
         modePenHint: 'Write on the pad with a pen or finger, then reveal and rate yourself — like on paper.',
         penOnly: 'Pen only (ignore fingers)',
@@ -902,6 +922,127 @@
     const OPEN_KEY = 'myvoci_open_dirs';
     const loadOpen = () => readLocal(OPEN_KEY, []) || [];
     const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+
+    // ---------- Ordner auf der Platte (wie die Quizzes in MyKahoot) ----------
+    // Chrome/Edge am Computer öffnen über die File System Access API einen
+    // Ordner; dann liegen die Sets dort als .txt (Unterordner = Ordner), und
+    // localStorage ist nur noch Zwischenspeicher — die Liste steht sofort,
+    // auch bevor der Browser den Zugriff wieder freigegeben hat. Der
+    // Ordner-Handle überlebt nur in IndexedDB, nicht in localStorage.
+    const dirSupported = typeof window.showDirectoryPicker === 'function';
+    const openDb = () => new Promise((resolve, reject) => {
+      const req = indexedDB.open('myvoci', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('kv');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const dbRun = async (mode, act) => {
+      const db = await openDb();
+      return new Promise((resolve, reject) => {
+        const req = act(db.transaction('kv', mode).objectStore('kv'));
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    };
+    const loadDirHandle = () => dbRun('readonly', (kv) => kv.get('dir')).catch(() => undefined);
+    const saveDirHandle = (h) => dbRun('readwrite', (kv) => (h ? kv.put(h, 'dir') : kv.delete('dir'))).catch(() => {});
+
+    const isVociFile = (name) => /\.(txt|md)$/i.test(name) && !name.startsWith('.');
+    // Liest den ganzen Ordner: Sets noch ohne id (die vergibt fromDisk),
+    // Ordnerpfade wie im Store («Unité 3/Verben»).
+    const readDir = async (root) => {
+      const sets = [], folders = [];
+      const walk = async (handle, dir) => {
+        for await (const [name, entry] of handle.entries()) {
+          if (name.startsWith('.')) continue;
+          if (entry.kind === 'directory') {
+            const path = dir ? `${dir}/${name}` : name;
+            folders.push(path);
+            await walk(entry, path);
+          } else if (isVociFile(name)) {
+            const parsed = parseFile(await (await entry.getFile()).text(), name);
+            // `file` merkt sich den echten Dateinamen: heisst die Datei anders
+            // als der Titel (von Hand angelegt, «Fremd.txt» mit «# Von Hand»),
+            // schreibt die App weiter dorthin, statt eine zweite anzulegen.
+            if (parsed.words.length) sets.push({ ...parsed, dir, file: name });
+          }
+        }
+      };
+      await walk(root, '');
+      return { sets, folders };
+    };
+
+    const setPath = (set) => `${set.dir ? safeDir(set.dir) + '/' : ''}${set.file || safeName(set.title) + '.txt'}`;
+    const dirOf = async (root, path, create) => {
+      let h = root;
+      for (const part of path.split('/').filter(Boolean)) h = await h.getDirectoryHandle(part, { create });
+      return h;
+    };
+    const splitPath = (path) => { const parts = path.split('/'); return [parts.slice(0, -1).join('/'), parts[parts.length - 1]]; };
+    const writeFile = async (root, path, text) => {
+      const [dir, name] = splitPath(path);
+      const fh = await (await dirOf(root, dir, true)).getFileHandle(name, { create: true });
+      const w = await fh.createWritable();
+      await w.write(text);
+      await w.close();
+    };
+    const removeFile = async (root, path) => {
+      const [dir, name] = splitPath(path);
+      try { await (await dirOf(root, dir, false)).removeEntry(name); } catch {}
+    };
+    const removeEmptyDir = async (root, path) => {
+      try {
+        for await (const _ of (await dirOf(root, path, false)).keys()) return; // nicht leer → bleibt stehen
+        const [dir, name] = splitPath(path);
+        await (await dirOf(root, dir, false)).removeEntry(name);
+      } catch {}
+    };
+
+    // Schreibt nur, was sich geändert hat: Diff über die id, verglichen werden
+    // Pfad und Dateiinhalt. Gelöscht → Datei weg; umbenannt/verschoben → alte
+    // Datei weg, neue hin; leer gewordene Ordner werden mitgeräumt.
+    const mirrorDir = async (root, prev, next) => {
+      const before = new Map(prev.sets.map((s) => [s.id, s]));
+      const after = new Set(next.sets.map((s) => s.id));
+      const prevFolders = allFolders(prev), nextFolders = allFolders(next);
+      for (const f of nextFolders) if (!prevFolders.includes(f)) await dirOf(root, safeDir(f), true);
+      for (const s of next.sets) {
+        const old = before.get(s.id);
+        const path = setPath(s), text = toFile(s);
+        if (old && setPath(old) === path && toFile(old) === text) continue;
+        if (old && setPath(old) !== path) await removeFile(root, setPath(old));
+        await writeFile(root, path, text);
+      }
+      for (const s of prev.sets) if (!after.has(s.id)) await removeFile(root, setPath(s));
+      const gone = prevFolders.filter((f) => !nextFolders.includes(f)).sort((a, b) => b.length - a.length);
+      for (const f of gone) await removeEmptyDir(root, safeDir(f));
+    };
+
+    // Vom Ordner in den Store. Die id bleibt über Ordner+Titel erhalten (daran
+    // hängt der Lernstand), sonst über den Titel allein (verschoben), sonst neu.
+    // `keepLocal` (beim Verbinden): Sets, die nur im Browser liegen, bleiben
+    // und wandern anschliessend per mirrorDir in den Ordner. Beim Nachlesen
+    // gilt der Ordner allein — was dort fehlt, wurde im Finder gelöscht.
+    // Zurück kommt neben dem neuen Stand auch `onDisk`: das, was der Ordner
+    // schon hat und deshalb nicht zurückgeschrieben werden muss.
+    const fromDisk = (prev, disk, keepLocal) => {
+      const place = (s) => `${s.dir}\u0001${s.title}`;
+      const byPlace = new Map(prev.sets.map((s) => [place(s), s]));
+      const used = new Set();
+      const sets = disk.sets.map((d) => {
+        const old = byPlace.get(place(d)) || prev.sets.find((s) => s.title === d.title && !used.has(s.id));
+        const id = old && !used.has(old.id) ? old.id : newId();
+        used.add(id);
+        return { ...d, id };
+      });
+      const onDisk = { sets: [...sets].sort(byTitle), folders: disk.folders };
+      const local = keepLocal ? prev.sets.filter((s) => !used.has(s.id)) : [];
+      const next = {
+        sets: [...sets, ...local].sort(byTitle),
+        folders: [...new Set([...disk.folders, ...(keepLocal ? prev.folders : [])])],
+      };
+      return { next, onDisk };
+    };
 
     // ---------- Lernstand ----------
     // Pro Set und Wort: richtig/falsch-Zähler, Leitner-Fach 1–5, letzter Versuch,
@@ -1419,7 +1560,7 @@
     );
 
     // ---------- Auswahlseite ----------
-    const Selection = ({ own, folders, onOpen, onEdit, onNew, onImport, onDelete, folderApi, backup }) => {
+    const Selection = ({ own, folders, onOpen, onEdit, onNew, onImport, onDelete, folderApi, backup, dir }) => {
       const [showToast, toastNode] = useToast();
       const backupInput = useRef(null);
       // Der Datei-Listener am Fenster wird nur einmal angehängt (s. unten) und
@@ -1431,7 +1572,24 @@
         const n = backup.restore(text);
         showToast(n === null ? t('backupBad') : t('backupDone', n));
       };
+      const dirButtons = (
+        <div className="flex flex-wrap gap-2">
+          {dir.status === 'none' && <button onClick={dir.connect} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('dirChoose')}</button>}
+          {dir.status === 'prompt' && <button onClick={dir.reconnect} className={`px-4 py-2 ${BTN_PRIMARY}`}>{t('dirReconnect')}</button>}
+          {(dir.status === 'ok' || dir.status === 'error') && <button onClick={dir.refresh} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('dirReload')}</button>}
+          {dir.status !== 'none' && dir.status !== 'unsupported' && <button onClick={dir.disconnect} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('dirDisconnect')}</button>}
+        </div>
+      );
       const [settingsButton, settingsPanel] = useSettings(
+        <>
+        <div className="rounded-lg border border-gray-200 p-4 mt-4">
+          <div className={`${LABEL} mb-2`}>{t('dirTitle')}</div>
+          <p className="text-sm text-gray-500 mb-3">{dir.status === 'unsupported' ? t('dirUnsupported') : t('dirHint')}</p>
+          {dir.status === 'ok' && <p className="text-sm text-emerald-700 mb-3">{t('dirConnected', dir.name, own.length)}</p>}
+          {dir.status === 'prompt' && <p className="text-sm text-amber-700 mb-3">{t('dirPrompt', dir.name)}</p>}
+          {dir.status === 'error' && <p className="text-sm text-red-700 mb-3">{t('dirError', dir.name)}</p>}
+          {dirButtons}
+        </div>
         <div className="rounded-lg border border-gray-200 p-4 mt-4">
           <div className={`${LABEL} mb-2`}>{t('backupTitle')}</div>
           <p className="text-sm text-gray-500 mb-3">{t('backupHint')}</p>
@@ -1442,6 +1600,7 @@
               onChange={(e) => { for (const f of e.target.files) f.text().then(importBackupText); e.target.value = ''; }} />
           </div>
         </div>
+        </>
       );
       const [qr, setQr] = useState(null);
       const [createOpen, setCreateOpen] = useState(false);
@@ -1627,6 +1786,12 @@
             </div>
             <p className="text-center text-gray-500 mb-8">{t('subtitle')}</p>
             <StorageWarning />
+            {(dir.status === 'prompt' || dir.status === 'error') && (
+              <div className={`mb-6 rounded-lg border-2 px-4 py-3 text-sm ${dir.status === 'prompt' ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-red-400 bg-red-50 text-red-900'}`}>
+                <p className="mb-2">{dir.status === 'prompt' ? t('dirPrompt', dir.name) : t('dirError', dir.name)}</p>
+                {dirButtons}
+              </div>
+            )}
             {settingsPanel}
 
             <Collapsible title={t('createTitle')} open={createOpen} onToggle={() => setCreateOpen((v) => !v)}>
@@ -2849,6 +3014,67 @@
       const newSet = (dir) => { location.hash = withLang('#new=' + encodeURIComponent(dir || '')); };
 
       const updateStore = (fn) => setStore((prev) => { const next = fn(prev); saveStore(next); return next; });
+
+      // ---- Ordner auf der Platte (s. Abschnitt oben) ----
+      const [dir, setDir] = useState({ handle: null, status: dirSupported ? 'none' : 'unsupported' });
+      // Der Stand, den der Ordner zuletzt gesehen hat: mirrorDir schreibt nur
+      // die Differenz dazu. Was vom Ordner kommt, wird darauf gesetzt, statt
+      // zurückgeschrieben — sonst bügelte die App jede von Hand geschriebene
+      // Datei in ihr eigenes Format.
+      const mirrored = useRef(null);
+      // Alle Ordner-Zugriffe laufen hintereinander: ein Nachlesen darf nicht
+      // in ein halb geschriebenes Set hineinlesen.
+      const queue = useRef(Promise.resolve());
+      const enqueue = (job) => (queue.current = queue.current.then(job).catch((e) => { console.error(e); setDir((d) => ({ ...d, status: 'error' })); }));
+      const takeDisk = (handle, keepLocal) => enqueue(async () => {
+        const disk = await readDir(handle);
+        setStore((prev) => {
+          const { next, onDisk } = fromDisk(prev, disk, keepLocal);
+          saveStore(next);
+          mirrored.current = onDisk;
+          return next;
+        });
+        setDir({ handle, status: 'ok' });
+      });
+      useEffect(() => {
+        if (!dirSupported) return;
+        loadDirHandle().then(async (handle) => {
+          if (!handle) return;
+          const perm = await handle.queryPermission({ mode: 'readwrite' });
+          if (perm === 'granted') takeDisk(handle, false); else setDir({ handle, status: 'prompt' });
+        });
+      }, []);
+      useEffect(() => {
+        if (dir.status !== 'ok' || !mirrored.current || mirrored.current === store) return;
+        const prev = mirrored.current;
+        mirrored.current = store;
+        enqueue(() => mirrorDir(dir.handle, prev, store));
+      }, [store, dir]);
+      // Im Finder abgelegte oder gelöschte Dateien erscheinen beim Wechsel
+      // zurück ins Fenster — MyKahoot liest seine Quizzes ebenso live.
+      useEffect(() => {
+        if (dir.status !== 'ok') return;
+        const onFocus = () => takeDisk(dir.handle, false);
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+      }, [dir]);
+      const connectDir = async () => {
+        let handle;
+        try { handle = await window.showDirectoryPicker({ mode: 'readwrite', id: 'myvoci' }); }
+        catch { return; } // abgebrochen
+        await saveDirHandle(handle);
+        takeDisk(handle, true);
+      };
+      const reconnectDir = async () => {
+        try {
+          if ((await dir.handle.requestPermission({ mode: 'readwrite' })) === 'granted') takeDisk(dir.handle, true);
+        } catch { setDir((d) => ({ ...d, status: 'error' })); }
+      };
+      const disconnectDir = () => { saveDirHandle(null); mirrored.current = null; setDir({ handle: null, status: 'none' }); };
+      const dirApi = {
+        status: dir.status, name: dir.handle ? dir.handle.name : '',
+        connect: connectDir, reconnect: reconnectDir, disconnect: disconnectDir, refresh: () => takeDisk(dir.handle, false),
+      };
       const insertSet = (prev, set, dropBy) => ({ ...prev, sets: [...prev.sets.filter(dropBy), set].sort(byTitle) });
       const importSet = (set) => updateStore((prev) => {
         const old = prev.sets.find((s) => s.title === set.title);
@@ -2977,7 +3203,7 @@
         ? <Open key={JSON.stringify(route)} route={route} own={own} progress={progress} onResult={recordResult} onReset={resetProgress} onBack={back} />
         : (
           <Selection own={own} folders={folders} onOpen={openSet} onEdit={editSet} onNew={newSet}
-            onImport={importSet} onDelete={deleteSet} folderApi={folderApi} backup={backup} />
+            onImport={importSet} onDelete={deleteSet} folderApi={folderApi} backup={backup} dir={dirApi} />
         );
     };
 

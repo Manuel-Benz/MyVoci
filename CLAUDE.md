@@ -35,6 +35,19 @@ Oberflächensprache beim Üben. Gespeichert wird `{ sets, folders }` unter
 `S:`, `H:` und `Sprachen: de → fr` sind Zusätze, die die anderen Apps überlesen.
 `Sprache:` (Einzahl) ist wie dort die Oberflächensprache — nicht verwechseln.
 
+**Ordner auf der Platte** (wie `quizzes/` in MyKahoot, Abschnitt «Ordner auf
+der Platte»): In Chrome/Edge am Computer öffnet die File System Access API
+einen Ordner; die Sets liegen dort als `.txt`, Unterordner = Ordner. Der
+Handle steckt in IndexedDB (`myvoci` → `kv` → `dir`), localStorage bleibt
+Zwischenspeicher. `readDir` liest alles, `fromDisk` hängt die ids per
+Ordner+Titel um (daran hängt der Lernstand) und liefert `onDisk` mit,
+`mirrorDir` schreibt nur die Differenz (Diff über die id, Vergleich von Pfad
+und Dateiinhalt). Beim Verbinden (`keepLocal`) bleiben Sets, die nur im
+Browser liegen, und wandern in den Ordner; beim Start und beim Fenster-Fokus
+gilt der Ordner allein. `file` am Set merkt den echten Dateinamen, damit eine
+von Hand angelegte `Fremd.txt` nach einer Umbenennung nicht als Waise
+liegen bleibt. Safari/iPad: kein Ordner, dort bleibt die Sicherung als Datei.
+
 **Lernstand** getrennt davon unter `myvoci_progress`:
 `{ <setKey>: { <wordKey>: { ok, bad, box, last, lastOk } } }`. `setKey` ist die
 id (eigene Sets), `demo:<id>` (Beispiele) oder `link:<titel>` (geteilte Links —
@@ -110,6 +123,12 @@ verzweigen, wenn es um Inhalte geht.
 - **Prüfung meldet nur, was sie wirklich gesehen hat.** Ohne aktives Vollbild
   überwacht niemand; dann steht das auch so da, statt eines grünen «nie
   verlassen».
+- **`mirrored` (Ref) ist der Stand, den der Ordner zuletzt gesehen hat.** Was
+  `takeDisk` vom Ordner liest, wird darauf gesetzt statt zurückgeschrieben —
+  sonst bügelte die App jede von Hand geschriebene Datei in ihr eigenes
+  Format. Alle Ordner-Zugriffe laufen über **eine** Promise-Kette
+  (`enqueue`): ein Nachlesen beim Fokus darf nicht in ein halb geschriebenes
+  Set hineinlesen.
 - **`writeLocal` meldet Fehlschläge** (`storageBroken` → Warnstreifen): ein
   stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
 
