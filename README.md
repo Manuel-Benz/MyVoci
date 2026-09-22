@@ -36,6 +36,13 @@ S: Je vais à l'école à pied.
 - `S:` Anwendungssatz (mehrere Zeilen oder mit `|`), `H:` Hinweis – beides optional.
   Weicht die Form im Satz stark vom Wort ab, mit Sternchen markieren:
   `S: Je *vais* à l'école.` – das wird die Lücke im Lückentext.
+- Listen auf beiden Seiten: Punkte mit `1.`, `2)`, `-` oder `•` vorne, auf
+  einer Zeile mit ` | ` getrennt (`A: 1. petere | 2. appetere`, auch `F:`).
+  Ein Punkt genügt; mit der Zeile `W: alle` müssen beim Schreiben und bei der
+  Handschrift alle kommen.
+- `HF:` / `HA:` Hinweis zu Sprache A bzw. B: wird diese Seite gefragt, steht er
+  gleich da, wird sie gesucht, erst mit der Lösung. Für Hinweise, die das Wort
+  verraten (Stammformen, Genitiv). `H:` steht wie bisher immer da.
 
 ## Üben
 

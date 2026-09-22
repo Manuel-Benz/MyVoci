@@ -32,13 +32,34 @@ Ende) · `Open` (Set aus der Route laden) · `App`.
 
 ## Datenmodell
 
-Ein Set: `{ id, title, dir, langs: ['de','fr'], lang, words: [{ a, b, s: [], h }] }`
-— `a`/`b` die zwei Seiten, `s` Anwendungssätze, `h` Hinweis, `lang` die
-Oberflächensprache beim Üben. Gespeichert wird `{ sets, folders }` unter
-`myvoci`; Ordner sind Pfad-Strings wie in MyKahoot/MyMemory.
+Ein Set: `{ id, title, dir, langs: ['de','fr'], lang, words: [{ a, b, s: [], h, ha, hb, all }] }`
+— `a`/`b` die zwei Seiten, `s` Anwendungssätze, `h` Hinweis (immer sichtbar),
+`ha`/`hb` Hinweis zu einer Seite (Datei `HF:`/`HA:`: bei der gefragten Seite
+sofort, bei der gesuchten erst mit der Lösung), `lang` die Oberflächensprache
+beim Üben. Gespeichert wird `{ sets, folders }` unter `myvoci`; Ordner sind
+Pfad-Strings wie in MyKahoot/MyMemory. Jedes Wort entsteht über `cleanWord`
+(feste Schlüssel-Reihenfolge, leere Felder fallen weg) — Datei, Link und
+Editor liefern so dasselbe Objekt, und `keepLink` erkennt das eigene Set.
+
+**Listen** (beide Seiten): Punkte mit `1.`/`2)`/`-`/`•` vorne stehen in `a`
+bzw. `b` zeilenweise, mit `\n` und samt Zeichen (`listEntries`, `joinAnswer`)
+— Anzeige mit `whitespace-pre-line` oder einzeilig über `inline`. Eine
+einzelne Zeile ist nie eine Liste («1. August» bleibt stehen). `variants`
+behandelt jeden Punkt wie eine Alternative, ein Punkt genügt also. `all`
+(Datei `W: alle`, nur an Listen) verlangt alle Punkte der gesuchten Seite:
+`task.need` in `Practice`, gewertet mit `checkAll` beim Schreiben (ein Feld pro
+Punkt, die Felder als Zeilen von `input`) und bei der Handschrift (eine
+Schriftzeile pro Punkt), bei Karteikarten nur als Vermerk. Im Direktlink
+stehen `ha`, `hb`, `all` hinten im Wort-Array, leere Enden fallen weg — alte
+Links bleiben gültig.
 
 **Dateiformat** bleibt kompatibel zu MyMemory/MyTafelfussball (`F:`/`A:`/`---`);
-`S:`, `H:` und `Sprachen: de → fr` sind Zusätze, die die anderen Apps überlesen.
+`S:`, `H:`, `HF:`, `HA:`, `W:` und `Sprachen: de → fr` sind Zusätze, die die
+anderen Apps überlesen. Eine Liste schreibt `toFile` auf **eine** Zeile, Punkte
+mit ` | ` getrennt (`A: 1. petere | 2. appetere`): MyMemory liest nur die erste
+`A:`-Zeile und sähe sonst nur den ersten Punkt; für `F:` ginge es ohnehin nicht
+anders, ein neues `F:` beginnt ein neues Wort. Gelesen werden auch mehrere
+`A:`-Zeilen mit Zeichen. `|` trennt nur, wenn Listenzeichen drinstehen.
 `Sprache:` (Einzahl) ist wie dort die Oberflächensprache — nicht verwechseln.
 
 **Ordner auf der Platte** (wie `quizzes/` in MyKahoot, Abschnitt «Ordner auf
@@ -192,9 +213,18 @@ verzweigen, wenn es um Inhalte geht.
   zeichengleich, damit die Fundstelle auf das Original passt) und **ohne
   Lookbehind** — `(?<!…)` kennt Safari erst ab 16.4 und wirft sonst mitten im
   Aufbau der Set-Seite, ohne Error Boundary also weisse Seite.
-- **Nur `/` trennt Alternativen.** Komma und Semikolon gehören zur Wendung;
+- **Nur `/` (und die Punkte einer Liste) trennen Alternativen.** Komma und Semikolon gehören zur Wendung;
   wer daran trennt, lässt «comment ça va» als Antwort auf «Bonjour, comment ça
   va ?» durchgehen.
+- **`checkAll` ordnet erst die exakten Treffer zu, dann die Tippfehler, dann
+  den Rest nach Ähnlichkeit (engstes Paar zuerst).** Sonst schnappt sich
+  «apetere» als Tippfehler den Punkt «petere», und das danach getippte,
+  richtige «petere» geht leer aus.
+- **Die Felder von «alle Punkte» leben als Zeilen in `input`, nicht in einem
+  Array.** `[...xs]` macht aus einer Lücke (Feld 1 übersprungen) ein echtes
+  `undefined`, und `checkAll` stürzte beim `.trim()` ab — «Prüfen» tat nichts.
+- **Gewertet wird an einer Stelle (`grade`)**: Knopf, Handschrift und Wecker.
+  Der Wecker hatte zuvor eine eigene Kopie ohne `others`.
 - **`checkAnswer` bekommt die übrigen Lösungen der Runde** (`others`): wer exakt
   ein anderes Wort des Sets tippt (vous/nous), hat verwechselt, nicht sich
   vertippt — sonst zählt die Ein-Zeichen-Toleranz das als gewusst.

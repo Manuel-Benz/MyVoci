@@ -200,8 +200,13 @@
         sideBPh: 'z.B. la maison',
         sentences: 'Anwendungssätze (einer pro Zeile)',
         sentencesPh: 'J\'habite dans une grande maison.',
-        hint: 'Hinweis',
+        hint: 'Hinweis (immer sichtbar)',
         hintPh: 'z.B. f. / Verb / unregelmässig',
+        hintSide: (name) => `Hinweis zu ${name}`,
+        hintSidePh: 'erst sichtbar, wenn diese Seite gezeigt wird',
+        allNeeded: 'Alle Punkte nötig (sonst genügt einer)',
+        needAll: (n) => `Alle ${n} Punkte nötig`,
+        needAllPen: (n) => `Alle ${n} Punkte nötig — jeden auf eine eigene Zeile`,
         addWord: 'Wort hinzufügen',
         errTitle: 'Der Titel fehlt.',
         errTitleTaken: 'In diesem Ordner gibt es schon ein Set mit diesem Titel.',
@@ -210,7 +215,10 @@
         editorHint: () => (
           <>Mehrere richtige Antworten mit {code('/')} trennen: {code('aller / marcher')}. Optionales in Klammern:
           {' '}{code('(la) maison')} gilt mit und ohne Artikel. Im Satz die Form mit Sternchen markieren, wenn sie
-          vom Wort abweicht: {code('Je *vais* à l\'école.')} — das wird die Lücke im Lückentext.</>
+          vom Wort abweicht: {code('Je *vais* à l\'école.')} — das wird die Lücke im Lückentext.
+          {' '}Mehrere Bedeutungen als Liste (auf beiden Seiten): eine Zeile pro Punkt, vorne {code('1.')} oder
+          {' '}{code('-')}; es genügt ein Punkt, ausser «alle nötig» ist angekreuzt. Ein Hinweis zu einer Sprache steht nur bei dieser Seite:
+          wird sie gefragt, gleich — wird sie gesucht, erst mit der Lösung (z.B. Stammformen).</>
         ),
         // Set-Seite
         overview: 'Übersicht',
@@ -513,8 +521,13 @@
         sideBPh: 'e.g. the house',
         sentences: 'Example sentences (one per line)',
         sentencesPh: 'I live in a big house.',
-        hint: 'Hint',
+        hint: 'Hint (always shown)',
         hintPh: 'e.g. noun / verb / irregular',
+        hintSide: (name) => `Hint for ${name}`,
+        hintSidePh: 'only shown with this side',
+        allNeeded: 'All items required (otherwise one is enough)',
+        needAll: (n) => `All ${n} items required`,
+        needAllPen: (n) => `All ${n} items required — each on its own line`,
         addWord: 'Add word',
         errTitle: 'The title is missing.',
         errTitleTaken: 'This folder already has a set with this title.',
@@ -523,7 +536,10 @@
         editorHint: () => (
           <>Separate several correct answers with {code('/')}: {code('go / walk')}. Optional parts in brackets:
           {' '}{code('(the) house')} counts with and without the article. Mark the form in a sentence with asterisks
-          when it differs from the word: {code('She *went* home.')} — that becomes the gap.</>
+          when it differs from the word: {code('She *went* home.')} — that becomes the gap.
+          {' '}Several meanings as a list (on either side): one line per item, starting with {code('1.')} or
+          {' '}{code('-')}; one item is enough unless «all required» is ticked. A hint for one language only appears with that side: right away
+          when it is asked, only with the solution when it is the answer (e.g. principal parts).</>
         ),
         overview: 'Overview',
         toOverview: 'Back to the overview',
@@ -868,15 +884,20 @@
       "  Weicht die Form im Satz stark vom Wort ab (je *vais* zu aller, *went* zu go),",
       "  setze sie zwischen Sternchen — so wird die Lücke im Lückentext gefunden.",
       "- «H: » ist ein optionaler Hinweis: Genus (m./f.), Wortart, «unregelmässig».",
-      "  Weglassen, wenn es nichts zu sagen gibt.",
-      "- Jedes Wort nur einmal. Keine Nummerierung, keine Fettschrift, keine Erklärungen.",
+      "  Weglassen, wenn es nichts zu sagen gibt. Verrät der Hinweis das Wort in",
+      "  Sprache B (Stammformen, Genitiv, Pluralform), schreib ihn als «HA: » — er",
+      "  erscheint dann erst mit der Lösung. «HF: » entsprechend für Sprache A.",
+      "- Hat ein Wort mehrere deutlich verschiedene Bedeutungen, darf «F: » oder «A: »",
+      "  eine Liste sein, auf EINER Zeile mit « | » getrennt: «A: 1. … | 2. …».",
+      "  Müssen alle gewusst werden, folgt die Zeile «W: alle».",
+      "- Jedes Wort nur einmal. Keine Nummerierung der Wörter, keine Fettschrift, keine Erklärungen.",
       "",
       "ZUM SCHLUSS: geh die Liste nochmals durch und bessere STILL aus, was hier nicht",
       "stimmt — am Ende nur das fertige Set ausgeben, keine Liste der Änderungen.",
       "- Stimmen Rechtschreibung und Akzente in Sprache B genau? Sie werden Buchstabe",
       "  für Buchstabe geprüft.",
       "- Kommt das Wort im Satz wirklich vor?",
-      "- Stimmt das Format überall: «F: », «A: », «S: », «H: », «---»?",
+      "- Stimmt das Format überall: «F: », «A: », «S: », «H: »/«HF: »/«HA: », «---»?",
     ].join("\n");
 
     const KI_PROMPT_EN = [
@@ -934,37 +955,100 @@
       "  If the form in the sentence differs a lot from the word (*went* for go,",
       "  je *vais* for aller), put it between asterisks — that marks the gap.",
       "- «H: » is an optional hint: gender (m./f.), part of speech, «irregular».",
-      "  Omit it when there is nothing to say.",
-      "- Every word once. No numbering, no bold, no explanations.",
+      "  Omit it when there is nothing to say. If the hint gives away the word in",
+      "  language B (principal parts, genitive, plural), write it as «HA: » — it then",
+      "  only appears with the solution. «HF: » likewise for language A.",
+      "- If a word has clearly different meanings, «F: » or «A: » may be a list, on ONE",
+      "  line separated by « | »: «A: 1. … | 2. …». If all must be known, add «W: all».",
+      "- Every word once. No numbering of the words, no bold, no explanations.",
       "",
       "FINALLY: go through the list again and QUIETLY fix whatever does not match",
       "the rules — output only the finished set, no list of changes.",
       "- Are spelling and accents in language B exactly right? They are checked",
       "  letter by letter.",
       "- Does the word really appear in the sentence?",
-      "- Is the format right everywhere: «F: », «A: », «S: », «H: », «---»?",
+      "- Is the format right everywhere: «F: », «A: », «S: », «H: »/«HF: »/«HA: », «---»?",
     ].join("\n");
 
     const kiPrompt = () => (currentLang === 'en' ? KI_PROMPT_EN : KI_PROMPT_DE);
 
+    // ---------- Listen (beide Seiten) ----------
+    // Mehrere Punkte mit «1.», «2)», «-» oder «•» vorne sind eine Liste
+    // (Bedeutungen): die Seite hält sie zeilenweise samt Zeichen, damit
+    // Anzeige, Datei und Direktlink sie unverändert weitertragen. In der Datei
+    // steht eine Liste auf EINER Zeile, Punkte mit « | » getrennt
+    // («A: 1. petere | 2. appetere») — so sieht MyMemory, das nur die erste
+    // A:-Zeile liest, alle Punkte, und F: kann auch eine Liste sein. Mehrere
+    // A:-Zeilen mit Zeichen werden ebenfalls als Liste gelesen; ohne Zeichen
+    // bleiben sie Alternativen mit « / », wie bisher.
+    // Gewertet wird wie bei « / »: ein Punkt genügt. `all` an der Karte
+    // (Datei: «W: alle») verlangt alle Punkte der gesuchten Seite — beim
+    // Schreiben und bei der Handschrift-Erkennung, s. `task.need` in Practice.
+    const LIST_MARK = /^(?:\d+[.)]|[-–•])\s+/;
+    const isListLine = (line) => LIST_MARK.test(line);
+    const isList = (text) => text.includes('\n');
+    // Punkte samt Zeichen, in einem Durchgang — Feld, Zeichen und Wertung
+    // müssen Punkt für Punkt zusammenpassen. Eine einzelne Zeile ist keine
+    // Liste: «1. August» bleibt «1. August».
+    const listEntries = (text) => (isList(text)
+      ? text.split('\n').map((x) => {
+        const m = x.trim().match(/^(?:\d+[.)]|[-–•])(?:\s+|$)/); // auch ein leerer Punkt «2.»
+        return { mark: m ? m[0].trim() : '•', item: x.trim().slice(m ? m[0].length : 0).trim() };
+      }).filter((e) => e.item)
+      : [{ mark: '', item: text.trim() }].filter((e) => e.item));
+    const listItems = (text) => listEntries(text).map((e) => e.item);
+    const joinAnswer = (lines) => {
+      const ls = lines.map((x) => x.trim()).filter(Boolean);
+      return ls.some(isListLine) ? ls.join('\n') : ls.join(' / ');
+    };
+    // Eine Dateizeile: «1. petere | 2. appetere» zerfällt nur, wenn Listenzeichen drinstehen
+    const splitLine = (val) => {
+      const parts = val.split(/\s*\|\s*/);
+      return parts.length > 1 && parts.some(isListLine) ? parts : [val];
+    };
+    // Einzeilig für Listen, Tabellen und die Datei
+    const inline = (text, sep = '  ') => text.split('\n').join(sep);
+    const fileSide = (text) => inline(text, ' | ');
+
+    // Ein Wort in fester Gestalt: gleiche Schlüssel in gleicher Reihenfolge,
+    // egal ob es aus der Datei, dem Link oder dem Editor kommt. `keepLink`
+    // vergleicht Sets per JSON — eine andere Reihenfolge hiesse «anderes Set».
+    const cleanWord = (w) => ({
+      a: w.a, b: w.b,
+      ...(w.s && w.s.length ? { s: w.s } : {}), ...(w.h ? { h: w.h } : {}),
+      ...(w.ha ? { ha: w.ha } : {}), ...(w.hb ? { hb: w.hb } : {}),
+      ...(w.all && (isList(w.a) || isList(w.b)) ? { all: true } : {}),
+    });
+
     // ---------- Dateien parsen ----------
-    // F: Sprache A, A: Sprache B, S: Satz (mehrere Zeilen oder mit | getrennt),
-    // H: Hinweis, --- Trenner. Ein neues F: schliesst das vorige Wort auch ohne ---.
+    // F: Sprache A, A: Sprache B (beide auch als Liste, s. oben), S: Satz
+    // (mehrere Zeilen oder mit | getrennt), H: Hinweis, HF:/HA: Hinweis zu
+    // Sprache A bzw. B (erscheint nur bei dieser Seite: gefragt sofort, gesucht
+    // erst mit der Lösung), W: alle (Liste ganz verlangt), --- Trenner. Ein
+    // neues F: schliesst das vorige Wort auch ohne ---.
     const parseFA = (text) => {
       const words = [];
-      let cur = null;
-      const flush = () => { if (cur && cur.a && cur.b) words.push(cur); cur = null; };
+      let cur = null, answer = [];
+      const flush = () => {
+        if (cur) cur.b = joinAnswer(answer);
+        if (cur && cur.a && cur.b) words.push(cleanWord(cur));
+        cur = null; answer = [];
+      };
+      const addHint = (key, val) => { if (val) cur[key] = cur[key] ? `${cur[key]} ${val}` : val; };
       for (const raw of text.split(/\r?\n/)) {
         const line = raw.trim();
         if (/^-{3,}$/.test(line)) { flush(); continue; }
-        const m = line.match(/^([FQASH]):\s*(.*)$/i);
+        const m = line.match(/^(HF|HA|[FQASHW]):\s*(.*)$/i);
         if (!m) continue;
         const key = m[1].toUpperCase(), val = m[2].trim();
-        if (key === 'F' || key === 'Q') { flush(); cur = { a: val, b: '' }; continue; }
+        if (key === 'F' || key === 'Q') { flush(); cur = { a: joinAnswer(splitLine(val)), b: '' }; continue; }
         if (!cur) continue;
-        if (key === 'A') cur.b = cur.b ? `${cur.b} / ${val}` : val;
+        if (key === 'A') answer.push(...splitLine(val));
         else if (key === 'S' && val) cur.s = [...(cur.s || []), ...val.split('|').map((x) => x.trim()).filter(Boolean)];
-        else if (key === 'H' && val) cur.h = cur.h ? `${cur.h} ${val}` : val;
+        else if (key === 'H') addHint('h', val);
+        else if (key === 'HF') addHint('ha', val);
+        else if (key === 'HA') addHint('hb', val);
+        else if (key === 'W' && /^(alle|all)$/i.test(val)) cur.all = true;
       }
       flush();
       return words;
@@ -1007,7 +1091,9 @@
       (set.langs ? `${currentLang === 'en' ? 'Languages' : 'Sprachen'}: ${set.langs[0]} → ${set.langs[1]}\n` : '') +
       (set.lang ? `${set.lang === 'en' ? 'Language' : 'Sprache'}: ${set.lang}\n` : '') + '\n' +
       set.words.map((w) =>
-        `F: ${w.a}\nA: ${w.b}\n` + (w.s || []).map((s) => `S: ${s}\n`).join('') + (w.h ? `H: ${w.h}\n` : '') + '---'
+        `F: ${fileSide(w.a)}\nA: ${fileSide(w.b)}\n` + (w.s || []).map((s) => `S: ${s}\n`).join('') +
+        (w.h ? `H: ${w.h}\n` : '') + (w.ha ? `HF: ${w.ha}\n` : '') + (w.hb ? `HA: ${w.hb}\n` : '') +
+        (w.all ? 'W: alle\n' : '') + '---'
       ).join('\n') + '\n';
 
     const safeName = (title) => title.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'Voci';
@@ -1280,7 +1366,12 @@
 
     const encodeSet = async (set) => {
       const json = new TextEncoder().encode(JSON.stringify([
-        set.title, set.langs || 0, set.words.map((w) => [w.a, w.b, w.s && w.s.length ? w.s : 0, w.h || 0]),
+        set.title, set.langs || 0, set.words.map((w) => {
+          // Neue Felder hinten; was fehlt, fällt weg — alte Links bleiben gültig und kurz
+          const row = [w.a, w.b, w.s && w.s.length ? w.s : 0, w.h || 0, w.ha || 0, w.hb || 0, w.all ? 1 : 0];
+          while (row.length > 2 && !row[row.length - 1]) row.pop();
+          return row;
+        }),
       ]));
       if (window.CompressionStream) {
         const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('deflate-raw'));
@@ -1297,7 +1388,7 @@
       const [title, langs, words] = JSON.parse(json);
       return {
         title, ...(langs ? { langs } : {}),
-        words: words.map(([a, b, s, h]) => ({ a, b, ...(s ? { s } : {}), ...(h ? { h } : {}) })),
+        words: words.map(([a, b, s, h, ha, hb, all]) => cleanWord({ a, b, s: s || [], h, ha, hb, all })),
       };
     };
 
@@ -1413,9 +1504,10 @@
       return s;
     };
     // «aller / marcher» → zwei Lösungen; «(la) maison» → mit und ohne Klammerteil.
+    // Jeder Punkt einer Liste zählt wie eine Alternative.
     const variants = (solution) => {
       const out = [];
-      for (const alt of solution.split(/\s*\/\s*/)) {
+      for (const alt of listItems(solution).flatMap((x) => x.split(/\s*\/\s*/))) {
         if (!alt.trim()) continue;
         let forms = [alt];
         while (forms.some((f) => /\([^()]*\)/.test(f))) {
@@ -1480,6 +1572,46 @@
         if (b.length >= 4 && levenshtein(a, b) <= 1) return { status: 'almost', solution: v, note: 'noteTypo' };
       }
       return wrong();
+    };
+
+    // Liste ganz verlangt: jede Eingabe sucht sich ihren Punkt, die
+    // Reihenfolge ist egal. Zurück kommt dasselbe wie bei checkAnswer, dazu
+    // `rows` — pro Punkt die Eingabe, die darauf fiel, und ihr Ergebnis.
+    const checkAll = (typed, solution, o) => {
+      const items = listItems(solution);
+      const rows = items.map((item) => ({ item, input: '', r: null }));
+      // Erst die exakten Treffer, dann die Tippfehler: sonst schnappt sich
+      // «apetere» den Punkt «petere», und das richtige «petere» geht leer aus.
+      let rest = typed.map((x) => x.trim()).filter(Boolean);
+      for (const want of ['right', 'almost']) {
+        rest = rest.filter((inp) => {
+          for (const row of rows) {
+            if (row.r) continue;
+            const r = checkAnswer(inp, row.item, o);
+            if (r.status === want) { row.input = inp; row.r = r; return false; }
+          }
+          return true;
+        });
+      }
+      // Was nichts traf, steht beim ähnlichsten offenen Punkt — als Fehler
+      // sichtbar, verglichen mit dessen nächstliegender Alternative
+      const gap = (inp, row) => Math.min(...variants(row.item).map((v) => levenshtein(baseNorm(inp).toLowerCase(), v.toLowerCase())));
+      // Paarweise, das engste Paar zuerst — sonst nimmt «xyz» als erste
+      // Eingabe einem Tippfehler weiter hinten seinen Punkt weg
+      const pairs = rest.flatMap((inp, k) => rows.filter((row) => !row.r).map((row) => ({ inp, k, row, d: gap(inp, row) })))
+        .sort((x, y) => x.d - y.d);
+      const used = new Set(); // Stelle der Eingabe — zweimal dasselbe Wort sind zwei Eingaben
+      for (const { inp, k, row } of pairs) {
+        if (row.r || used.has(k)) continue;
+        used.add(k);
+        row.input = inp;
+        row.r = { status: 'wrong', solution: checkAnswer(inp, row.item, o).solution };
+      }
+      for (const row of rows) if (!row.r) row.r = { status: 'wrong', solution: variants(row.item)[0] };
+      const status = rows.every((x) => x.r.status === 'right') ? 'right'
+        : rows.some((x) => x.r.status === 'wrong') ? 'wrong' : 'almost';
+      const note = status === 'almost' ? (rows.find((x) => x.r.note) || { r: {} }).r.note : undefined;
+      return { status, solution, rows, ...(note ? { note } : {}) };
     };
 
     // Zeichenweiser Vergleich (längste gemeinsame Teilfolge): was in der Eingabe
@@ -1558,7 +1690,9 @@
       if (!canSpeak(lang)) return;
       try {
         window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text.replace(/\s*\/.*$/, '').replace(/[()]/g, ''));
+        // Pro Listenpunkt die erste Alternative, ohne die Zeichen «1.» / «-»
+        const said = listItems(text).map((x) => x.replace(/\s*\/.*$/, '')).join(', ');
+        const u = new SpeechSynthesisUtterance(said.replace(/[()]/g, ''));
         u.lang = TTS_LOCALE[lang];
         u.rate = 0.9;
         window.speechSynthesis.speak(u);
@@ -2339,6 +2473,7 @@
     };
 
     // ---------- Editor ----------
+    const EMPTY_WORD = { a: '', b: '', s: '', h: '', ha: '', hb: '', all: false };
     const SetEditor = ({ set, sets, folders, onSave, onCancel, onNewFolder }) => {
       const [title, setTitle] = useState(set.title);
       const [dir, setDir] = useState(set.dir || '');
@@ -2346,7 +2481,9 @@
       const [langA, setLangA] = useState(set.langs ? set.langs[0] : '');
       const [langB, setLangB] = useState(set.langs ? set.langs[1] : '');
       const [words, setWords] = useState(() =>
-        set.words.length ? set.words.map((w) => ({ a: w.a, b: w.b, s: (w.s || []).join('\n'), h: w.h || '' })) : [{ a: '', b: '', s: '', h: '' }]);
+        set.words.length
+          ? set.words.map((w) => ({ ...EMPTY_WORD, ...w, s: (w.s || []).join('\n'), all: !!w.all }))
+          : [{ ...EMPTY_WORD }]);
       const [error, setError] = useState('');
       const [dialog, setDialog] = useState(null);
 
@@ -2359,7 +2496,7 @@
       const editLangA = touch(setLangA), editLangB = touch(setLangB);
 
       const setWord = touch((i, key, value) => setWords((ws) => ws.map((w, j) => (j === i ? { ...w, [key]: value } : w))));
-      const addWord = touch(() => setWords((ws) => [...ws, { a: '', b: '', s: '', h: '' }]));
+      const addWord = touch(() => setWords((ws) => [...ws, { ...EMPTY_WORD }]));
       const removeWord = touch((i) => setWords((ws) => ws.filter((_, j) => j !== i)));
       const moveWord = touch((i, delta) => setWords((ws) => {
         const j = i + delta;
@@ -2372,11 +2509,11 @@
       const save = () => {
         const clean = words
           .map((w) => ({
-            a: w.a.trim(), b: w.b.trim(),
-            s: w.s.split('\n').map((x) => x.trim()).filter(Boolean), h: w.h.trim(),
+            a: joinAnswer(w.a.split('\n')), b: joinAnswer(w.b.split('\n')),
+            s: w.s.split('\n').map((x) => x.trim()).filter(Boolean), h: w.h.trim(), ha: w.ha.trim(), hb: w.hb.trim(), all: w.all,
           }))
           .filter((w) => w.a || w.b)
-          .map((w) => ({ a: w.a, b: w.b, ...(w.s.length ? { s: w.s } : {}), ...(w.h ? { h: w.h } : {}) }));
+          .map(cleanWord);
         const name = title.trim();
         if (!name) return setError(t('errTitle'));
         // Nur im selben Ordner: seit die Sets in Ordnern liegen, tragen zwei
@@ -2397,6 +2534,16 @@
         onOk: (name) => { const path = onNewFolder(dir, name); if (path) editDir(path); },
       });
 
+      const nameA = langA ? langName(langCode(langA)) : t('sideA');
+      const nameB = langB ? langName(langCode(langB)) : t('sideB');
+      // Beide Seiten mehrzeilig: eine Zeile pro Listenpunkt («1. …», «- …»)
+      const side = (i, key, label, placeholder) => (
+        <label className="block">
+          <span className={LABEL}>{label}</span>
+          <textarea rows={Math.max(1, words[i][key].split('\n').length)} value={words[i][key]} placeholder={placeholder}
+            onChange={(e) => setWord(i, key, e.target.value)} className={`w-full mt-1 ${INPUT} resize-y`} />
+        </label>
+      );
       const field = (i, key, label, placeholder) => (
         <label className="block">
           <span className={LABEL}>{label}</span>
@@ -2453,15 +2600,25 @@
                   <IconButton onClick={() => removeWord(i)} title={t('deleteWord')} hover="hover:bg-red-50"><TrashIcon /></IconButton>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3 mb-3">
-                  {field(i, 'a', langA ? langName(langCode(langA)) : t('sideA'), t('sideAPh'))}
-                  {field(i, 'b', langB ? langName(langCode(langB)) : t('sideB'), t('sideBPh'))}
+                  {side(i, 'a', nameA, t('sideAPh'))}
+                  {side(i, 'b', nameB, t('sideBPh'))}
                 </div>
+                {/* Dieselbe Prüfung wie beim Speichern (cleanWord), sonst ginge ein Haken verloren */}
+                {[w.a, w.b].some((x) => isList(joinAnswer(x.split('\n')))) && (
+                  <label className="flex items-center gap-2 -mt-1 mb-3 text-sm text-gray-600">
+                    <input type="checkbox" checked={w.all} onChange={(e) => setWord(i, 'all', e.target.checked)} /> {t('allNeeded')}
+                  </label>
+                )}
                 <label className="block mb-3">
                   <span className={LABEL}>{t('sentences')}</span>
                   <textarea rows={2} value={w.s} placeholder={t('sentencesPh')} onChange={(e) => setWord(i, 's', e.target.value)}
                     className={`w-full mt-1 ${INPUT} text-sm`} />
                 </label>
                 {field(i, 'h', t('hint'), t('hintPh'))}
+                <div className="grid sm:grid-cols-2 gap-3 mt-3">
+                  {field(i, 'ha', t('hintSide', nameA), t('hintSidePh'))}
+                  {field(i, 'hb', t('hintSide', nameB), t('hintSidePh'))}
+                </div>
               </div>
             ))}
 
@@ -2699,7 +2856,7 @@
                     <li key={i} className="flex items-start gap-2">
                       <span className={`mt-1.5 inline-block w-2.5 h-2.5 rounded-full shrink-0 ${BOX_COLORS[r ? Math.min(r.box, 5) : 0]}`} />
                       <span className="text-gray-400 w-6 shrink-0 text-right">{i + 1}.</span>
-                      <span className="flex-1"><b>{w.a}</b> — {w.b}{w.h && <span className="text-gray-400"> ({w.h})</span>}</span>
+                      <span className="flex-1"><b>{inline(w.a)}</b> — {inline(w.b)}{(w.h || w.ha || w.hb) && <span className="text-gray-400"> ({[w.h, w.ha, w.hb].filter(Boolean).join(' · ')})</span>}</span>
                     </li>
                   );
                 })}
@@ -2734,7 +2891,7 @@
     const solutionOf = (item) => (item.dir === 'ab' ? item.word.b : item.word.a);
     const langOf = (set, item, side) => set.langs && set.langs[(item.dir === 'ab') === (side === 'prompt') ? 0 : 1];
     // Erste Alternative ohne Klammern: was vorgelesen und im Buchstabensalat gezeigt wird
-    const firstAlt = (solution) => solution.split(/\s*\/\s*/)[0].replace(/[()]/g, '').replace(/\s+/g, ' ').trim();
+    const firstAlt = (solution) => (listItems(solution)[0] || '').split(/\s*\/\s*/)[0].replace(/[()]/g, '').replace(/\s+/g, ' ').trim();
     // Drei Ablenker aus demselben Set, gleiche Seite, nie die Lösung selbst
     const distractors = (set, item, n = 3) => {
       const side = item.dir === 'ab' ? 'b' : 'a';
@@ -2989,7 +3146,13 @@
         if (mode === 'listen') return { solution: firstAlt(solution), spoken: firstAlt(solution), prompt: promptOf(item) };
         if (mode === 'choice') return { solution, prompt: promptOf(item), options: shuffleArray([solution, ...distractors(set, item)]) };
         if (mode === 'scramble') return { solution: firstAlt(solution), prompt: promptOf(item), letters: scrambleLetters(firstAlt(solution)) };
-        return { solution, prompt: promptOf(item) };
+        // Liste ganz verlangt: gewertet beim Schreiben und bei der Handschrift
+        // (ein Feld bzw. eine Zeile pro Punkt), bei Karteikarten nur als
+        // Vermerk. Sonst genügt ein Punkt (Hören, Sprechen, Buchstabensalat)
+        // oder man sieht die ganze Liste ohnehin (Multiple Choice, Zuordnen).
+        // Gilt für die gesuchte Seite, egal in welcher Richtung.
+        const all = item.word.all && isList(solution) && ['write', 'pen', 'cards'].includes(mode);
+        return { solution, prompt: promptOf(item), ...(all ? { need: listEntries(solution) } : {}) };
       }, [item]); // nicht an der Warteschlange: die wächst bei jedem Fehler, die Aufgabe bliebe sonst nicht stehen
 
       useEffect(() => { if (phase === 'ask' || phase === 'copy') inputRef.current && inputRef.current.focus(); }, [phase, pos]);
@@ -3038,15 +3201,32 @@
         const { nextLog, nextQueue } = finish(r.status !== 'wrong', typed, r.solution);
         if (exam) { next(nextQueue, nextLog); return; } // keine Rückmeldung, gleich weiter
         setResult(r);
-        setPhase(r.status === 'wrong' && opts.copy && TYPED_MODES.includes(mode) ? 'copy' : 'feedback');
+        // Abschreiben nur bei einem Feld — eine ganze Liste abzuschreiben ist Strafarbeit
+        setPhase(r.status === 'wrong' && opts.copy && TYPED_MODES.includes(mode) && !task.need ? 'copy' : 'feedback');
       };
       // Die übrigen Lösungen dieser Runde: wer eine davon exakt tippt, hat
       // verwechselt, nicht sich vertippt (s. checkAnswer).
       const others = useMemo(() => (item ? words.map((w) => (item.dir === 'ab' ? w.b : w.a)).filter((s) => s !== task.solution) : []), [item]);
+      // Eine Stelle fürs Werten — Knopf, Handschrift und Wecker. Bei «alle
+      // Punkte» trägt `typed` die Felder bzw. Schriftzeilen mit \n getrennt.
+      const grade = (typed) => {
+        const o = { level: opts.level, lang: answerLang, others };
+        return task.need ? checkAll(typed.split('\n'), task.solution, o) : checkAnswer(typed, task.solution, o);
+      };
+      // Für Protokoll und Prüfungstabelle einzeilig
+      const shown = (typed) => typed.split('\n').map((x) => x.trim()).filter(Boolean).join(' / ');
       const check = () => {
         if (!input.trim()) return;
-        settle(checkAnswer(input, task.solution, { level: opts.level, lang: answerLang, others }), input);
+        settle(grade(input), shown(input));
       };
+      // Liste ganz verlangt: Feld i ist Zeile i von `input`
+      const fieldValue = (i) => input.split('\n')[i] || '';
+      const setField = (i, v) => setInput((cur) => {
+        const parts = cur.split('\n');
+        while (parts.length <= i) parts.push('');
+        parts[i] = v.replace(/\n/g, ' ');
+        return parts.join('\n');
+      });
       // Handschrift mit Erkennung: einmal erkennen lassen, dann wie getippt
       // werten. Die Sperre ist nötig, weil dazwischen das Netz liegt und der
       // Knopf so lange anklickbar bleibt. Schlägt die Erkennung fehl, wird das
@@ -3065,7 +3245,8 @@
           const typed = ((out && out['text/plain']) || '').trim();
           if (!typed) { setInkNote(t('inkEmpty')); return; }
           setInkText(typed);
-          settle(checkAnswer(typed, task.solution, { level: opts.level, lang: answerLang, others }), typed);
+          // Liste ganz verlangt: jeder Punkt auf eine eigene Zeile
+          settle(grade(typed), shown(typed));
         } catch { setInkNote(t('inkFail')); }
         finally { inkAsking.current = false; setInkBusy(false); }
       };
@@ -3116,6 +3297,14 @@
       // gleich wieder wegzuklicken.
       const onKey = (e) => {
         if (e.key !== 'Enter' || e.repeat) return;
+        // Mehrere Felder: Enter springt ins nächste, erst im letzten wird geprüft
+        const at = e.target.dataset && e.target.dataset.at;
+        if (phase === 'ask' && task.need && at !== undefined && +at < task.need.length - 1) {
+          e.preventDefault();
+          const nextField = e.currentTarget.querySelector(`[data-at="${+at + 1}"]`);
+          if (nextField) nextField.focus();
+          return;
+        }
         if (phase === 'ask' && TYPED_MODES.includes(mode)) { e.preventDefault(); check(); }
         else if (phase === 'copy') { e.preventDefault(); checkCopy(); }
         else if (phase === 'feedback') { e.preventDefault(); next(); }
@@ -3139,26 +3328,37 @@
 
       // Blitzrunde: der Wecker liest den Stand aus der Ref — die Closure wäre
       // vom Moment des Stellens. Was schon dasteht, wird noch gewertet.
-      latest.current = { input, built, task };
+      latest.current = { input, built, grade };
       useEffect(() => {
         if (!timed || phase !== 'ask' || !item) return;
         const id = setTimeout(() => {
-          const { input, built, task } = latest.current;
+          const { input, built, grade } = latest.current;
           const typed = mode === 'scramble' ? built.map((j) => task.letters[j]).join('') : input;
-          const r = TYPED_MODES.includes(mode) && typed.trim()
-            ? checkAnswer(typed, task.solution, { level: opts.level, lang: answerLang })
-            : { status: 'wrong', solution: task.solution };
-          settle(r.status === 'wrong' ? { ...r, note: 'timeUp' } : r, typed);
+          // Bei «alle Punkte» auch leer werten: dann stehen alle Punkte als
+          // fehlend da, statt der ganzen Liste in einer Zeile
+          const r = TYPED_MODES.includes(mode) && (typed.trim() || task.need)
+            ? grade(typed) : { status: 'wrong', solution: task.solution };
+          settle(r.status === 'wrong' ? { ...r, note: 'timeUp' } : r, shown(typed));
         }, opts.timer * 1000);
         return () => clearTimeout(id);
       }, [pos, phase]);
 
       if (!item) return null;
-      const hint = opts.hints && !exam && item.word.h;
+      // Hinweise: H: steht immer da, HF:/HA: gehören zu einer Seite — bei der
+      // gefragten sofort, bei der gesuchten erst mit der Lösung. Sonst
+      // verraten Stammformen oder Genitiv das gesuchte Wort.
+      const showHints = opts.hints && !exam;
+      const sideHint = (side) => (side === 'a' ? item.word.ha : item.word.hb);
+      const hint = showHints && [item.word.h, sideHint(item.dir === 'ab' ? 'a' : 'b')].filter(Boolean).join(' · ');
+      const answerHint = showHints && sideHint(item.dir === 'ab' ? 'b' : 'a');
+      const answerHintLine = answerHint && <div className="text-sm text-gray-500 mt-1">{answerHint}</div>;
+      const needNote = task.need && (
+        <div className="text-sm font-semibold text-blue-700 mb-2">{t(mode === 'pen' ? 'needAllPen' : 'needAll', task.need.length)}</div>
+      );
       const promptLabel = sideName(set, item.dir === 'ab' ? 0 : 1);
 
-      const inputField = (ref, value, onChange, cls = '') => (
-        <input ref={ref} type="text" value={value} onChange={onChange} placeholder={t('answerPh')}
+      const inputField = (ref, value, onChange, cls = '', at) => (
+        <input ref={ref} type="text" value={value} onChange={onChange} placeholder={t('answerPh')} data-at={at}
           autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[answerLang] || undefined}
           className={`flex-1 min-w-0 ${INPUT} text-2xl py-3 ${cls}`} />
       );
@@ -3168,20 +3368,53 @@
           <div className="font-bold text-lg mb-2">
             {t(result.status)}{result.note && <span className="font-normal text-sm"> · {t(result.note)}</span>}
           </div>
-          {result.status !== 'right' && typed !== null ? (() => {
+          {result.rows ? (
+            <div className="space-y-1 text-lg">
+              {result.rows.map((row, i) => {
+                const [A, B] = charDiff(baseNorm(row.input), row.r.solution);
+                return (
+                  <div key={i} className="flex gap-2 items-baseline">
+                    <span className="text-gray-400 w-7 shrink-0 text-right">{task.need[i].mark}</span>
+                    {row.r.status === 'right' ? <b>{row.item}</b>
+                      : !row.input ? <span><b>{row.item}</b> <span className="text-sm text-gray-500">· {t('noAnswer')}</span></span>
+                      : <span><DiffText parts={A} cls="diff-del" /> → <b><DiffText parts={B} cls="diff-ins" /></b></span>}
+                  </div>
+                );
+              })}
+            </div>
+          ) : result.status !== 'right' && typed !== null ? (() => {
             const [A, B] = charDiff(baseNorm(typed), result.solution);
             return (
               <div className="space-y-1 text-lg">
                 <div><span className={`${LABEL} mr-2`}>{t('yourInput')}</span><DiffText parts={A} cls="diff-del" /></div>
                 <div><span className={`${LABEL} mr-2`}>{t('solution')}</span><b><DiffText parts={B} cls="diff-ins" /></b> <SpeakButton text={task.solution} lang={answerLang} /></div>
+                {isList(task.solution) && <div className="whitespace-pre-line text-base text-gray-700 mt-1">{task.solution}</div>}
               </div>
             );
           })() : (
-            <div className="text-lg"><b>{task.solution}</b> <SpeakButton text={task.solution} lang={answerLang} /></div>
+            <div className="text-lg whitespace-pre-line"><b>{task.solution}</b> <SpeakButton text={task.solution} lang={answerLang} /></div>
           )}
-          {mode === 'listen' && <div className="text-gray-700 mt-1">{promptLabel}: <b>{task.prompt}</b></div>}
+          {answerHintLine}
+          {mode === 'listen' && <div className="text-gray-700 mt-1">{promptLabel}: <b>{inline(task.prompt)}</b></div>}
           {mode !== 'gap' && <Sentences word={item.word} solution={solutionOf(item)} />}
         </div>
+      );
+
+      // Aufgedeckt, selbst bewerten — Karteikarten und Handschrift ohne Wertung
+      const reveal = (
+        <>
+          <div className={`${LABEL} mb-1`}>{t('solution')}</div>
+          <div className="flex items-start gap-3">
+            <div className="flex-1 text-3xl font-bold text-blue-700 break-words whitespace-pre-line">{task.solution}</div>
+            <SpeakButton text={task.solution} lang={answerLang} />
+          </div>
+          {answerHintLine}
+          <Sentences word={item.word} solution={task.solution} />
+          <div className="flex gap-3 mt-4">
+            <button onClick={() => rate(false)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 text-lg">{t('knewNot')}</button>
+            <button onClick={() => rate(true)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-green-100 text-green-700 hover:bg-green-200 text-lg">{t('knew')}</button>
+          </div>
+        </>
       );
 
       const nextButton = phase === 'feedback' && (
@@ -3231,18 +3464,7 @@
                 {nextButton}
               </>
             ) : (
-              <div className="mt-4">
-                <div className={`${LABEL} mb-1`}>{t('solution')}</div>
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 text-3xl font-bold text-blue-700 break-words">{task.solution}</div>
-                  <SpeakButton text={task.solution} lang={answerLang} />
-                </div>
-                <Sentences word={item.word} solution={task.solution} />
-                <div className="flex gap-3 mt-4">
-                  <button onClick={() => rate(false)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 text-lg">{t('knewNot')}</button>
-                  <button onClick={() => rate(true)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-green-100 text-green-700 hover:bg-green-200 text-lg">{t('knew')}</button>
-                </div>
-              </div>
+              <div className="mt-4">{reveal}</div>
             )}
           </>
         );
@@ -3272,20 +3494,7 @@
       } else if (mode === 'cards') {
         body = phase === 'ask' ? (
           <button onClick={() => setPhase('back')} className={`w-full ${BTN_PRIMARY} px-6 py-6 text-xl`}>{t('flip')}</button>
-        ) : (
-          <>
-            <div className={`${LABEL} mb-1`}>{t('solution')}</div>
-            <div className="flex items-start gap-3">
-              <div className="flex-1 text-3xl font-bold text-blue-700 break-words">{task.solution}</div>
-              <SpeakButton text={task.solution} lang={answerLang} />
-            </div>
-            <Sentences word={item.word} solution={task.solution} />
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => rate(false)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 text-lg">{t('knewNot')}</button>
-              <button onClick={() => rate(true)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-green-100 text-green-700 hover:bg-green-200 text-lg">{t('knew')}</button>
-            </div>
-          </>
-        );
+        ) : reveal;
       } else if (mode === 'choice') {
         body = (
           <>
@@ -3295,7 +3504,7 @@
                   : o === picked ? 'bg-red-100 border-red-400 text-red-800' : 'opacity-50';
                 return (
                   <button key={o} onClick={() => pick(o)} disabled={phase !== 'ask'}
-                    className={`px-4 py-4 rounded-lg border-2 border-gray-200 bg-white text-lg font-semibold text-gray-800 text-left break-words hover:border-blue-400 hover:bg-blue-50 transition-all ${state}`}>
+                    className={`px-4 py-4 rounded-lg border-2 border-gray-200 bg-white text-lg font-semibold text-gray-800 text-left break-words whitespace-pre-line hover:border-blue-400 hover:bg-blue-50 transition-all ${state}`}>
                     {o}
                   </button>
                 );
@@ -3333,12 +3542,22 @@
         // Schreiben, Lückentext, Hören: Eingabefeld
         body = (
           <>
-            {phase === 'ask' && (
+            {phase === 'ask' && (task.need ? (
+              <div className="space-y-2">
+                {task.need.map((e, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <span className="text-gray-400 w-7 shrink-0 text-right">{e.mark}</span>
+                    {inputField(i === 0 ? inputRef : null, fieldValue(i), (ev) => setField(i, ev.target.value), '', i)}
+                  </div>
+                ))}
+                <button onClick={check} className={`w-full ${BTN_PRIMARY} px-5 py-3`}>{t('check')}</button>
+              </div>
+            ) : (
               <div className="flex gap-2">
                 {inputField(inputRef, input, (e) => setInput(e.target.value))}
                 <button onClick={check} className={`${BTN_PRIMARY} px-5`}>{t('check')}</button>
               </div>
-            )}
+            ))}
             {(phase === 'feedback' || phase === 'copy') && feedbackBox(input)}
             {copyBlock}
             {nextButton}
@@ -3356,7 +3575,7 @@
               {task.before}<span className="inline-block min-w-[5rem] border-b-4 border-blue-400 text-blue-700 px-1 text-center">
                 {phase === 'ask' ? ' ' : task.solution}</span>{task.after}
             </div>
-            <div className="text-gray-600"><span className={`${LABEL} mr-2`}>{promptLabel}</span><b className="text-xl">{task.prompt}</b>{hint && <span className="text-sm text-gray-500 ml-2">{hint}</span>}</div>
+            <div className="text-gray-600"><span className={`${LABEL} mr-2`}>{promptLabel}</span><b className="text-xl">{inline(task.prompt)}</b>{hint && <span className="text-sm text-gray-500 ml-2">{hint}</span>}</div>
           </>
         );
       } else if (mode === 'listen') {
@@ -3372,10 +3591,11 @@
           <>
             <div className={`${LABEL} mb-2`}>{promptLabel}</div>
             <div className="flex items-start gap-3 mb-1">
-              <div className="flex-1 text-3xl sm:text-4xl font-bold text-gray-800 break-words">{task.prompt}</div>
+              <div className="flex-1 text-3xl sm:text-4xl font-bold text-gray-800 break-words whitespace-pre-line">{task.prompt}</div>
               <SpeakButton text={task.prompt} lang={promptLang} />
             </div>
             {hint && <div className="text-sm text-gray-500 mb-2">{hint}</div>}
+            {needNote}
           </>
         );
       }
@@ -3462,7 +3682,7 @@
         const isFlash = flash && (side === 'l' ? flash.l === w : flash.r === w);
         return (
           <button key={side + i} onClick={onClick} disabled={isMatched}
-            className={`w-full px-3 py-3 rounded-lg border-2 text-left font-semibold break-words transition-all ${
+            className={`w-full px-3 py-3 rounded-lg border-2 text-left font-semibold break-words whitespace-pre-line transition-all ${
               isMatched ? 'bg-green-100 border-green-300 text-green-800 opacity-60'
               : isFlash ? 'bg-red-100 border-red-400 text-red-800'
               : active ? 'bg-blue-100 border-blue-500 text-blue-900'
@@ -3529,9 +3749,9 @@
                     {log.map((e, i) => (
                       <tr key={i} className={`border-t border-gray-100 ${e.ok ? '' : 'bg-red-50'}`}>
                         <td className="pr-2 py-1 text-gray-400">{i + 1}</td>
-                        <td className="pr-2 py-1 font-semibold">{promptOf(e.item)}</td>
+                        <td className="pr-2 py-1 font-semibold">{inline(promptOf(e.item))}</td>
                         <td className={`pr-2 py-1 ${e.ok ? 'text-green-700' : 'text-red-700'}`}>{e.input || t('noAnswer')}</td>
-                        <td className="pr-2 py-1">{e.solution || solutionOf(e.item)}</td>
+                        <td className="pr-2 py-1">{inline(e.solution || solutionOf(e.item))}</td>
                         <td className="py-1">{e.ok ? '✓' : '✗'}</td>
                       </tr>
                     ))}
@@ -3543,7 +3763,7 @@
               <div className={`${CARD} p-6 mb-4`}>
                 <h3 className="font-semibold text-gray-700 mb-2">{t('wrongWords')}</h3>
                 <ul className="space-y-1 text-gray-700">
-                  {wrong.map((e, i) => <li key={i}><b>{promptOf(e.item)}</b> — {solutionOf(e.item)}</li>)}
+                  {wrong.map((e, i) => <li key={i}><b>{inline(promptOf(e.item))}</b> — {inline(solutionOf(e.item))}</li>)}
                 </ul>
               </div>
             ) : <p className="text-center text-green-700 font-semibold mb-4">{t('allRight')}</p>}
