@@ -92,6 +92,7 @@
         pastedTitlePh: 'Titel (z.B. Unité 3 – La maison)',
         pastePh: 'Sprachen: de → fr\nF: das Haus\nA: la maison\nS: J\'habite dans une grande maison.\nH: f.\n---',
         importText: 'Text importieren',
+        importHintDir: (name) => `Neue Sets werden als Datei im Ordner «${name}» gespeichert.`,
         importHint: 'Importierte Sets werden in diesem Browser gespeichert. Bewahre die Originaldatei trotzdem auf — leert der Browser seinen Speicher, importierst du sie einfach wieder.',
         mySets: 'Meine Voci',
         examples: 'Beispiele',
@@ -420,6 +421,7 @@
         pastedTitlePh: 'Title (e.g. Unit 3 – At home)',
         pastePh: 'Languages: de → en\nF: das Haus\nA: the house\nS: I live in a big house.\n---',
         importText: 'Import text',
+        importHintDir: (name) => `New sets are saved as files in the folder “${name}”.`,
         importHint: 'Imported sets are stored in this browser. Keep the original file anyway — if the browser clears its storage, you simply import it again.',
         mySets: 'My sets',
         examples: 'Examples',
@@ -2099,13 +2101,26 @@
       <div className="mb-6 rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900">{t('storageBroken')}</div>
     );
 
-    const Collapsible = ({ title, open, onToggle, children }) => (
-      <div className={`${CARD} mb-8`}>
+    const Collapsible = ({ id, title, open, onToggle, children }) => (
+      <div id={id} className={`${CARD} mb-8 scroll-mt-4`}>
         <button onClick={onToggle} className="w-full flex items-center justify-between gap-2 px-6 py-4 text-left">
           <h2 className="text-lg font-semibold text-gray-700">{title}</h2>
           <span className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
         </button>
         {open && <div className="px-6 pb-6">{children}</div>}
+      </div>
+    );
+
+    // Ordnerwahl mit eingerückten Unterordnern — Editor und «Voci-Set erstellen»
+    const FolderSelect = ({ value, onChange, folders, className = '' }) => (
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={`flex-1 min-w-0 ${INPUT} ${className}`}>
+        <option value="">{t('rootFolder')}</option>
+        {folders.map((f) => <option key={f} value={f}>{'\u00a0\u00a0'.repeat(f.split('/').length - 1) + dirName(f)}</option>)}
+      </select>
+    );
+    const OrDivider = ({ children }) => (
+      <div className={`flex items-center gap-3 my-4 ${LABEL}`}>
+        <span className="flex-1 h-px bg-gray-200" /> {children} <span className="flex-1 h-px bg-gray-200" />
       </div>
     );
 
@@ -2211,11 +2226,11 @@
       // umbenannter oder gelöschter Ordner fällt auf die Hauptebene zurück.
       const [target, setTarget] = useState('');
       const into = folders.includes(target) ? target : '';
-      const createBox = useRef(null);
       const create = (dir) => {
         setTarget(dir);
         setCreateOpen(true);
-        setTimeout(() => createBox.current && createBox.current.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+        // Die Karte steht immer, nur ihr Inhalt klappt auf — scrollen geht sofort.
+        document.getElementById('create').scrollIntoView({ behavior: 'smooth', block: 'start' });
       };
       const [openDirs, setOpenDirs] = useState(loadOpen);
       const [dropDir, setDropDir] = useState(null);
@@ -2247,7 +2262,8 @@
         const parsed = parseFile(text, name);
         if (!parsed.words.length) { showToast(complain); return false; }
         const put = () => {
-          onImport({ id: newId(), ...parsed, ...(dir === undefined ? {} : { dir }) });
+          onImport({ id: newId(), ...parsed, ...(dir ? { dir } : {}) });
+          openTo(dir);
           showToast(t('imported', parsed.title, parsed.words.length));
         };
         // Gleicher Titel im gleichen Ordner heisst «neue Fassung desselben
@@ -2265,9 +2281,18 @@
         }
       };
       const importPasted = () => {
-        if (!addImported(pasted, pastedTitle.trim() || 'Voci', into || undefined, t('noWordsFound'))) return;
+        if (!addImported(pasted, pastedTitle.trim() || 'Voci', into, t('noWordsFound'))) return;
         setPasted('');
         setPastedTitle('');
+      };
+
+      // Alles, was im Kasten ankommt (Auswahl, Ablage-Fläche), geht in dessen
+      // Ordner. Die Fläche braucht ein eigenes onDrop: sonst fiele die Datei zum
+      // Fenster-Listener durch, und der kennt nur die Hauptebene.
+      const importHere = (fileList) => importFiles(fileList, into);
+      const hereDrop = {
+        onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); },
+        onDrop: (e) => { if (!e.dataTransfer.files.length) return; e.preventDefault(); e.stopPropagation(); importHere(e.dataTransfer.files); },
       };
 
       useEffect(() => {
@@ -2279,6 +2304,24 @@
       }, []);
 
       const rememberOpen = (dirs) => { setOpenDirs(dirs); writeLocal(OPEN_KEY, dirs); };
+      // Ein Import in einen zugeklappten Ordner wäre sonst unsichtbar — die
+      // Meldung sagt «importiert», die Liste zeigt nichts. Funktional, weil
+      // `put` auch erst nach der Rückfrage «ersetzen?» laufen kann.
+      const openTo = (dir) => setOpenDirs((cur) => {
+        const add = [];
+        for (let d = dir || ''; d; d = parentDir(d)) if (!cur.includes(d)) add.push(d);
+        if (!add.length) return cur;
+        const next = [...cur, ...add];
+        writeLocal(OPEN_KEY, next);
+        return next;
+      });
+      // Umbenannt oder verschoben: aufgeklappte Ordner und die Ordnerwahl im
+      // Kasten wandern mit, sonst fiele die Wahl still auf die Hauptebene.
+      const followMove = (from, to) => {
+        const move = (d) => (inside(d, from) ? to + d.slice(from.length) : d);
+        rememberOpen(openDirs.map(move));
+        setTarget(move);
+      };
       const toggleDir = (dir) => rememberOpen(openDirs.includes(dir) ? openDirs.filter((d) => d !== dir) : [...openDirs, dir]);
 
       const canDrop = (dir) => {
@@ -2314,7 +2357,7 @@
           else {
             const target = folderApi.moveFolder(item.id, dir);
             if (target === false) { showToast(t('folderExists', dirName(item.id))); return; }
-            rememberOpen(openDirs.map((d) => (inside(d, item.id) ? target + d.slice(item.id.length) : d)));
+            followMove(item.id, target);
           }
         },
       });
@@ -2331,7 +2374,7 @@
         onOk: (name) => {
           const target = folderApi.renameFolder(dir, name);
           if (target === false) { showToast(t('folderExists', name)); return; }
-          if (target) rememberOpen(openDirs.map((d) => (inside(d, dir) ? target + d.slice(dir.length) : d)));
+          if (target) followMove(dir, target);
         },
       });
       const dropFolder = (dir) => {
@@ -2417,31 +2460,26 @@
             )}
             {settingsPanel}
 
-            <div ref={createBox} className="scroll-mt-4">
-            <Collapsible title={t('createTitle')} open={createOpen} onToggle={() => setCreateOpen((v) => !v)}>
+            <Collapsible id="create" title={t('createTitle')} open={createOpen}
+              onToggle={() => { setTarget(''); setCreateOpen((v) => !v); }}>
               {folders.length > 0 && (
                 <label className="flex items-center gap-3 mb-4">
                   <span className={LABEL}>{t('createIn')}</span>
-                  <select value={into} onChange={(e) => setTarget(e.target.value)} className={`flex-1 min-w-0 ${INPUT} text-sm`}>
-                    <option value="">{t('rootFolder')}</option>
-                    {folders.map((f) => <option key={f} value={f}>{'\u00a0\u00a0'.repeat(f.split('/').length - 1) + dirName(f)}</option>)}
-                  </select>
+                  <FolderSelect value={into} onChange={setTarget} folders={folders} className="text-sm" />
                 </label>
               )}
               <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1 mb-4">{t('steps')}</ol>
               <button onClick={() => copyText(kiPrompt(), t('promptCopied'))} className={`w-full ${BTN_PRIMARY} px-4 py-2 mb-6`}>
                 {t('copyPrompt')}
               </button>
-              <div onClick={() => fileInput.current.click()}
+              <div onClick={() => fileInput.current.click()} {...hereDrop}
                 className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center text-gray-500 cursor-pointer hover:border-blue-400 hover:text-gray-700 hover:bg-blue-50 transition-all">
                 <span className="flex items-center justify-center gap-2 font-bold"><InboxIcon /> {t('dropTitle')}</span>
                 <span className="block text-sm text-gray-400">{t('dropHint')}</span>
               </div>
               <input ref={fileInput} type="file" accept=".txt,.md" multiple className="hidden"
-                onChange={(e) => { importFiles(e.target.files, into || undefined); e.target.value = ''; }} />
-              <div className={`flex items-center gap-3 my-4 ${LABEL}`}>
-                <span className="flex-1 h-px bg-gray-200" /> {t('orPaste')} <span className="flex-1 h-px bg-gray-200" />
-              </div>
+                onChange={(e) => { importHere(e.target.files); e.target.value = ''; }} />
+              <OrDivider>{t('orPaste')}</OrDivider>
               <input type="text" value={pastedTitle} onChange={(e) => setPastedTitle(e.target.value)} placeholder={t('pastedTitlePh')}
                 className={`w-full mb-2 ${INPUT} text-sm`} />
               <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={6} placeholder={t('pastePh')}
@@ -2450,15 +2488,12 @@
                 className={`w-full mt-2 px-4 py-2 rounded-lg font-semibold transition-all ${pasted.trim() ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
                 {t('importText')}
               </button>
-              <div className={`flex items-center gap-3 my-4 ${LABEL}`}>
-                <span className="flex-1 h-px bg-gray-200" /> {t('orByHand')} <span className="flex-1 h-px bg-gray-200" />
-              </div>
+              <OrDivider>{t('orByHand')}</OrDivider>
               <button onClick={() => onNew(into)} className={`w-full ${BTN_SECONDARY} px-4 py-2 flex items-center justify-center gap-2`}>
                 <PenIcon /> {t('byHand')}
               </button>
-              <p className="text-xs text-gray-400 mt-3">{t('importHint')}</p>
+              <p className="text-xs text-gray-400 mt-3">{dir.status === 'ok' ? t('importHintDir', dir.name) : t('importHint')}</p>
             </Collapsible>
-            </div>
 
             <div className="mb-8">
               <div className="flex items-center gap-0.5 mb-1 pl-2.5">
@@ -2598,10 +2633,7 @@
               </label>
               <span className={LABEL}>{t('folderLabel')}</span>
               <div className="flex gap-2 mt-1 mb-4">
-                <select value={dir} onChange={(e) => editDir(e.target.value)} className={`flex-1 min-w-0 ${INPUT}`}>
-                  <option value="">{t('rootFolder')}</option>
-                  {folders.map((f) => <option key={f} value={f}>{'\u00a0\u00a0'.repeat(f.split('/').length - 1) + dirName(f)}</option>)}
-                </select>
+                <FolderSelect value={dir} onChange={editDir} folders={folders} />
                 <IconButton onClick={newFolder} title={t('makeFolder')}><FolderIcon /></IconButton>
               </div>
               <div className="grid sm:grid-cols-2 gap-3">

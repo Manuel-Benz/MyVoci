@@ -31,7 +31,12 @@ den Kasten «Voci-Set erstellen» (`create(dir)`) mit dem Ordner vorgewählt
 einfügen, «von Hand» (`onNew(into)` → Editor). Das `+` führte früher direkt
 in den Editor, der Kasten kannte nur die Hauptebene — je nach Einstieg fehlte
 die Hälfte. Ein Ziehen aufs Fenster landet weiterhin auf der Hauptebene, aufs
-Ordner-Feld im Ordner.
+Ordner-Feld im Ordner. — die Ablage-Fläche im Kasten hat dafür ein
+eigenes `onDrop` (`importHere`), sonst fiele die Datei zum Fenster-Listener
+durch. Die Titelzeile des Kastens heisst Hauptebene (setzt `target` zurück);
+Umbenennen/Verschieben nimmt die Wahl mit (`followMove`), ein Import klappt
+seinen Ordner auf (`openTo`), und `FolderSelect` teilt sich die Ordnerliste
+mit dem Editor.
 
 Seiten-Komponenten: `Selection` (Übersicht) · `SetEditor` · `SetPage`
 (Rundeneinstellungen + Lernstand + Teilen) · `Practice` (alle Modi ausser
