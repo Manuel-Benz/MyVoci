@@ -4,6 +4,16 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (22.09.2026, 13):** «Voci-Set erstellen» hat eine **Ordnerwahl** und
+den Weg **von Hand**; das `+` an einem Ordner (und bei «Meine Voci») öffnet
+denselben Kasten mit dem Ordner vorgewählt, statt direkt in den Editor zu
+springen. Damit geht der KI-Weg in jeden Ordner, und das Anlegen von Hand ist
+auffindbar (offener Punkt aus Stand 10). Im Browser geprüft: Vorwahl,
+Text-Import in einen Unterordner, «von Hand» öffnet den Editor im Ordner.
+
+**Stand (22.09.2026, 12):** Listen auf beiden Seiten (`W: alle`, `checkAll`)
+und Hinweise pro Seite (`HF:`/`HA:`).
+
 **Stand (09.09.2026, 11):** Neues **App-Icon**: zwei Karteikarten auf dem
 Verlauf der App, die vordere mit Doppelpfeil — ein Motiv wie MyMemorys
 Kartenpaar statt des Buchstabens «Vo», und der Pfeil sagt, was MyVoci vom

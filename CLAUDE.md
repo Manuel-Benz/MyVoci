@@ -25,6 +25,14 @@ der Wortzahl dahinter in einer Flucht, rechts transparente Symbolknöpfe
 (`RowTool`, nicht `IconButton` — der bleibt für die Kacheln auf den anderen
 Seiten), Ordnerinhalt an einer Linie eingerückt.
 
+**Ein Weg zum neuen Set:** Das `+` bei «Meine Voci» und an jedem Ordner öffnet
+den Kasten «Voci-Set erstellen» (`create(dir)`) mit dem Ordner vorgewählt
+(`target`). Dort stehen alle Wege nebeneinander: KI-Prompt, Datei, Text
+einfügen, «von Hand» (`onNew(into)` → Editor). Das `+` führte früher direkt
+in den Editor, der Kasten kannte nur die Hauptebene — je nach Einstieg fehlte
+die Hälfte. Ein Ziehen aufs Fenster landet weiterhin auf der Hauptebene, aufs
+Ordner-Feld im Ordner.
+
 Seiten-Komponenten: `Selection` (Übersicht) · `SetEditor` · `SetPage`
 (Rundeneinstellungen + Lernstand + Teilen) · `Practice` (alle Modi ausser
 Zuordnen) · `MatchRound` (Zuordnen) · `Summary` · `Trainer` (Set-Seite → Runde →

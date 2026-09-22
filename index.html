@@ -86,6 +86,9 @@
         dropTitle: 'Datei hierher ziehen',
         dropHint: 'oder klicken zum Auswählen (.txt im F:/A:/---‑Format, auch aus MyMemory)',
         orPaste: 'oder Text einfügen',
+        orByHand: 'oder von Hand',
+        byHand: 'Leeres Set von Hand anlegen',
+        createIn: 'Speichern in',
         pastedTitlePh: 'Titel (z.B. Unité 3 – La maison)',
         pastePh: 'Sprachen: de → fr\nF: das Haus\nA: la maison\nS: J\'habite dans une grande maison.\nH: f.\n---',
         importText: 'Text importieren',
@@ -411,6 +414,9 @@
         dropTitle: 'Drag a file here',
         dropHint: 'or click to choose one (.txt in F:/A:/--- format, MyMemory files work too)',
         orPaste: 'or paste text',
+        orByHand: 'or by hand',
+        byHand: 'Create an empty set by hand',
+        createIn: 'Save in',
         pastedTitlePh: 'Title (e.g. Unit 3 – At home)',
         pastePh: 'Languages: de → en\nF: das Haus\nA: the house\nS: I live in a big house.\n---',
         importText: 'Import text',
@@ -2199,6 +2205,18 @@
       );
       const [qr, setQr] = useState(null);
       const [createOpen, setCreateOpen] = useState(false);
+      // Wohin «Voci-Set erstellen» ablegt. Das `+` an einem Ordner öffnet
+      // denselben Kasten mit diesem Ordner vorgewählt — sonst gäbe es dort nur
+      // den Weg von Hand und oben nur die Hauptebene. Ein inzwischen
+      // umbenannter oder gelöschter Ordner fällt auf die Hauptebene zurück.
+      const [target, setTarget] = useState('');
+      const into = folders.includes(target) ? target : '';
+      const createBox = useRef(null);
+      const create = (dir) => {
+        setTarget(dir);
+        setCreateOpen(true);
+        setTimeout(() => createBox.current && createBox.current.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+      };
       const [openDirs, setOpenDirs] = useState(loadOpen);
       const [dropDir, setDropDir] = useState(null);
       const dragged = useRef(null);
@@ -2247,7 +2265,7 @@
         }
       };
       const importPasted = () => {
-        if (!addImported(pasted, pastedTitle.trim() || 'Voci', undefined, t('noWordsFound'))) return;
+        if (!addImported(pasted, pastedTitle.trim() || 'Voci', into || undefined, t('noWordsFound'))) return;
         setPasted('');
         setPastedTitle('');
       };
@@ -2361,7 +2379,7 @@
               <span className="w-3 text-xs text-gray-400">{isOpen ? '▾' : '▸'}</span>
               <span className="shrink-0 text-gray-400 mr-1.5"><FolderIcon /></span>
               <span className="flex-1 min-w-0 truncate font-semibold text-gray-700">{dirName(dir)}</span>
-              <RowTool onClick={(e) => { e.stopPropagation(); onNew(dir); }} title={t('newSetHere')}><PlusIcon /></RowTool>
+              <RowTool onClick={(e) => { e.stopPropagation(); create(dir); }} title={t('newSetHere')}><PlusIcon /></RowTool>
               <RowTool onClick={(e) => { e.stopPropagation(); newFolder(dir); }} title={t('newSubfolder')}><FolderIcon /></RowTool>
               <RowTool onClick={(e) => { e.stopPropagation(); renameFolder(dir); }} title={t('renameFolder')}><PenIcon /></RowTool>
               <RowTool onClick={(e) => { e.stopPropagation(); dropFolder(dir); }} title={t('deleteFolder')} hover="hover:bg-red-50 hover:text-red-600"><TrashIcon /></RowTool>
@@ -2399,7 +2417,17 @@
             )}
             {settingsPanel}
 
+            <div ref={createBox} className="scroll-mt-4">
             <Collapsible title={t('createTitle')} open={createOpen} onToggle={() => setCreateOpen((v) => !v)}>
+              {folders.length > 0 && (
+                <label className="flex items-center gap-3 mb-4">
+                  <span className={LABEL}>{t('createIn')}</span>
+                  <select value={into} onChange={(e) => setTarget(e.target.value)} className={`flex-1 min-w-0 ${INPUT} text-sm`}>
+                    <option value="">{t('rootFolder')}</option>
+                    {folders.map((f) => <option key={f} value={f}>{'\u00a0\u00a0'.repeat(f.split('/').length - 1) + dirName(f)}</option>)}
+                  </select>
+                </label>
+              )}
               <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1 mb-4">{t('steps')}</ol>
               <button onClick={() => copyText(kiPrompt(), t('promptCopied'))} className={`w-full ${BTN_PRIMARY} px-4 py-2 mb-6`}>
                 {t('copyPrompt')}
@@ -2410,7 +2438,7 @@
                 <span className="block text-sm text-gray-400">{t('dropHint')}</span>
               </div>
               <input ref={fileInput} type="file" accept=".txt,.md" multiple className="hidden"
-                onChange={(e) => { importFiles(e.target.files); e.target.value = ''; }} />
+                onChange={(e) => { importFiles(e.target.files, into || undefined); e.target.value = ''; }} />
               <div className={`flex items-center gap-3 my-4 ${LABEL}`}>
                 <span className="flex-1 h-px bg-gray-200" /> {t('orPaste')} <span className="flex-1 h-px bg-gray-200" />
               </div>
@@ -2422,13 +2450,20 @@
                 className={`w-full mt-2 px-4 py-2 rounded-lg font-semibold transition-all ${pasted.trim() ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
                 {t('importText')}
               </button>
+              <div className={`flex items-center gap-3 my-4 ${LABEL}`}>
+                <span className="flex-1 h-px bg-gray-200" /> {t('orByHand')} <span className="flex-1 h-px bg-gray-200" />
+              </div>
+              <button onClick={() => onNew(into)} className={`w-full ${BTN_SECONDARY} px-4 py-2 flex items-center justify-center gap-2`}>
+                <PenIcon /> {t('byHand')}
+              </button>
               <p className="text-xs text-gray-400 mt-3">{t('importHint')}</p>
             </Collapsible>
+            </div>
 
             <div className="mb-8">
               <div className="flex items-center gap-0.5 mb-1 pl-2.5">
                 <h2 className="text-lg font-semibold text-gray-600 flex-1">{t('mySets')}</h2>
-                <RowTool onClick={() => onNew('')} title={t('newSet')}><PlusIcon /></RowTool>
+                <RowTool onClick={() => create('')} title={t('newSet')}><PlusIcon /></RowTool>
                 <RowTool onClick={() => newFolder('')} title={t('newFolder')}><FolderIcon /></RowTool>
                 <RowTool onClick={exportAll} title={t('exportAll')}><DownloadIcon /></RowTool>
               </div>
