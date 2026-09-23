@@ -8,9 +8,11 @@ Komplett clientseitig (wie MyMemory): kein Backend, keine Inhalte auf GitHub.
 
 ## Set erstellen
 
-Im Kästchen **«Voci-Set erstellen»**: KI-Prompt kopieren, in Claude/ChatGPT den
-Block zuoberst ausfüllen (Thema oder Buchseite, Sprachen, Anzahl), die
-gelieferte `.txt` auf die Seite ziehen. Oder von Hand mit dem **+** im Editor.
+Das **+** bei «Meine Voci» oder an einem Ordner öffnet den Kasten **«Voci-Set
+erstellen»** (mit diesem Ordner als Ziel). Dort: KI-Prompt kopieren, in
+Claude/ChatGPT den Block zuoberst ausfüllen (Thema oder Buchseite, Sprachen,
+Anzahl), die gelieferte `.txt` in den Kasten ziehen — oder Text einfügen, eine
+Datei wählen oder **von Hand** im Editor anlegen.
 
 Format (kompatibel mit MyMemory/MyTafelfussball – dieselbe `F:/A:`-Datei läuft
 in allen Apps, die Zusatzzeilen überlesen die anderen):
@@ -54,6 +56,12 @@ Set antippen → Einstellungen wählen → **Üben starten**.
   gewusst, Abweichung wird markiert). Toleranz *streng* (alles exakt), *normal*,
   *locker* (Akzente und Artikel egal). Falsche Wörter werden einmal
   abgeschrieben und kommen am Rundenende nochmals dran.
+- **Schreiben mit Handschrift**: unter «Schreiben» die Eingabe wählen
+  (Tastatur · Handschrift ohne Kontrolle · Handschrift mit Kontrolle).
+  *Ohne Kontrolle*: auf die Schreibfläche schreiben, aufdecken, selbst bewerten –
+  wie auf Papier. *Mit Kontrolle*: MyScript erkennt die Schrift und korrigiert
+  wie beim Tippen (braucht zwei Schlüssel, s. Anleitung in der App). Option
+  «Nur Stift annehmen» gegen Handballen-Striche.
 - **Karteikarten**: umdrehen, «Gewusst / Nicht gewusst».
 - **Multiple Choice**: vier Antworten, die falschen stammen aus demselben Set.
 - **Zuordnen**: Gruppen von sechs Paaren, links antippen, rechts die Übersetzung.
@@ -61,9 +69,6 @@ Set antippen → Einstellungen wählen → **Üben starten**.
   eintippen (nur Wörter, deren Satz das Wort enthält).
 - **Hören**: das Wort wird vorgelesen (Web Speech), aufschreiben, was man hört.
 - **Buchstabensalat**: Buchstaben-Kacheln in die richtige Reihenfolge tippen.
-- **Handschrift**: mit Stift oder Finger auf die Schreibfläche schreiben, aufdecken,
-  selbst bewerten – wie auf Papier, ohne Erkennung. Option «Nur Stift annehmen»
-  gegen Handballen-Striche.
 - **Sprechen**: das Wort aussprechen, das Gerät hört zu (Spracherkennung von
   Safari/Chrome) und vergleicht grosszügig.
 - **Blitzrunde**: «Zeit pro Wort» 5/10/20 s – läuft die Zeit ab, zählt das

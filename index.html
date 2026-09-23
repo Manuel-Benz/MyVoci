@@ -145,7 +145,7 @@
             <li>Die Schlüssel finden: angemeldet oben rechts das Konto-Symbol → <b>Cloud recognition</b> → bei der Anwendung <b>Open</b> → Reiter <b>Keys</b>. Dort stehen <b>Application Key</b> und <b>HMAC Key</b>, je mit Kopier-Knopf.</li>
             <li>Beide in den Einstellungen einsetzen (dort, wo du übst). Sie bleiben in diesem Browser und unter dieser Adresse — ein anderer Browser, die Home-Screen-App oder eine andere Adresse braucht sie nochmals. Nie im Code, nie in einem geteilten Link.</li>
             <li>Zweites Gerät der Familie: <b>«Auf ein anderes Gerät bringen»</b> zeigt einen QR-Code, der nur die Schlüssel trägt. Dort mit dem Scan-Knopf oben einlesen. Das Kontingent läuft auf dein Konto.</li>
-            <li>Ohne Schlüssel bleibt «Handschrift» wie Papier: schreiben, aufdecken, selbst bewerten. Dasselbe, wenn es für die Sprache keine Erkennung gibt.</li>
+            <li>Dann gibt es bei «Schreiben» die Eingabe <b>«Handschrift mit Kontrolle»</b>. «Handschrift ohne Kontrolle» bleibt wie Papier — schreiben, aufdecken, selbst bewerten — und braucht kein Kontingent. Gibt es für eine Sprache keine Erkennung, bleibt «mit Kontrolle» ausgegraut.</li>
           </>
         ),
         helpDirSteps: (
@@ -230,7 +230,13 @@
         practiceTitle: 'Üben',
         mode: 'Modus',
         modeWrite: 'Schreiben',
-        modeWriteHint: 'Wort eintippen — Tastatur oder Stift (iPad: Scribble). Automatische Korrektur.',
+        inputKeysHint: 'Wort eintippen — auch mit dem Stift ins Feld (iPad: Scribble). Automatische Korrektur.',
+        input: 'Eingabe',
+        inputKeys: 'Tastatur',
+        inputPen: 'Handschrift ohne Kontrolle',
+        inputInk: 'Handschrift mit Kontrolle',
+        inkOffKeys: '«Mit Kontrolle» braucht die zwei MyScript-Schlüssel (Einstellungen).',
+        inkOffLang: '«Mit Kontrolle»: für diese Sprache gibt es keine Erkennung.',
         modeCards: 'Karteikarten',
         modeCardsHint: 'Umdrehen und selbst bewerten.',
         modeChoice: 'Multiple Choice',
@@ -282,16 +288,15 @@
         dirPrompt: (name) => `Der Ordner «${name}» braucht deine Freigabe, bevor die Sets dort gespeichert werden.`,
         dirReconnect: 'Ordner freigeben',
         dirError: (name) => `Der Ordner «${name}» ist nicht erreichbar (verschoben, gelöscht oder Zugriff verweigert). Änderungen bleiben bis dahin nur im Browser.`,
-        modePen: 'Handschrift',
-        modePenHint: 'Mit Stift oder Finger auf die Fläche schreiben. Ohne Erkennung: aufdecken und selbst bewerten, wie auf Papier. Mit MyScript-Schlüssel (Einstellungen) wird die Schrift erkannt und automatisch korrigiert.',
+        inputPenHint: 'Mit Stift oder Finger auf die Fläche schreiben, dann aufdecken und selbst bewerten — wie auf Papier.',
+        inputInkHint: 'Mit Stift oder Finger auf die Fläche schreiben. «Prüfen» lässt die Schrift erkennen (MyScript) und korrigiert automatisch; aufdecken geht immer.',
         penOnly: 'Nur Stift annehmen (Finger ignorieren)',
         penClear: 'Fläche leeren',
         inkFail: 'Erkennung nicht erreichbar — aufdecken und selbst bewerten.',
         inkEmpty: 'Noch nichts erkannt — zuerst schreiben.',
         inkChecking: 'Wird gelesen …',
-        inkNoLang: 'Für diese Sprache gibt es keine Erkennung — aufdecken und selbst bewerten.',
         myscriptTitle: 'Handschrift-Erkennung (MyScript)',
-        myscriptShort: 'Erkennt im Modus «Handschrift» das Geschriebene und korrigiert automatisch. Die zwei Schlüssel bleiben in diesem Browser.',
+        myscriptShort: 'Erkennt bei «Handschrift mit Kontrolle» das Geschriebene und korrigiert automatisch. Die zwei Schlüssel bleiben in diesem Browser.',
         myscriptApp: 'Application Key',
         myscriptHmac: 'HMAC Key',
         myscriptOn: 'Erkennung eingeschaltet.',
@@ -472,7 +477,7 @@
             <li>Finding the keys: signed in, click the account icon at the top right → <b>Cloud recognition</b> → <b>Open</b> next to your application → <b>Keys</b> tab. It lists the <b>Application key</b> and the <b>HMAC key</b>, each with a copy button.</li>
             <li>Put both into the settings (on the page you practise from). They stay in this browser at this address — another browser, the home-screen app or another address needs them again. Never in the code, never in a shared link.</li>
             <li>Second family device: <b>“Bring to another device”</b> shows a QR code carrying only the keys. Read it there with the scan button at the top. The quota is charged to your account.</li>
-            <li>Without keys, “Handwriting” stays like paper: write, reveal, rate yourself. Same when there is no recognition for the language.</li>
+            <li>Then “Write” offers the input <b>“Handwriting with checking”</b>. “Handwriting without checking” stays like paper — write, reveal, rate yourself — and uses no quota. If a language has no recognition, “with checking” stays greyed out.</li>
           </>
         ),
         helpDirSteps: (
@@ -554,7 +559,13 @@
         practiceTitle: 'Practise',
         mode: 'Mode',
         modeWrite: 'Write',
-        modeWriteHint: 'Type the word — keyboard or pen (iPad: Scribble). Checked automatically.',
+        inputKeysHint: 'Type the word — a pen in the field works too (iPad: Scribble). Checked automatically.',
+        input: 'Input',
+        inputKeys: 'Keyboard',
+        inputPen: 'Handwriting without checking',
+        inputInk: 'Handwriting with checking',
+        inkOffKeys: '“With checking” needs the two MyScript keys (settings).',
+        inkOffLang: '“With checking”: no recognition for this language.',
         modeCards: 'Flashcards',
         modeCardsHint: 'Flip and rate yourself.',
         modeChoice: 'Multiple choice',
@@ -606,16 +617,15 @@
         dirPrompt: (name) => `The folder “${name}” needs your permission before the sets are saved there.`,
         dirReconnect: 'Grant access',
         dirError: (name) => `The folder “${name}” is not reachable (moved, deleted or access denied). Until then, changes stay in the browser only.`,
-        modePen: 'Handwriting',
-        modePenHint: 'Write on the pad with a pen or finger. Without recognition: reveal and rate yourself, like on paper. With MyScript keys (settings) the writing is recognised and checked automatically.',
+        inputPenHint: 'Write on the pad with a pen or finger, then reveal and rate yourself — like on paper.',
+        inputInkHint: 'Write on the pad with a pen or finger. “Check” has the writing recognised (MyScript) and checks it automatically; revealing always works.',
         penOnly: 'Pen only (ignore fingers)',
         penClear: 'Clear pad',
         inkFail: 'Recognition unavailable — reveal and rate yourself.',
         inkEmpty: 'Nothing recognised yet — write first.',
         inkChecking: 'Reading …',
-        inkNoLang: 'No recognition for this language — reveal and rate yourself.',
         myscriptTitle: 'Handwriting recognition (MyScript)',
-        myscriptShort: 'Recognises what you write in “Handwriting” mode and checks it automatically. The two keys stay in this browser.',
+        myscriptShort: 'Recognises what you write with “Handwriting with checking” and checks it automatically. The two keys stay in this browser.',
         myscriptApp: 'Application key',
         myscriptHmac: 'HMAC key',
         myscriptOn: 'Recognition enabled.',
@@ -2058,7 +2068,7 @@
     // von der aus geübt wird — der Hinweis unter der Moduswahl zeigt dorthin,
     // und wer über einen geteilten Link kommt, sieht die Übersicht nie.
     // Geschrieben wird beim Verlassen des Feldes, nicht bei jedem Zeichen.
-    const MyScriptKeys = () => {
+    const MyScriptKeys = ({ onSaved }) => {
       const [keys, setKeys] = useState(() => readLocal(MYSCRIPT_KEY, null) || { app: '', hmac: '' });
       const [qr, setQr] = useState(false);
       const [help, setHelp] = useState(false);
@@ -2071,7 +2081,7 @@
           <span className={LABEL}>{label}</span>
           <input type="text" value={keys[part]} autoCapitalize="none" autoCorrect="off" spellCheck={false}
             onChange={(e) => setKeys({ ...keys, [part]: e.target.value })}
-            onBlur={() => writeLocal(MYSCRIPT_KEY, { app: keys.app.trim(), hmac: keys.hmac.trim() })}
+            onBlur={() => { writeLocal(MYSCRIPT_KEY, { app: keys.app.trim(), hmac: keys.hmac.trim() }); onSaved && onSaved(); }}
             className={`w-full mt-1 ${INPUT}`} />
         </label>
       );
@@ -2706,7 +2716,7 @@
 
     // ---------- Set-Seite: Einstellungen für die Runde + Lernstand ----------
     const OPTS_KEY = 'myvoci_practice';
-    const DEFAULT_OPTS = { mode: 'write', dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false, timer: 0 };
+    const DEFAULT_OPTS = { mode: 'write', input: 'write', dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false, timer: 0 };
     const loadOpts = () => ({ ...DEFAULT_OPTS, ...(readLocal(OPTS_KEY, {}) || {}) });
 
     const Choice = ({ options, value, onChange }) => (
@@ -2721,22 +2731,37 @@
     );
 
     // Welche Modi gibt es, und was braucht ein Modus vom Set?
-    const MODES = ['write', 'pen', 'cards', 'choice', 'match', 'gap', 'listen', 'speak', 'scramble'];
-    const MODE_LABEL = { write: 'modeWrite', pen: 'modePen', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', speak: 'modeSpeak', scramble: 'modeScramble' };
+    const MODES = ['write', 'pen', 'ink', 'cards', 'choice', 'match', 'gap', 'listen', 'speak', 'scramble'];
+    // «Schreiben» hat drei Eingaben. Intern sind es eigene Modi — daran hängen
+    // Link (`&mode=`), `modeOff` und die Listen hier —, gezeigt wird ein Knopf
+    // mit einer Zeile «Eingabe» darunter. `pen` erkennt nie, `ink` immer: die
+    // Wahl hängt nicht mehr still daran, ob Schlüssel im Browser liegen.
+    const WRITE_INPUTS = ['write', 'pen', 'ink'];
+    const INPUT_LABEL = { write: 'inputKeys', pen: 'inputPen', ink: 'inputInk' }; // dazu je `…Hint`
+    const MODE_GROUP = { pen: 'write', ink: 'write' }; // kein eigener Knopf, eine Eingabe von
+    const HAND_MODES = ['pen', 'ink']; // Schreibfläche statt Eingabefeld
+    // Gleichwertiger Ersatz, wenn ein Modus bei diesem Set nicht geht (sonst «Schreiben»)
+    const MODE_FALLBACK = { ink: 'pen' };
+    const MODE_LABEL = { write: 'modeWrite', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', speak: 'modeSpeak', scramble: 'modeScramble' };
     // Modi, die der Rechner selber werten kann — Voraussetzung für Blitzrunde
     // und Prüfung (beides braucht ein Urteil ohne Zutun des Übenden).
     const AUTO_MODES = ['write', 'gap', 'listen', 'choice', 'scramble'];
     const TIMER_STEPS = [0, 5, 10, 20];
     const TYPED_MODES = ['write', 'gap', 'listen']; // Eingabefeld + Toleranz + Abschreiben
     // Wer nach Toleranz gewertet wird, muss sie auch einstellen können: die
-    // Handschrift hat kein Eingabefeld, wird mit Schlüssel aber genauso
-    // gemessen — sonst gälte still, was zuletzt in «Schreiben» gewählt war.
-    const usesLevel = (m) => TYPED_MODES.includes(m) || m === 'pen';
+    // Handschrift mit Kontrolle hat kein Eingabefeld, wird aber genauso
+    // gemessen — sonst gälte still, was zuletzt bei der Tastatur gewählt war.
+    const LEVEL_MODES = [...TYPED_MODES, 'ink'];
+    // Liste ganz verlangt (`W: alle`): gewertet beim Schreiben, von Hand oder
+    // getippt, bei Karteikarten nur als Vermerk
+    const NEED_ALL_MODES = [...WRITE_INPUTS, 'cards'];
     const DIRECTIONLESS = ['gap', 'match']; // Satz ist immer Sprache B, Zuordnen zeigt beide
     // Hören: gehört wird die Antwortseite — bei «gemischt» müssen beide gehen
     const listenLangs = (set, dir) => (set.langs ? (dir === 'ab' ? [set.langs[1]] : dir === 'ba' ? [set.langs[0]] : set.langs) : []);
     const canListen = (set, dir) => { const l = listenLangs(set, dir); return l.length > 0 && l.every(canSpeak); };
     const canSpeakMode = (set, dir) => { const l = listenLangs(set, dir); return l.length > 0 && l.every(canRecognize); };
+    // Handschrift mit Kontrolle: erkannt wird die Antwortseite, wie beim Hören
+    const canInk = (set, dir) => { const l = listenLangs(set, dir); return l.length > 0 && l.every((x) => IINK_LANG[x]); };
 
     const selectWords = (set, opts, prog) => {
       const recs = set.words.map((w) => prog[wordKey(w)]);
@@ -2752,8 +2777,13 @@
     const SetPage = ({ set, prog, preset, go, onStart, onReset, onBack }) => {
       // Ein geteilter Link bringt seine Einstellungen mit (preset) — die gelten
       // für diesen Besuch, gemerkt wird erst, was hier umgestellt wird.
-      const [opts, setOpts] = useState(() => ({ ...loadOpts(), ...preset }));
-      const [settingsButton, settingsPanel] = useSettings(<MyScriptKeys />);
+      // `wanted` ist die Wahl, `opts` (unten) das, was bei diesem Set geht
+      const [wanted, setWanted] = useState(() => ({ ...loadOpts(), ...preset }));
+      // Neu eingetragene Schlüssel sollen «mit Kontrolle» sofort freigeben —
+      // vor `useSettings`, das JSX des Panels wird vorher ausgewertet
+      const [inkKeys, setInkKeys] = useState(() => !!myscriptKeys());
+      const [settingsButton, settingsPanel] = useSettings(<MyScriptKeys onSaved={() => setInkKeys(!!myscriptKeys())} />);
+      const [help, setHelp] = useState(false);
       const [dialog, setDialog] = useState(null);
       const [listOpen, setListOpen] = useState(false);
       const [shareGo, setShareGo] = useState(false);
@@ -2767,11 +2797,11 @@
       // Gemerkt wird nur, was hier von Hand umgestellt wurde — und zwar auf
       // dem gespeicherten Stand, nicht auf dem eines geteilten Links. Sonst
       // würden Prüfungsmodus und Timer einer fremden Übung zum Standard des
-      // Geräts. Der Rückfall auf «Schreiben» merkt sich gar nichts (remember).
+      // Geräts. Der Rückfall eines Modus steht nie im Zustand (s. `opts`).
       // Geschrieben wird ausserhalb des Updaters: der darf mehrfach laufen.
-      const set_ = (patch, remember = true) => {
-        if (remember) writeLocal(OPTS_KEY, { ...loadOpts(), ...patch });
-        setOpts((o) => ({ ...o, ...patch }));
+      const set_ = (patch) => {
+        writeLocal(OPTS_KEY, { ...loadOpts(), ...patch });
+        setWanted((o) => ({ ...o, ...patch }));
       };
 
       const n = set.words.length;
@@ -2784,15 +2814,21 @@
       // `gapFor` zerlegt jeden Satz und baut dabei Ausdrücke — das darf nicht
       // an jedem Tastendruck in den Bereichsfeldern hängen.
       const gapN = useMemo(() => set.words.filter(gapFor).length, [set]);
-      // Ein gemerkter Modus, der bei diesem Set nicht geht, fällt auf Schreiben zurück
       // Eine Stelle entscheidet, ob ein Modus geht — sonst können ausgegrauter
-      // Knopf und Rückfall auf «Schreiben» auseinanderlaufen.
-      const modeOff = (m) => (m === 'gap' && !gapN) || (m === 'listen' && !canListen(set, opts.dir)) || (m === 'speak' && !canSpeakMode(set, opts.dir)) || !MODES.includes(m);
-      const modeOk = !modeOff(opts.mode);
-      useEffect(() => { if (!modeOk) set_({ mode: 'write' }, false); }, [modeOk]);
+      // Knopf und Rückfall auseinanderlaufen.
+      const modeOff = (m) => (m === 'gap' && !gapN) || (m === 'listen' && !canListen(set, wanted.dir)) || (m === 'speak' && !canSpeakMode(set, wanted.dir))
+        || (m === 'ink' && !(inkKeys && canInk(set, wanted.dir))) || !MODES.includes(m);
+      // Ein Modus, der bei diesem Set nicht geht, fällt zurück — berechnet,
+      // nicht per Effekt nachgetragen: sonst sähe «Direkt starten» beim
+      // ersten Aufbau noch den ungültigen Modus und startete nie.
+      const mode = modeOff(wanted.mode) ? MODE_FALLBACK[wanted.mode] || 'write' : wanted.mode;
+      const opts = useMemo(() => (mode === wanted.mode ? wanted : { ...wanted, mode }), [wanted, mode]);
+      const writing = (MODE_GROUP[opts.mode] || opts.mode) === 'write';
       const chosen = useMemo(() => selectWords(set, opts, prog), [set, opts, prog]);
-      // «Direkt starten» aus dem Link — nur beim ersten Anzeigen (s. Trainer)
-      useEffect(() => { if (go && modeOk && chosen.length) onStart(opts, chosen); }, []);
+      // «Direkt starten» aus dem Link — nur beim ersten Anzeigen (s. Trainer).
+      // Ein gleichwertiger Ersatz (MODE_FALLBACK) startet auch, «Schreiben»
+      // statt Lückentext nicht: das wäre eine andere Übung.
+      useEffect(() => { if (go && (mode === wanted.mode || MODE_FALLBACK[wanted.mode]) && chosen.length) onStart(opts, chosen); }, []);
       const A = sideName(set, 0), B = sideName(set, 1);
       const BOX_COLORS = ['bg-gray-300', 'bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-lime-400', 'bg-green-500'];
 
@@ -2814,13 +2850,32 @@
               <div className="space-y-4">
                 <div>
                   <div className={`${LABEL} mb-2`}>{t('mode')}</div>
-                  <Choice value={opts.mode} onChange={(mode) => set_({ mode })}
-                    options={MODES.map((m) => [m, t(MODE_LABEL[m]), modeOff(m)])} />
-                  <p className="text-sm text-gray-500 mt-1">{t((MODE_LABEL[opts.mode] || MODE_LABEL.write) + 'Hint')}</p>
+                  {/* Zurück zu «Schreiben» holt die zuletzt gewählte Eingabe (`input`) */}
+                  <Choice value={MODE_GROUP[opts.mode] || opts.mode}
+                    onChange={(m) => { if (m !== 'write') set_({ mode: m }); else if (!writing) set_({ mode: opts.input }); }}
+                    options={MODES.filter((m) => !MODE_GROUP[m]).map((m) => [m, t(MODE_LABEL[m]), modeOff(m)])} />
+                  {!writing && <p className="text-sm text-gray-500 mt-1">{t(MODE_LABEL[opts.mode] + 'Hint')}</p>}
                   {!gapN && <p className="text-sm text-gray-400 mt-1">{t('modeGapNone')}</p>}
                   {!canListen(set, opts.dir) && <p className="text-sm text-gray-400 mt-1">{t('modeListenNone')}</p>}
                   {!canSpeakMode(set, opts.dir) && canListen(set, opts.dir) && <p className="text-sm text-gray-400 mt-1">{t('modeSpeakNone')}</p>}
                 </div>
+                {writing && (
+                  <div>
+                    <div className={`${LABEL} mb-2`}>{t('input')}</div>
+                    <Choice value={opts.mode} onChange={(m) => set_({ mode: m, input: m })}
+                      options={WRITE_INPUTS.map((m) => [m, t(INPUT_LABEL[m]), modeOff(m)])} />
+                    <p className="text-sm text-gray-500 mt-1">{t(INPUT_LABEL[opts.mode] + 'Hint')}</p>
+                    {/* Nur wer von Hand schreibt, bekommt den Weg zur Erkennung
+                        gezeigt — wer tippt (etwa jede Klasse über einen
+                        geteilten Link), braucht keine MyScript-Einrichtung */}
+                    {modeOff('ink') && HAND_MODES.includes(opts.mode) && (
+                      <p className="text-sm text-gray-400 mt-1">
+                        {t(inkKeys ? 'inkOffLang' : 'inkOffKeys')} {!inkKeys && <HelpLink onClick={() => setHelp(true)} />}
+                      </p>
+                    )}
+                    {help && <Help only="ink" onClose={() => setHelp(false)} />}
+                  </div>
+                )}
                 {!DIRECTIONLESS.includes(opts.mode) && (
                   <div>
                     <div className={`${LABEL} mb-2`}>{t('direction')}</div>
@@ -2846,7 +2901,7 @@
                   <div className={`${LABEL} mb-2`}>{t('order')}</div>
                   <Choice value={opts.order} onChange={(order) => set_({ order })} options={[['random', t('orderRandom')], ['file', t('orderFile')]]} />
                 </div>
-                {usesLevel(opts.mode) && (
+                {LEVEL_MODES.includes(opts.mode) && (
                   <div>
                     <div className={`${LABEL} mb-2`}>{t('tolerance')}</div>
                     <Choice value={opts.level} onChange={(level) => set_({ level })}
@@ -2859,7 +2914,7 @@
                   {TYPED_MODES.includes(opts.mode) && !opts.exam && (
                     <label className="flex items-center gap-2"><input type="checkbox" checked={opts.copy} onChange={(e) => set_({ copy: e.target.checked })} /> {t('copyWrong')}</label>
                   )}
-                  {opts.mode === 'pen' && (
+                  {HAND_MODES.includes(opts.mode) && (
                     <label className="flex items-center gap-2"><input type="checkbox" checked={opts.penOnly} onChange={(e) => set_({ penOnly: e.target.checked })} /> {t('penOnly')}</label>
                   )}
                 </div>
@@ -3184,7 +3239,7 @@
       const [built, setBuilt] = useState([]); // Buchstabensalat: Indizes der gesetzten Kacheln
       const [log, setLog] = useState([]); // { item, ok, input, solution } nur erste Versuche
       const [sketchKey, setSketchKey] = useState(0); // Handschrift: Fläche leeren
-      const myscript = useMemo(myscriptKeys, []); // Handschrift: Schlüssel für die Erkennung
+      const myscript = useMemo(myscriptKeys, []); // Handschrift mit Kontrolle: Schlüssel für die Erkennung
       const [inkText, setInkText] = useState(''); // Handschrift: was gewertet wurde
       const [inkFail, setInkFail] = useState(false); // Handschrift: Fläche kam gar nicht → Papier
       const [inkNote, setInkNote] = useState(''); // Handschrift: Meldung zu diesem einen Versuch
@@ -3218,7 +3273,7 @@
         // Vermerk. Sonst genügt ein Punkt (Hören, Sprechen, Buchstabensalat)
         // oder man sieht die ganze Liste ohnehin (Multiple Choice, Zuordnen).
         // Gilt für die gesuchte Seite, egal in welcher Richtung.
-        const all = item.word.all && isList(solution) && ['write', 'pen', 'cards'].includes(mode);
+        const all = item.word.all && isList(solution) && NEED_ALL_MODES.includes(mode);
         return { solution, prompt: promptOf(item), ...(all ? { need: listEntries(solution) } : {}) };
       }, [item]); // nicht an der Warteschlange: die wächst bei jedem Fehler, die Aufgabe bliebe sonst nicht stehen
 
@@ -3420,7 +3475,7 @@
       const answerHint = showHints && sideHint(item.dir === 'ab' ? 'b' : 'a');
       const answerHintLine = answerHint && <div className="text-sm text-gray-500 mt-1">{answerHint}</div>;
       const needNote = task.need && (
-        <div className="text-sm font-semibold text-blue-700 mb-2">{t(mode === 'pen' ? 'needAllPen' : 'needAll', task.need.length)}</div>
+        <div className="text-sm font-semibold text-blue-700 mb-2">{t(HAND_MODES.includes(mode) ? 'needAllPen' : 'needAll', task.need.length)}</div>
       );
       const promptLabel = sideName(set, item.dir === 'ab' ? 0 : 1);
 
@@ -3500,13 +3555,15 @@
 
       // ---- der Aufgabenteil je Modus ----
       let body;
-      // Handschrift: ein Zweig, zwei Flächen. Mit Erkennung kommt «Prüfen»
+      // Handschrift: ein Zweig, zwei Flächen. Mit Kontrolle kommt «Prüfen»
       // dazu — «Aufdecken» bleibt in beiden Fällen, sonst käme niemand an
       // einem Wort vorbei, das er nicht weiss, und ein falsch gelesenes
-      // «Haus» liesse sich nicht richtigstellen.
-      const inkOn = mode === 'pen' && myscript && IINK_LANG[answerLang] && !inkFail;
-      if (mode === 'pen') {
-        const note = inkNote || (inkFail && t('inkFail')) || (myscript && !IINK_LANG[answerLang] && t('inkNoLang'));
+      // «Haus» liesse sich nicht richtigstellen. Ob `ink` geht (Schlüssel,
+      // Sprache), hat `modeOff` auf der Set-Seite entschieden; hier bleibt nur
+      // der Ausfall mitten in der Runde — dann ohne Kontrolle weiter.
+      const inkOn = mode === 'ink' && !inkFail;
+      if (HAND_MODES.includes(mode)) {
+        const note = inkNote || (inkFail && t('inkFail'));
         body = (
           <>
             {note && <p className="text-sm text-orange-600 mb-2">{note}</p>}
@@ -3671,7 +3728,7 @@
         <div className={`${SCREEN} p-4 sm:p-8`} onKeyDown={onKey}>
           <PracticeFrame set={set} pos={pos} queue={queue.length} done={pos + 1} total={total} item={item} onQuit={quit}
             extra={exam && <span className="ml-2 px-1.5 rounded bg-red-100 text-red-700 text-xs font-semibold">{t('examTag')}</span>}>
-            <div className={`${CARD} p-6 sm:p-8 mb-4 relative overflow-hidden ${mode === 'pen' ? 'sketch' : ''}`}>
+            <div className={`${CARD} p-6 sm:p-8 mb-4 relative overflow-hidden ${HAND_MODES.includes(mode) ? 'sketch' : ''}`}>
               {timed && phase === 'ask' && (
                 <div key={pos} className="absolute left-0 top-0 h-1.5 bg-orange-400" style={{ animation: `shrink ${opts.timer}s linear forwards` }} />
               )}

@@ -121,13 +121,17 @@ localStorage, Eingabe in den Einstellungen jeder Seite, von der aus geübt wird 
 `#k=…`, der nur die Schlüssel trägt: `takeKeysFromHash` speichert sie beim
 Laden und streicht den Teil sofort aus der Adresse, `keysArrived` löst die
 einmalige Meldung in der Übersicht aus — Familien-Geräte, nie der Set-Link)
-erkennt der Handschrift-Modus das Geschriebene: `InkPad` lädt
+erkennt die Eingabe «Handschrift mit Kontrolle» (Modus `ink`) das
+Geschriebene: `InkPad` lädt
 `iink-ts` erst bei Bedarf per CDN (`loadScript`), Variante `INK_V2`, Sprache aus
 `IINK_LANG`. Erkannt wird **nur auf Verlangen** (`exportContent: 'DEMAND'`):
 «Prüfen» holt per `export()` den Text und wertet ihn wie eine Eingabe
-(`checkInk` → `settle`). Ohne Schlüssel, bei einer Sprache ohne Paket
-(`inkNoLang`) oder wenn Laden/Anmelden scheitert (`inkFail`) bleibt die Fläche
-ohne Erkennung (`Sketch`). Beide Wege teilen **einen** Zweig in `Practice`:
+(`checkInk` → `settle`). Ohne Schlüssel oder bei einer Sprache ohne Paket
+ist `ink` in der Moduswahl ausgegraut (`modeOff`, `canInk`); ein gemerktes
+oder verlinktes `ink` fällt dann auf `pen` zurück. Scheitert Laden/Anmelden
+mitten in der Runde (`inkFail`), bleibt die Fläche ohne Erkennung
+(`Sketch`). `pen` («ohne Kontrolle») erkennt nie, auch mit Schlüsseln —
+kostet also kein Kontingent. Beide Wege teilen **einen** Zweig in `Practice`:
 «Aufdecken» mit Selbstbewertung gibt es immer, «Prüfen» kommt nur dazu — sonst
 käme niemand an einem Wort vorbei, das er nicht weiss, und ein falsch gelesenes
 Wort liesse sich nicht richtigstellen.
@@ -189,7 +193,15 @@ das mitgelieferte Set; wird navigiert, trägt `keysArrived` die Meldung nach.
 
 ## Modi
 
-`MODES` = write, pen, cards, choice, match, gap, listen, speak, scramble.
+`MODES` = write, pen, ink, cards, choice, match, gap, listen, speak, scramble.
+`write`/`pen`/`ink` sind die drei Eingaben von «Schreiben» (`WRITE_INPUTS`:
+Tastatur · Handschrift ohne/mit Kontrolle): intern eigene Modi, damit Link
+(`&mode=`), `modeOff` und die Listen unten nichts Neues lernen müssen; die
+Set-Seite zeigt einen Knopf «Schreiben» und darunter die Zeile «Eingabe».
+`MODE_GROUP` sagt, welche Modi keinen eigenen Knopf haben (Beschriftung
+`INPUT_LABEL`), `HAND_MODES` = pen, ink (Schreibfläche). Zurück zu «Schreiben» holt die
+zuletzt gewählte Eingabe (`opts.input`). Alte Links mit `mode=pen` hatten mit
+Schlüsseln die Erkennung und laufen jetzt ohne — bewusst so gelassen.
 Daneben stehen die Listen, die entscheiden, was ein Modus kann:
 `TYPED_MODES` (Eingabefeld, Toleranz, Abschreiben) · `AUTO_MODES` (der Rechner
 kann selber werten — Voraussetzung für Blitzrunde und Prüfung) ·
@@ -244,6 +256,13 @@ verzweigen, wenn es um Inhalte geht.
 - **Richtungslose Modi bekommen in `buildQueue` fest `dir: 'ab'`.** Sonst
   schlägt im Lückentext eine alte Richtungswahl durch, die dort gar nicht
   angeboten wird: falsche Stimme, falsche Artikel-Toleranz.
+- **Der Rückfall eines Modus wird berechnet, nicht per Effekt gesetzt.**
+  `SetPage` hält die Wahl in `wanted`; `opts` ist daraus abgeleitet, mit
+  `MODE_FALLBACK` (`ink` → `pen`, sonst `write`), wo `modeOff` greift. Mit dem
+  alten Effekt sah «Direkt starten» (`go=1`) beim ersten Aufbau noch den
+  ungültigen Modus und startete nie; so kehrt auch `ink` von selbst zurück,
+  sobald Schlüssel eingetragen sind. Direkt gestartet wird nur mit
+  gleichwertigem Ersatz — «Schreiben» statt Lückentext wäre eine andere Übung.
 - **`set_` merkt nur die eigene Wahl**, aufgesetzt auf den gespeicherten Stand.
   Merkte es das ganze Objekt, würden Prüfungsmodus und Timer eines geteilten
   Links zum Standard des fremden Geräts.
@@ -350,7 +369,7 @@ verzweigen, wenn es um Inhalte geht.
   liefert HTTP 200 mit einer Fehlerseite, `onload` feuert, und die gemerkte
   Promise stand für die ganze Sitzung auf `undefined` — kein späterer Versuch
   lud je nach.
-- **Wer nach Toleranz gewertet wird, muss sie einstellen können** (`usesLevel`):
+- **Wer nach Toleranz gewertet wird, muss sie einstellen können** (`LEVEL_MODES`):
   `checkInk` misst mit `opts.level`, die Wahl stand aber nur bei `TYPED_MODES`.
   Still galt, was zuletzt in «Schreiben» gewählt war.
 - **iink bekommt ein absolut eingepasstes Wurzelelement in einem Rahmen
@@ -388,8 +407,8 @@ bleiben gleich, und Browser wie Home-Bildschirm halten Icons zäh fest.
 Die **MyScript-Schlüssel** liegen im localStorage, nicht im Code — und zwar
 pro Browser **und** pro Adresse: Pages, `localhost:8000`, die LAN-Adresse und
 die Home-Screen-Webapp haben je einen eigenen, leeren Speicher (Chrome-Sync
-nimmt ihn nicht mit). Fehlen sie, zeigt der Handschrift-Modus still nur
-«Aufdecken», ohne Meldung. Nachschlagen: developer.myscript.com, Konto-Symbol →
+nimmt ihn nicht mit). Fehlen sie, ist «Handschrift mit Kontrolle»
+ausgegraut, mit Verweis in die Anleitung. Nachschlagen: developer.myscript.com, Konto-Symbol →
 Cloud recognition (cloud.myscript.com) → MyFirstApp → Open → Reiter Keys
 (Reiter Filters leer, also keine Einschränkung auf Adressen); oder per «Auf ein anderes Gerät bringen» von einem Gerät, das sie hat. Eine
 lokale Kopie gehört nach `keys/` (steht in `.gitignore`, wird **nie**

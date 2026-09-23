@@ -4,6 +4,13 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (23.09.2026, 14):** «Handschrift» ist kein eigener Modus mehr, sondern
+eine Eingabe von **Schreiben**: Tastatur · Handschrift ohne Kontrolle ·
+Handschrift mit Kontrolle. «Mit Kontrolle» ist ohne MyScript-Schlüssel oder
+Sprachpaket ausgegraut (mit Verweis in die Anleitung), «ohne» erkennt auch mit
+Schlüsseln nie und kostet kein Kontingent. Im Browser geprüft: Auswahl,
+Freigabe nach Eintragen der Schlüssel, beide Flächen, Rückfall ohne Schlüssel.
+
 **Stand (22.09.2026, 13):** «Voci-Set erstellen» hat eine **Ordnerwahl** und
 den Weg **von Hand**; das `+` an einem Ordner (und bei «Meine Voci») öffnet
 denselben Kasten mit dem Ordner vorgewählt, statt direkt in den Editor zu
@@ -156,8 +163,9 @@ S: Je vais à l'école. | Nous marchons vite.
 
 | Modus | Eingabe | Korrektur |
 |---|---|---|
-| **Schreiben** | Tastatur oder Stift (s. u.) | automatisch, mit Toleranz |
-| **Handschrift** | Schreibfläche; mit MyScript-Schlüssel erkannt | selbst bewerten, mit Schlüssel automatisch |
+| **Schreiben** · Tastatur | Eingabefeld (Stift: Scribble) | automatisch, mit Toleranz |
+| **Schreiben** · Handschrift ohne Kontrolle | Schreibfläche | selbst bewerten |
+| **Schreiben** · Handschrift mit Kontrolle | Schreibfläche, MyScript erkennt | automatisch, mit Toleranz (aufdecken geht immer) |
 | **Karteikarten** | umdrehen, selbst bewerten (Gewusst/Nicht gewusst) | manuell |
 | **Multiple Choice** | 4 Optionen, Ablenker aus demselben Set | automatisch |
 | **Zuordnen** | 6–8 Paare per Tippen verbinden | automatisch |
