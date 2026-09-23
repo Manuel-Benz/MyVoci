@@ -385,10 +385,16 @@ bleiben gleich, und Browser wie Home-Bildschirm halten Icons zäh fest.
 
 ## Was nicht ins Repo gehört
 
-Die **MyScript-Schlüssel** liegen im localStorage des Geräts, nicht im Code.
-Manuels Kopie (Schlüssel und Zertifikat) liegt in `keys/`; der Ordner steht in
-`.gitignore` und wird **nie** committet — wie `voci/` auch nicht proaktiv zum
-Committen anbieten.
+Die **MyScript-Schlüssel** liegen im localStorage, nicht im Code — und zwar
+pro Browser **und** pro Adresse: Pages, `localhost:8000`, die LAN-Adresse und
+die Home-Screen-Webapp haben je einen eigenen, leeren Speicher (Chrome-Sync
+nimmt ihn nicht mit). Fehlen sie, zeigt der Handschrift-Modus still nur
+«Aufdecken», ohne Meldung. Nachschlagen: developer.myscript.com, Konto-Symbol →
+Cloud recognition (cloud.myscript.com) → MyFirstApp → Open → Reiter Keys
+(Reiter Filters leer, also keine Einschränkung auf Adressen); oder per «Auf ein anderes Gerät bringen» von einem Gerät, das sie hat. Eine
+lokale Kopie gehört nach `keys/` (steht in `.gitignore`, wird **nie**
+committet — wie `voci/` auch nicht proaktiv zum Committen anbieten); Stand
+23.09.2026 gibt es diesen Ordner noch nicht.
 
 Im Code stehen nur die zwei eingebauten Beispiele. Die **echten Sets liegen in
 `voci/`** — wie `quizzes/` in MyKahoot lebendes Material, das die App direkt von
