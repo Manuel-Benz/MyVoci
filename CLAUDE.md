@@ -136,6 +136,13 @@ kostet also kein Kontingent. Beide Wege teilen **einen** Zweig in `Practice`:
 käme niemand an einem Wort vorbei, das er nicht weiss, und ein falsch gelesenes
 Wort liesse sich nicht richtigstellen.
 
+Stift/Radierer (`padTool` in `Practice`, Werte wie bei iink `write`/`erase`,
+über `clearPad` bei jedem Wort und beim Leeren zurück auf Stift) gilt für
+beide Flächen: `Sketch` radiert mit `destination-out` (die Grundlinie ist
+CSS-Hintergrund und bleibt), `InkPad` schaltet das Werkzeug von iink um
+(`pad.tool`, nimmt ganze Striche weg) — auch nach dem Laden, falls vorher
+umgeschaltet wurde.
+
 ## Anleitung (`Help`, `?`-Knopf oben)
 
 Die langen Erklärtexte stehen **an einer Stelle**: ein Modal mit vier
@@ -375,6 +382,14 @@ verzweigen, wenn es um Inhalte geht.
 - **iink bekommt ein absolut eingepasstes Wurzelelement in einem Rahmen
   fester Höhe.** Es setzt seiner Wurzel `height: 100%` und wuchs mit dem
   eigenen SVG bei jedem Rendern weiter (1 500 px und mehr).
+- **Der Radierer von iink darf nicht selber zu Ende radieren.**
+  `EraseManager.end` ruft `removeStrokes`, und das schickt die übrigen
+  Striche an den Server — eine abrechenbare Anfrage pro Radierstrich, am
+  `DEMAND` vorbei; davor steht `Iterator.toArray` (Safari erst ab 18.4).
+  `InkPad` ersetzt darum `eraser.end` an der Instanz (vor dem ersten
+  Umschalten, `attach` bindet es) und nimmt die Striche nur aus Modell und
+  Bild. Hängt an Interna von iink-ts 4.1.0 — beim Versionswechsel prüfen.
+  Im Browser gemessen: Schreiben und Radieren 0 Anfragen.
 - **`writeLocal` meldet Fehlschläge** (`storageBroken` → Warnstreifen): ein
   stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
 
