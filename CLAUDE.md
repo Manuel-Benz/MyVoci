@@ -121,7 +121,7 @@ localStorage, Eingabe in den Einstellungen jeder Seite, von der aus geübt wird 
 `#k=…`, der nur die Schlüssel trägt: `takeKeysFromHash` speichert sie beim
 Laden und streicht den Teil sofort aus der Adresse, `keysArrived` löst die
 einmalige Meldung in der Übersicht aus — Familien-Geräte, nie der Set-Link)
-erkennt die Eingabe «Handschrift mit Kontrolle» (Modus `ink`) das
+erkennt die Eingabe «Handschrift, automatisch geprüft» (Modus `ink`) das
 Geschriebene: `InkPad` lädt
 `iink-ts` erst bei Bedarf per CDN (`loadScript`), Variante `INK_V2`, Sprache aus
 `IINK_LANG`. Erkannt wird **nur auf Verlangen** (`exportContent: 'DEMAND'`):
@@ -130,7 +130,7 @@ Geschriebene: `InkPad` lädt
 ist `ink` in der Moduswahl ausgegraut (`modeOff`, `canInk`); ein gemerktes
 oder verlinktes `ink` fällt dann auf `pen` zurück. Scheitert Laden/Anmelden
 mitten in der Runde (`inkFail`), bleibt die Fläche ohne Erkennung
-(`Sketch`). `pen` («ohne Kontrolle») erkennt nie, auch mit Schlüsseln —
+(`Sketch`). `pen` («selbst bewerten») erkennt nie, auch mit Schlüsseln —
 kostet also kein Kontingent. Beide Wege teilen **einen** Zweig in `Practice`:
 «Aufdecken» mit Selbstbewertung gibt es immer, «Prüfen» kommt nur dazu — sonst
 käme niemand an einem Wort vorbei, das er nicht weiss, und ein falsch gelesenes
@@ -202,9 +202,22 @@ das mitgelieferte Set; wird navigiert, trägt `keysArrived` die Meldung nach.
 
 `MODES` = write, pen, ink, cards, choice, match, gap, listen, speak, scramble.
 `write`/`pen`/`ink` sind die drei Eingaben von «Schreiben» (`WRITE_INPUTS`:
-Tastatur · Handschrift ohne/mit Kontrolle): intern eigene Modi, damit Link
+Tastatur · Handschrift, selbst bewerten / automatisch geprüft): intern eigene Modi, damit Link
 (`&mode=`), `modeOff` und die Listen unten nichts Neues lernen müssen; die
-Set-Seite zeigt einen Knopf «Schreiben» und darunter die Zeile «Eingabe».
+Set-Seite zeigt eine Kachel «Schreiben» und darunter die Zeile «Eingabe».
+
+**Die Set-Seite** (Übungsmenü): oben die acht Modi als Kacheln (Linien-Icon
+aus `MODE_ICON`, eine Zeile `…Short`; geht ein Modus nicht, steht dort der
+Grund — ein Tooltip käme auf dem iPad nie an). Den Grund liefert `modeOff`
+selbst (I18N-Schlüssel oder `null`), damit Sperre und Begründung nicht an zwei
+Stellen entschieden werden. Fehlen dem Set die Sprachen, sagt es das
+(`modeNoLangs`) statt «keine Spracherkennung» — sonst sucht man den Fehler im
+Browser statt im Editor. Darunter eine Liste ohne Trennlinien: `OptRow` (Beschriftung
+links, auf dem Handy darüber), `Seg` für kleine Wahlen, `Switch` für Ja/Nein,
+kurze Erklärung nur zur aktuellen Wahl (`NOTE`). Die Eingabe trägt pro Feld
+eine zweite Zeile, wer prüft (`INPUT_CHECK`) — auch die Tastatur
+prüft, «mit/ohne Kontrolle» klang, als täte sie es nicht. `Choice` bleibt für die
+Knopfreihen der Runde (Stift/Radierer).
 `MODE_GROUP` sagt, welche Modi keinen eigenen Knopf haben (Beschriftung
 `INPUT_LABEL`), `HAND_MODES` = pen, ink (Schreibfläche). Zurück zu «Schreiben» holt die
 zuletzt gewählte Eingabe (`opts.input`). Alte Links mit `mode=pen` hatten mit
@@ -393,23 +406,53 @@ verzweigen, wenn es um Inhalte geht.
 - **`writeLocal` meldet Fehlschläge** (`storageBroken` → Warnstreifen): ein
   stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
 
+## Farben: Sonne (hell) / Nacht (dunkel)
+
+Das Skript im `<head>` legt jede Farbskala als CSS-Variable an und sagt
+Tailwind (`tailwind.config`), die Klassen daraus zu lesen. Im Code heissen
+sie **`acc-…`** (Akzent), **`acc2-…`** (zweiter Akzent; der Verlauf
+`from-acc-500 to-acc2-500`), `gray-…` und die Signalfarben
+`red`/`green`/`amber`/`yellow`/`orange`/`lime` wie gewohnt. **Hell = Sonne**
+(Orange → Rose, Stein-Grau), **dunkel = Nacht** (Himmelblau → Smaragd,
+Schiefer; `DARK`) — bewusst zwei Stimmungen, nicht eine Farbe in zwei
+Helligkeiten: Orange wirkt auf Dunkel bräunlich. Dunkel kehrt jede Skala um
+(50 ↔ 950 …), Grau hat eine eigene dunkle Skala (`DARK_GRAY`), sonst wäre
+blasse Schrift unlesbar. Wahl in den Einstellungen
+jeder Seite (`ThemeChoice`); gespeichert (`myvoci_theme`: `auto`/`light`/`dark`)
+und angewendet wird nur im `<head>`-Skript (`themePick`/`setTheme`), `auto`
+folgt dem Gerät live; das Skript läuft vor dem ersten Zeichnen, damit nichts
+hell aufblitzt.
+
+Stolpersteine: **Flächen heissen `bg-card`, nicht `bg-white`** — Weiss bleibt
+im Dunkeln weiss. Echtes `bg-white` steht nur, wo es weiss bleiben soll: die
+Schreibflächen (`PAD_FRAME`, Papier, die Tinte von iink ist dunkel) und der
+Knopf im `Switch`. **Grau kehrt sich um**: `bg-gray-800` ist im Dunkeln hell,
+Schrift darauf also `text-gray-50`, nie `text-white` (Toast, Knopf «Einfügen»).
+Neue Farbtöne ausserhalb der Skalen (Hex im Code) nur über die Variablen
+(`rgb(var(--c-red-200))`, s. `.diff-del`). **Die Home-Screen-Webapp auf iOS
+liest nicht `theme-color`**, sondern `apple-mobile-web-app-status-bar-style`
+beim Start — das Skript setzt beide, sonst bleibt die Statusleiste über der
+dunklen Seite weiss. Safari vor 14 kennt am `matchMedia`-Objekt nur
+`addListener`.
+
 ## Icon
 
 Quelle ist `favicon.svg` (von Hand, 64×64): zwei Karteikarten auf dem
-Verlauf der App (Blau `#3b82f6` → Grün `#10b981`), die vordere weiss mit
-blauem **Doppelpfeil** — geübt wird in beide Richtungen, das unterscheidet
+Verlauf von Sonne (Orange `#f97316` → Rose `#e11d48`), die hintere Karte
+Pfirsich, die vordere weiss mit orangem **Doppelpfeil** — geübt wird in beide Richtungen, das unterscheidet
 MyVoci vom Karteikasten. Motiv statt Buchstabe, wie das Kartenpaar von
 MyMemory; die Familienähnlichkeit ist Absicht.
 
 Die **PNGs sind randlos** (kein `rx`): iOS und Android legen ihre eigene
 Maske darüber, eingebackene Ecken würden ein zweites Mal beschnitten. Nur
-das SVG rundet (`rx="14"`), es steht im Tab unmaskiert. Neu rendern:
+das SVG rundet (`rx="14"`), es steht im Tab unmaskiert. Neu rendern (für die
+PNGs eine Kopie des SVG ohne `rx`):
 
 ```bash
 # Chrome headless, weil ImageMagick SVG-Verläufe ohne librsvg verpfuscht
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
   --screenshot=icon-512.png --window-size=512,512 file://…/icon.html
-magick icon-512.png -resize 180x180 apple-touch-icon.png
+sips -z 180 180 icon-512.png --out apple-touch-icon.png
 ```
 
 Bei 16 px wird das Motiv zum Farbfleck — bei MyMemorys zwei Karten genauso,
@@ -422,7 +465,7 @@ bleiben gleich, und Browser wie Home-Bildschirm halten Icons zäh fest.
 Die **MyScript-Schlüssel** liegen im localStorage, nicht im Code — und zwar
 pro Browser **und** pro Adresse: Pages, `localhost:8000`, die LAN-Adresse und
 die Home-Screen-Webapp haben je einen eigenen, leeren Speicher (Chrome-Sync
-nimmt ihn nicht mit). Fehlen sie, ist «Handschrift mit Kontrolle»
+nimmt ihn nicht mit). Fehlen sie, ist «Handschrift, automatisch geprüft»
 ausgegraut, mit Verweis in die Anleitung. Nachschlagen: developer.myscript.com, Konto-Symbol →
 Cloud recognition (cloud.myscript.com) → MyFirstApp → Open → Reiter Keys
 (Reiter Filters leer, also keine Einschränkung auf Adressen); oder per «Auf ein anderes Gerät bringen» von einem Gerät, das sie hat. Eine

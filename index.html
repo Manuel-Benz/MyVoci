@@ -4,15 +4,86 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>MyVoci</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=3" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="MyVoci" />
-  <meta name="theme-color" content="#2563eb" />
+  <meta name="theme-color" content="#fff7ed" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // ---------- Farben: Sonne (hell) / Nacht (dunkel) ----------
+    // Die Klassen im Code heissen weiter `gray-…`, `acc-…` (Akzent),
+    // `acc2-…` (zweiter Akzent), `red-…` usw. — Tailwind liest sie aber aus
+    // CSS-Variablen, die hier pro Modus gesetzt werden. Hell (Sonne): Akzente
+    // Orange → Rose auf warmem Stein-Grau. Dunkel (Nacht): Akzente Himmelblau
+    // → Smaragd auf Schiefer. Dunkel kehrt jede Farbskala um (50 ↔ 950,
+    // 100 ↔ 900 …): ein heller Hinweiskasten wird dunkel getönt, dunkle
+    // Schrift hell. Grau hat eine eigene dunkle Skala, weil die reine Umkehr
+    // zu wenig Kontrast für blasse Schrift liesse.
+    // Muss vor dem ersten Zeichnen laufen, sonst blitzt die helle Seite auf.
+    (() => {
+      const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+      const P = {
+        gray: ['#fafaf9', '#f5f5f4', '#e7e5e4', '#d6d3d1', '#a8a29e', '#78716c', '#57534e', '#44403c', '#292524', '#1c1917', '#0c0a09'],
+        acc: ['#fff7ed', '#ffedd5', '#fed7aa', '#fdba74', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12', '#431407'],
+        acc2: ['#fff1f2', '#ffe4e6', '#fecdd3', '#fda4af', '#fb7185', '#f43f5e', '#e11d48', '#be123c', '#9f1239', '#881337', '#4c0519'],
+        red: ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d', '#450a0a'],
+        green: ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#166534', '#14532d', '#052e16'],
+        amber: ['#fffbeb', '#fef3c7', '#fde68a', '#fcd34d', '#fbbf24', '#f59e0b', '#d97706', '#b45309', '#92400e', '#78350f', '#451a03'],
+        yellow: ['#fefce8', '#fef9c3', '#fef08a', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#854d0e', '#713f12', '#422006'],
+        lime: ['#f7fee7', '#ecfccb', '#d9f99d', '#bef264', '#a3e635', '#84cc16', '#65a30d', '#4d7c0f', '#3f6212', '#365314', '#1a2e05'],
+      };
+      P.orange = P.acc; // Signalfarbe «orange» = Akzent von Sonne
+      // Nacht: eigene Akzente (Umkehr unten gilt auch für sie) und Schiefer-Grau
+      const DARK = {
+        acc: ['#f0f9ff', '#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8', '#0ea5e9', '#0284c7', '#0369a1', '#075985', '#0c4a6e', '#082f49'],
+        acc2: ['#ecfdf5', '#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669', '#047857', '#065f46', '#064e3b', '#022c22'],
+      };
+      const DARK_GRAY = ['#243044', '#273449', '#334155', '#475569', '#7c8ba1', '#94a3b8', '#b4c0cf', '#cbd5e1', '#e2e8f0', '#f1f5f9', '#f8fafc'];
+      const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(' ');
+      const vars = (dark) => Object.entries(P).map(([name, scale]) => {
+        const s = dark ? (name === 'gray' ? DARK_GRAY : [...(DARK[name] || scale)].reverse()) : scale;
+        return STEPS.map((n, i) => `--c-${name}-${n}:${rgb(s[i])};`).join('');
+      }).join('');
+      const PAGE = { light: '#fff7ed', dark: '#0f172a' }; // auch Farbe der Statusleiste
+      const style = document.createElement('style');
+      style.textContent = `
+        :root{${vars(false)}--c-card:255 255 255;--page:linear-gradient(135deg,${PAGE.light},#fdf2f8);color-scheme:light}
+        :root[data-theme="dark"]{${vars(true)}--c-card:30 41 59;--page:${PAGE.dark};color-scheme:dark}`;
+      document.head.appendChild(style);
+      const shades = (name) => Object.fromEntries(STEPS.map((n) => [n, `rgb(var(--c-${name}-${n}) / <alpha-value>)`]));
+      // Ohne Tailwind (CDN nicht erreichbar) trotzdem weiter: hell/dunkel
+      // unten muss stehen, sonst werfen die Knöpfe in den Einstellungen
+      if (window.tailwind) tailwind.config = { theme: { extend: {
+        colors: { ...Object.fromEntries(Object.keys(P).map((k) => [k, shades(k)])), card: 'rgb(var(--c-card) / <alpha-value>)' },
+      } } };
+      // Wahl: 'auto' folgt dem Gerät, 'light'/'dark' fest. Gespeichert und
+      // gelesen wird nur hier — die Einstellungen rufen `themePick`/`setTheme`.
+      const KEY = 'myvoci_theme';
+      const dark = matchMedia('(prefers-color-scheme: dark)');
+      window.themePick = () => { try { return JSON.parse(localStorage.getItem(KEY)) || 'auto'; } catch { return 'auto'; } };
+      const apply = (pick = window.themePick()) => {
+        const mode = pick === 'auto' ? (dark.matches ? 'dark' : 'light') : pick;
+        document.documentElement.dataset.theme = mode;
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = PAGE[mode];
+        // Home-Screen-Webapp auf iOS: dort gilt nicht theme-color, sondern
+        // dieser Wert, gelesen beim Start — sonst bleibt die Statusleiste
+        // über der dunklen Seite weiss
+        const bar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+        if (bar) bar.content = mode === 'dark' ? 'black' : 'default';
+      };
+      // Die Wahl gilt sofort, auch wenn der Speicher nein sagt (privates Fenster)
+      window.setTheme = (pick) => { try { localStorage.setItem(KEY, JSON.stringify(pick)); } catch {} apply(pick); };
+      apply();
+      // Safari vor 14 kennt nur das alte `addListener`
+      if (dark.addEventListener) dark.addEventListener('change', () => apply());
+      else dark.addListener(() => apply());
+    })();
+  </script>
   <script defer src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -20,8 +91,9 @@
   <style>
     /* iOS zoomt in Eingabefelder unter 16 px hinein — hier nie */
     input, textarea, select { font-size: max(16px, 1em); }
-    .diff-del { background: #fecaca; text-decoration: line-through; border-radius: 2px; }
-    .diff-ins { background: #bbf7d0; border-radius: 2px; }
+    body { background: var(--page); color: rgb(var(--c-gray-800)); }
+    .diff-del { background: rgb(var(--c-red-200)); text-decoration: line-through; border-radius: 2px; }
+    .diff-ins { background: rgb(var(--c-green-200)); border-radius: 2px; }
     @keyframes shrink { from { width: 100%; } to { width: 0; } }
     /* Handschrift: iPadOS deutet Striche neben Text sonst als Auswahl-Geste
        (Wort wird markiert, Lupe erscheint, Strich reisst ab) */
@@ -72,6 +144,10 @@
         subtitle: 'Voci üben — Tastatur oder Stift, in beide Richtungen.',
         settings: 'Einstellungen',
         language: 'Sprache',
+        theme: 'Darstellung',
+        themeAuto: 'wie das Gerät',
+        themeLight: 'hell',
+        themeDark: 'dunkel',
         createTitle: 'Voci-Set erstellen',
         steps: (
           <>
@@ -145,7 +221,7 @@
             <li>Die Schlüssel finden: angemeldet oben rechts das Konto-Symbol → <b>Cloud recognition</b> → bei der Anwendung <b>Open</b> → Reiter <b>Keys</b>. Dort stehen <b>Application Key</b> und <b>HMAC Key</b>, je mit Kopier-Knopf.</li>
             <li>Beide in den Einstellungen einsetzen (dort, wo du übst). Sie bleiben in diesem Browser und unter dieser Adresse — ein anderer Browser, die Home-Screen-App oder eine andere Adresse braucht sie nochmals. Nie im Code, nie in einem geteilten Link.</li>
             <li>Zweites Gerät der Familie: <b>«Auf ein anderes Gerät bringen»</b> zeigt einen QR-Code, der nur die Schlüssel trägt. Dort mit dem Scan-Knopf oben einlesen. Das Kontingent läuft auf dein Konto.</li>
-            <li>Dann gibt es bei «Schreiben» die Eingabe <b>«Handschrift mit Kontrolle»</b>. «Handschrift ohne Kontrolle» bleibt wie Papier — schreiben, aufdecken, selbst bewerten — und braucht kein Kontingent. Gibt es für eine Sprache keine Erkennung, bleibt «mit Kontrolle» ausgegraut.</li>
+            <li>Dann gibt es bei «Schreiben» die Eingabe <b>«Handschrift, automatisch geprüft»</b>. «Handschrift, selbst bewerten» bleibt wie Papier — schreiben, aufdecken, selbst bewerten — und braucht kein Kontingent. Gibt es für eine Sprache keine Erkennung, bleibt «automatisch geprüft» ausgegraut.</li>
           </>
         ),
         helpDirSteps: (
@@ -227,33 +303,20 @@
         // Set-Seite
         overview: 'Übersicht',
         toOverview: 'Zur Übersicht',
-        practiceTitle: 'Üben',
-        mode: 'Modus',
         modeWrite: 'Schreiben',
-        inputKeysHint: 'Wort eintippen — auch mit dem Stift ins Feld (iPad: Scribble). Automatische Korrektur.',
         input: 'Eingabe',
         inputKeys: 'Tastatur',
-        inputPen: 'Handschrift ohne Kontrolle',
-        inputInk: 'Handschrift mit Kontrolle',
-        inkOffKeys: '«Mit Kontrolle» braucht die zwei MyScript-Schlüssel (Einstellungen).',
-        inkOffLang: '«Mit Kontrolle»: für diese Sprache gibt es keine Erkennung.',
+        inputPen: 'Handschrift, selbst bewerten',
+        inputInk: 'Handschrift, automatisch geprüft',
+        inkOffKeys: 'Die automatische Prüfung der Handschrift braucht die zwei MyScript-Schlüssel (Einstellungen).',
+        inkOffLang: 'Für diese Sprache gibt es keine Handschrift-Erkennung.',
         modeCards: 'Karteikarten',
-        modeCardsHint: 'Umdrehen und selbst bewerten.',
         modeChoice: 'Multiple Choice',
-        modeChoiceHint: 'Die richtige von vier Antworten antippen — die falschen stammen aus demselben Set.',
         modeMatch: 'Zuordnen',
-        modeMatchHint: 'Paare verbinden: links ein Wort antippen, rechts die Übersetzung.',
         modeGap: 'Lückentext',
-        modeGapHint: 'Der Anwendungssatz mit Lücke — das Wort in der passenden Form eintippen.',
-        modeGapNone: 'Keine Sätze, in denen das Wort vorkommt — im Editor «S:»-Zeilen ergänzen.',
         modeListen: 'Hören',
-        modeListenHint: 'Das Wort wird vorgelesen — aufschreiben, was du hörst.',
-        modeListenNone: 'Vorlesen geht auf diesem Gerät oder für diese Sprache nicht.',
         modeScramble: 'Buchstabensalat',
-        modeScrambleHint: 'Die Buchstaben in die richtige Reihenfolge tippen.',
         modeSpeak: 'Sprechen',
-        modeSpeakHint: 'Das Wort aussprechen — das Gerät hört zu und vergleicht (ungefähr, Akzente und Artikel egal).',
-        modeSpeakNone: 'Spracherkennung gibt es in diesem Browser nicht (Safari und Chrome können es).',
         micStart: 'Sprechen',
         micListening: 'Ich höre zu …',
         micHeard: 'Verstanden',
@@ -288,8 +351,6 @@
         dirPrompt: (name) => `Der Ordner «${name}» braucht deine Freigabe, bevor die Sets dort gespeichert werden.`,
         dirReconnect: 'Ordner freigeben',
         dirError: (name) => `Der Ordner «${name}» ist nicht erreichbar (verschoben, gelöscht oder Zugriff verweigert). Änderungen bleiben bis dahin nur im Browser.`,
-        inputPenHint: 'Mit Stift oder Finger auf die Fläche schreiben, dann aufdecken und selbst bewerten — wie auf Papier.',
-        inputInkHint: 'Mit Stift oder Finger auf die Fläche schreiben. «Prüfen» lässt die Schrift erkennen (MyScript) und korrigiert automatisch; aufdecken geht immer.',
         penOnly: 'Nur Stift annehmen (Finger ignorieren)',
         penClear: 'Fläche leeren',
         padPen: 'Stift',
@@ -298,7 +359,7 @@
         inkEmpty: 'Noch nichts erkannt — zuerst schreiben.',
         inkChecking: 'Wird gelesen …',
         myscriptTitle: 'Handschrift-Erkennung (MyScript)',
-        myscriptShort: 'Erkennt bei «Handschrift mit Kontrolle» das Geschriebene und korrigiert automatisch. Die zwei Schlüssel bleiben in diesem Browser.',
+        myscriptShort: 'Erkennt bei «Handschrift, automatisch geprüft» das Geschriebene und korrigiert automatisch. Die zwei Schlüssel bleiben in diesem Browser.',
         myscriptApp: 'Application Key',
         myscriptHmac: 'HMAC Key',
         myscriptOn: 'Erkennung eingeschaltet.',
@@ -337,10 +398,6 @@
         direction: 'Richtung',
         dirAB: (a, b) => `${a} → ${b}`,
         dirMix: 'gemischt',
-        selection: 'Auswahl',
-        selAll: 'alle Wörter',
-        selWrong: (n) => `nur Fehler (${n})`,
-        selDue: (n) => `fällig heute (${n})`,
         selRange: 'Bereich',
         rangeFrom: 'von',
         rangeTo: 'bis',
@@ -351,9 +408,34 @@
         tolStrict: 'streng',
         tolNormal: 'normal',
         tolLoose: 'locker',
-        tolHint: 'streng: alles muss stimmen · normal: Tippfehler zählen als «fast richtig» · locker: auch Akzente und Artikel egal',
+        modeHow: 'Wie willst du üben?',
+        modeWriteShort: 'selbst schreiben',
+        modeCardsShort: 'umdrehen, selbst bewerten',
+        modeChoiceShort: 'eine von vier',
+        modeMatchShort: 'Paare verbinden',
+        modeGapShort: 'Wort im Satz',
+        modeListenShort: 'Diktat',
+        modeSpeakShort: 'aussprechen',
+        modeScrambleShort: 'Buchstaben ordnen',
+        modeGapOff: 'keine Sätze im Set',
+        modeListenOff: 'kein Vorlesen hier',
+        modeSpeakOff: 'keine Spracherkennung',
+        modeSpeakLang: 'nicht für diese Sprache',
+        modeNoLangs: 'Sprachen im Set fehlen',
+        handwriting: 'Handschrift',
+        checkAuto: 'automatisch geprüft',
+        checkSelf: 'selbst bewerten',
+        rowWords: 'Wörter',
+        rowExtras: 'Dazu',
+        selAllN: (n) => `alle ${n}`,
+        selWrongN: (n) => `Fehler ${n}`,
+        selDueN: (n) => `fällig ${n}`,
+        tolStrictHint: 'Alles muss stimmen.',
+        tolNormalHint: 'Ein Tippfehler zählt als «fast richtig».',
+        tolLooseHint: 'Auch Akzente und Artikel sind egal.',
+        examShort: 'Vollbild, Lösungen erst am Ende',
         showHints: 'Hinweise zeigen',
-        copyWrong: 'Falsche Wörter einmal abschreiben',
+        copyWrong: 'Nach einem Fehler die Lösung einmal abtippen',
         start: 'Üben starten',
         nothingSelected: 'Keine Wörter in dieser Auswahl.',
         progress: 'Lernstand',
@@ -408,6 +490,10 @@
         subtitle: 'Practise vocabulary — keyboard or pen, in both directions.',
         settings: 'Settings',
         language: 'Language',
+        theme: 'Appearance',
+        themeAuto: 'like the device',
+        themeLight: 'light',
+        themeDark: 'dark',
         createTitle: 'Create a vocabulary set',
         steps: (
           <>
@@ -479,7 +565,7 @@
             <li>Finding the keys: signed in, click the account icon at the top right → <b>Cloud recognition</b> → <b>Open</b> next to your application → <b>Keys</b> tab. It lists the <b>Application key</b> and the <b>HMAC key</b>, each with a copy button.</li>
             <li>Put both into the settings (on the page you practise from). They stay in this browser at this address — another browser, the home-screen app or another address needs them again. Never in the code, never in a shared link.</li>
             <li>Second family device: <b>“Bring to another device”</b> shows a QR code carrying only the keys. Read it there with the scan button at the top. The quota is charged to your account.</li>
-            <li>Then “Write” offers the input <b>“Handwriting with checking”</b>. “Handwriting without checking” stays like paper — write, reveal, rate yourself — and uses no quota. If a language has no recognition, “with checking” stays greyed out.</li>
+            <li>Then “Write” offers the input <b>“Handwriting, checked automatically”</b>. “Handwriting, rate yourself” stays like paper — write, reveal, rate yourself — and uses no quota. If a language has no recognition, “checked automatically” stays greyed out.</li>
           </>
         ),
         helpDirSteps: (
@@ -558,33 +644,20 @@
         ),
         overview: 'Overview',
         toOverview: 'Back to the overview',
-        practiceTitle: 'Practise',
-        mode: 'Mode',
         modeWrite: 'Write',
-        inputKeysHint: 'Type the word — a pen in the field works too (iPad: Scribble). Checked automatically.',
         input: 'Input',
         inputKeys: 'Keyboard',
-        inputPen: 'Handwriting without checking',
-        inputInk: 'Handwriting with checking',
-        inkOffKeys: '“With checking” needs the two MyScript keys (settings).',
-        inkOffLang: '“With checking”: no recognition for this language.',
+        inputPen: 'Handwriting, rate yourself',
+        inputInk: 'Handwriting, checked automatically',
+        inkOffKeys: 'Automatic checking of handwriting needs the two MyScript keys (settings).',
+        inkOffLang: 'There is no handwriting recognition for this language.',
         modeCards: 'Flashcards',
-        modeCardsHint: 'Flip and rate yourself.',
         modeChoice: 'Multiple choice',
-        modeChoiceHint: 'Tap the right one of four answers — the wrong ones come from the same set.',
         modeMatch: 'Matching',
-        modeMatchHint: 'Connect pairs: tap a word on the left, its translation on the right.',
         modeGap: 'Gap fill',
-        modeGapHint: 'The example sentence with a gap — type the word in the fitting form.',
-        modeGapNone: 'No sentences containing the word — add “S:” lines in the editor.',
         modeListen: 'Listening',
-        modeListenHint: 'The word is read aloud — write down what you hear.',
-        modeListenNone: 'Read-aloud is not available on this device or for this language.',
         modeScramble: 'Scrambled letters',
-        modeScrambleHint: 'Tap the letters in the right order.',
         modeSpeak: 'Speaking',
-        modeSpeakHint: 'Say the word — the device listens and compares (roughly; accents and articles are ignored).',
-        modeSpeakNone: 'Speech recognition is not available in this browser (Safari and Chrome have it).',
         micStart: 'Speak',
         micListening: 'Listening …',
         micHeard: 'Heard',
@@ -619,8 +692,6 @@
         dirPrompt: (name) => `The folder “${name}” needs your permission before the sets are saved there.`,
         dirReconnect: 'Grant access',
         dirError: (name) => `The folder “${name}” is not reachable (moved, deleted or access denied). Until then, changes stay in the browser only.`,
-        inputPenHint: 'Write on the pad with a pen or finger, then reveal and rate yourself — like on paper.',
-        inputInkHint: 'Write on the pad with a pen or finger. “Check” has the writing recognised (MyScript) and checks it automatically; revealing always works.',
         penOnly: 'Pen only (ignore fingers)',
         penClear: 'Clear pad',
         padPen: 'Pen',
@@ -629,7 +700,7 @@
         inkEmpty: 'Nothing recognised yet — write first.',
         inkChecking: 'Reading …',
         myscriptTitle: 'Handwriting recognition (MyScript)',
-        myscriptShort: 'Recognises what you write with “Handwriting with checking” and checks it automatically. The two keys stay in this browser.',
+        myscriptShort: 'Recognises what you write with “Handwriting, checked automatically” and checks it automatically. The two keys stay in this browser.',
         myscriptApp: 'Application key',
         myscriptHmac: 'HMAC key',
         myscriptOn: 'Recognition enabled.',
@@ -668,10 +739,6 @@
         direction: 'Direction',
         dirAB: (a, b) => `${a} → ${b}`,
         dirMix: 'mixed',
-        selection: 'Selection',
-        selAll: 'all words',
-        selWrong: (n) => `mistakes only (${n})`,
-        selDue: (n) => `due today (${n})`,
         selRange: 'Range',
         rangeFrom: 'from',
         rangeTo: 'to',
@@ -682,9 +749,34 @@
         tolStrict: 'strict',
         tolNormal: 'normal',
         tolLoose: 'loose',
-        tolHint: 'strict: everything must match · normal: typos count as “almost right” · loose: accents and articles are ignored too',
+        modeHow: 'How do you want to practise?',
+        modeWriteShort: 'write it yourself',
+        modeCardsShort: 'flip, rate yourself',
+        modeChoiceShort: 'one of four',
+        modeMatchShort: 'connect pairs',
+        modeGapShort: 'word in a sentence',
+        modeListenShort: 'dictation',
+        modeSpeakShort: 'say it',
+        modeScrambleShort: 'order the letters',
+        modeGapOff: 'no sentences in the set',
+        modeListenOff: 'no read-aloud here',
+        modeSpeakOff: 'no speech recognition',
+        modeSpeakLang: 'not for this language',
+        modeNoLangs: 'set has no languages',
+        handwriting: 'Handwriting',
+        checkAuto: 'checked automatically',
+        checkSelf: 'rate yourself',
+        rowWords: 'Words',
+        rowExtras: 'Extras',
+        selAllN: (n) => `all ${n}`,
+        selWrongN: (n) => `mistakes ${n}`,
+        selDueN: (n) => `due ${n}`,
+        tolStrictHint: 'Everything must match.',
+        tolNormalHint: 'One typo counts as “almost right”.',
+        tolLooseHint: 'Accents and articles are ignored too.',
+        examShort: 'full screen, answers at the end',
         showHints: 'Show hints',
-        copyWrong: 'Copy wrong words once',
+        copyWrong: 'After a mistake, type the answer once',
         start: 'Start practising',
         nothingSelected: 'No words in this selection.',
         progress: 'Progress',
@@ -1761,12 +1853,12 @@
     };
 
     // ---------- Gemeinsame Bausteine ----------
-    const SCREEN = 'min-h-screen bg-gradient-to-br from-blue-50 to-emerald-50';
-    const BTN_PRIMARY = 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-emerald-600 transition-all shadow-lg';
+    const SCREEN = 'min-h-screen'; // Hintergrund: `body` (var(--page))
+    const BTN_PRIMARY = 'bg-gradient-to-r from-acc-500 to-acc2-500 text-white rounded-lg font-semibold hover:from-acc-600 hover:to-acc2-600 transition-all shadow-lg';
     const BTN_SECONDARY = 'bg-gray-100 text-gray-600 rounded-lg font-semibold hover:bg-gray-200 transition-all';
-    const CARD = 'bg-white rounded-lg shadow-lg';
+    const CARD = 'bg-card rounded-lg shadow-lg';
     const LABEL = 'text-xs uppercase tracking-wide text-gray-400';
-    const INPUT = 'px-3 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:border-blue-400';
+    const INPUT = 'px-3 py-2 border border-gray-300 rounded-lg bg-card focus:outline-none focus:border-acc-400';
 
     // Safari lässt `writeText` nur in derselben Aufgabe wie der Tap zu — nach
     // einem `await` (der Link wird ja erst komprimiert) lehnt es jedes Mal ab.
@@ -1788,7 +1880,7 @@
     // und auch der Scanner passte auf kleinen Schirmen knapp nicht.
     const Modal = ({ children, onClose, wide }) => (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div className={`bg-white rounded-2xl p-6 sm:p-8 ${wide ? 'max-w-2xl' : 'max-w-md'} w-full max-h-[85vh] overflow-y-auto shadow-2xl`} onClick={(e) => e.stopPropagation()}>
+        <div className={`bg-card rounded-2xl p-6 sm:p-8 ${wide ? 'max-w-2xl' : 'max-w-md'} w-full max-h-[85vh] overflow-y-auto shadow-2xl`} onClick={(e) => e.stopPropagation()}>
           {children}
         </div>
       </div>
@@ -1821,9 +1913,9 @@
       );
     };
 
-    const IconButton = ({ onClick, title, hover = 'hover:bg-blue-50', extra = '', children }) => (
+    const IconButton = ({ onClick, title, hover = 'hover:bg-acc-50', extra = '', children }) => (
       <button onClick={onClick} title={title}
-        className={`px-3 py-3 bg-white rounded-lg shadow hover:shadow-md transition-all text-gray-500 ${hover} ${extra}`}>
+        className={`px-3 py-3 bg-card rounded-lg shadow hover:shadow-md transition-all text-gray-500 ${hover} ${extra}`}>
         {children}
       </button>
     );
@@ -1831,15 +1923,15 @@
     // Schlanke Symbolknöpfe der Listenzeilen (wie .row-tool in MyKahoot):
     // transparent, nur Hover getönt — eine Zeile bleibt eine Zeile, keine
     // Reihe weisser Kacheln pro Set.
-    const RowTool = ({ onClick, title, hover = 'hover:bg-white hover:text-gray-800', extra = '', children }) => (
+    const RowTool = ({ onClick, title, hover = 'hover:bg-card hover:text-gray-800', extra = '', children }) => (
       <button onClick={onClick} title={title}
         className={`shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 transition-colors ${hover} ${extra}`}>
         {children}
       </button>
     );
 
-    const Icon = ({ children }) => (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    const Icon = ({ children, size = 18 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
     );
     const LinkIcon = () => (
@@ -2036,6 +2128,16 @@
       <button onClick={onClick} className="underline font-semibold hover:text-gray-700">{t('guide')} →</button>
     );
 
+    // Hell/dunkel: Speichern und Anwenden besorgt das Skript im <head>
+    // (`setTheme`), das auch dem Gerät folgt, solange 'auto' gilt.
+    const ThemeChoice = () => {
+      const [pick, setPick] = useState(window.themePick);
+      return (
+        <Choice value={pick} onChange={(v) => { window.setTheme(v); setPick(v); }}
+          options={[['auto', t('themeAuto')], ['light', t('themeLight')], ['dark', t('themeDark')]]} />
+      );
+    };
+
     const useSettings = (extra) => {
       const [open, setOpen] = useState(false);
       const button = <IconButton onClick={() => setOpen((v) => !v)} title={t('settings')}><SettingsIcon /></IconButton>;
@@ -2050,6 +2152,8 @@
                   className={`px-4 py-2 ${entry.id === currentLang ? BTN_PRIMARY : BTN_SECONDARY}`}>{entry.name}</button>
               ))}
             </div>
+            <div className={`${LABEL} mt-4 mb-2`}>{t('theme')}</div>
+            <ThemeChoice />
           </div>
           {extra}
         </div>
@@ -2069,7 +2173,7 @@
       };
       useEffect(() => () => clearTimeout(timer.current), []);
       const node = toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">{toast}</div>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-gray-50 px-6 py-3 rounded-lg shadow-lg z-50">{toast}</div>
       );
       return [showToast, node];
     };
@@ -2105,7 +2209,7 @@
           </div>
           {filled && (
             <div className="flex flex-wrap items-center gap-3 mt-3">
-              <p className="text-sm text-emerald-700">{t('myscriptOn')}</p>
+              <p className="text-sm text-acc2-700">{t('myscriptOn')}</p>
               <button onClick={() => setQr(true)} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('myscriptShare')}</button>
             </div>
           )}
@@ -2208,7 +2312,7 @@
         <MyScriptKeys />
         <div className="rounded-lg border border-gray-200 p-4 mt-4">
           <label className="flex items-start gap-3 cursor-pointer">
-            <input type="checkbox" checked={showDemos} className="mt-1 h-4 w-4 accent-blue-500"
+            <input type="checkbox" checked={showDemos} className="mt-1 h-4 w-4 accent-acc-500"
               onChange={(e) => { setShowDemos(e.target.checked); writeLocal(DEMOS_KEY, e.target.checked); }} />
             <span>
               <span className="font-semibold text-gray-700">{t('showExamples')}</span>
@@ -2221,7 +2325,7 @@
           <p className="text-sm text-gray-500 mb-3">
             {dir.status === 'unsupported' ? t('dirUnsupported') : t('dirShort')} <HelpLink onClick={() => setHelp('dir')} />
           </p>
-          {dir.status === 'ok' && <p className="text-sm text-emerald-700 mb-3">{t('dirConnected', dir.name, own.length)}</p>}
+          {dir.status === 'ok' && <p className="text-sm text-acc2-700 mb-3">{t('dirConnected', dir.name, own.length)}</p>}
           {/* «Freigeben» und «nicht erreichbar» stehen schon als Streifen über
               der Liste — hier nur die Knöpfe, sonst liest man beides doppelt. */}
           {dirButtons}
@@ -2412,7 +2516,7 @@
         <div key={set.id} className="flex items-center gap-0.5"
           {...(deletable ? dragProps({ kind: 'set', id: set.id, dir: set.dir || '' }) : {})}>
           <button onClick={() => onOpen(set)}
-            className="flex-1 min-w-0 flex items-baseline text-left px-2.5 py-1.5 rounded-lg hover:bg-white transition-colors font-semibold text-gray-800">
+            className="flex-1 min-w-0 flex items-baseline text-left px-2.5 py-1.5 rounded-lg hover:bg-card transition-colors font-semibold text-gray-800">
             <span className="min-w-0 truncate" style={{ flex: '0 1 17rem' }}>{set.title}</span>
             <span className="ml-3 shrink-0 text-sm font-normal text-gray-400">{t('nWords', set.words.length)}</span>
             {langBadge(set)}
@@ -2436,9 +2540,9 @@
         const isOpen = openDirs.includes(dir);
         return (
           <div key={dir} {...dropProps(dir)}
-            className={`rounded-lg transition-colors ${dropDir === dir ? 'outline outline-2 outline-dashed outline-blue-400' : ''}`}>
+            className={`rounded-lg transition-colors ${dropDir === dir ? 'outline outline-2 outline-dashed outline-acc-400' : ''}`}>
             <div {...dragProps({ kind: 'dir', id: dir })} onClick={() => toggleDir(dir)}
-              className="flex items-center gap-0.5 pl-2.5 py-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer select-none">
+              className="flex items-center gap-0.5 pl-2.5 py-1.5 rounded-lg hover:bg-card transition-colors cursor-pointer select-none">
               <span className="w-3 text-xs text-gray-400">{isOpen ? '▾' : '▸'}</span>
               <span className="shrink-0 text-gray-400 mr-1.5"><FolderIcon /></span>
               <span className="flex-1 min-w-0 truncate font-semibold text-gray-700">{dirName(dir)}</span>
@@ -2493,7 +2597,7 @@
                 {t('copyPrompt')}
               </button>
               <div onClick={() => fileInput.current.click()} {...hereDrop}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center text-gray-500 cursor-pointer hover:border-blue-400 hover:text-gray-700 hover:bg-blue-50 transition-all">
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center text-gray-500 cursor-pointer hover:border-acc-400 hover:text-gray-700 hover:bg-acc-50 transition-all">
                 <span className="flex items-center justify-center gap-2 font-bold"><InboxIcon /> {t('dropTitle')}</span>
                 <span className="block text-sm text-gray-400">{t('dropHint')}</span>
               </div>
@@ -2505,7 +2609,7 @@
               <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={6} placeholder={t('pastePh')}
                 className={`w-full ${INPUT} text-sm font-mono`} />
               <button onClick={importPasted} disabled={!pasted.trim()}
-                className={`w-full mt-2 px-4 py-2 rounded-lg font-semibold transition-all ${pasted.trim() ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                className={`w-full mt-2 px-4 py-2 rounded-lg font-semibold transition-all ${pasted.trim() ? 'bg-gray-800 text-gray-50 hover:bg-gray-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
                 {t('importText')}
               </button>
               <OrDivider>{t('orByHand')}</OrDivider>
@@ -2523,7 +2627,7 @@
                 <RowTool onClick={exportAll} title={t('exportAll')}><DownloadIcon /></RowTool>
               </div>
               <div {...dropProps('')}
-                className={`min-h-[2.5rem] rounded-lg space-y-0.5 transition-colors ${dropDir === '' ? 'outline outline-2 outline-dashed outline-blue-400 outline-offset-4' : ''}`}>
+                className={`min-h-[2.5rem] rounded-lg space-y-0.5 transition-colors ${dropDir === '' ? 'outline outline-2 outline-dashed outline-acc-400 outline-offset-4' : ''}`}>
                 {own.length || folders.length ? treeOf('') : <p className="text-sm text-gray-400 px-2.5 py-2">{t('emptyList')}</p>}
               </div>
               {/* Bei verbundenem Ordner stimmt «in diesem Browser» nicht mehr:
@@ -2679,7 +2783,7 @@
             </div>
 
             {words.map((w, i) => (
-              <div key={i} className="bg-white rounded-lg shadow p-4 mb-3">
+              <div key={i} className="bg-card rounded-lg shadow p-4 mb-3">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="flex-1 text-sm font-semibold text-gray-400">{t('wordN', i + 1)}</span>
                   <IconButton onClick={() => moveWord(i, -1)} title={t('moveUp')}>↑</IconButton>
@@ -2709,12 +2813,12 @@
               </div>
             ))}
 
-            <button onClick={addWord} className="w-full px-4 py-2 mb-4 bg-white rounded-lg shadow hover:shadow-md font-semibold text-gray-600 flex items-center justify-center gap-2">
+            <button onClick={addWord} className="w-full px-4 py-2 mb-4 bg-card rounded-lg shadow hover:shadow-md font-semibold text-gray-600 flex items-center justify-center gap-2">
               <PlusIcon /> {t('addWord')}
             </button>
             {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
             <div className="flex gap-3">
-              <button onClick={cancel} className="flex-1 px-4 py-3 bg-white rounded-lg shadow hover:shadow-md font-semibold text-gray-600">{t('cancel')}</button>
+              <button onClick={cancel} className="flex-1 px-4 py-3 bg-card rounded-lg shadow hover:shadow-md font-semibold text-gray-600">{t('cancel')}</button>
               <button onClick={save} className={`flex-1 ${BTN_PRIMARY} px-4 py-3`}>{t('save')}</button>
             </div>
             <p className="text-xs text-gray-400 mt-3">{t('editorHint')}</p>
@@ -2728,6 +2832,56 @@
     const OPTS_KEY = 'myvoci_practice';
     const DEFAULT_OPTS = { mode: 'write', input: 'write', dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false, timer: 0 };
     const loadOpts = () => ({ ...DEFAULT_OPTS, ...(readLocal(OPTS_KEY, {}) || {}) });
+
+    // Bausteine der Set-Seite: Segment-Schalter für kleine Wahlen, Schalter
+    // für Ja/Nein, eine Zeile «Beschriftung links, Wahl rechts» (auf dem
+    // Handy untereinander). Keine Trennlinien — gegliedert wird über Abstand.
+    // `even`: gleich breite (und damit gleich hohe) Felder, auch wenn eines
+    // auf dem Handy umbricht — für Wahlen mit Icon wie die Eingabe.
+    const Seg = ({ options, value, onChange, even }) => (
+      <div className={`${even ? 'inline-grid' : 'inline-flex flex-wrap'} gap-0.5 p-0.5 rounded-lg bg-gray-100`}
+        style={even ? { gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` } : undefined}>
+        {options.map(([id, label, disabled, title]) => (
+          <button key={id} disabled={disabled} onClick={() => onChange(id)} title={title} aria-pressed={value === id}
+            className={`px-3 py-1.5 rounded-md text-sm font-semibold flex items-center justify-center gap-1.5 text-center leading-tight transition-colors ${value === id ? 'bg-card text-acc-700 shadow' : 'text-gray-600 hover:text-gray-800'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+    );
+    const Switch = ({ checked, onChange, hint, children }) => (
+      <label className="flex items-start gap-3 cursor-pointer">
+        <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
+          className={`mt-0.5 relative w-10 h-6 shrink-0 rounded-full transition-colors ${checked ? 'bg-acc-500' : 'bg-gray-300'}`}>
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-4' : ''}`} />
+        </button>
+        <span className="text-sm text-gray-700">{children}{hint && <span className="block text-xs text-gray-400">{hint}</span>}</span>
+      </label>
+    );
+    const OptRow = ({ label, children }) => (
+      <div className="sm:flex sm:items-start sm:gap-4">
+        <div className="sm:w-28 shrink-0 text-sm text-gray-500 mb-1.5 sm:mb-0 sm:pt-1.5">{label}</div>
+        <div className="flex-1 min-w-0">{children}</div>
+      </div>
+    );
+    const NOTE = 'text-xs text-gray-400 mt-1.5';
+    const TOL_LABEL = { strict: 'tolStrict', normal: 'tolNormal', loose: 'tolLoose' }; // dazu je `…Hint`
+    // Linien-Icons der Modi und Eingaben, eine Farbe (currentColor)
+    const MODE_ICON = {
+      write: <><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z" /><path d="M14 7l3 3" /></>,
+      cards: <><rect x="8" y="3.5" width="12" height="15" rx="2" /><path d="M5 7v11a2.5 2.5 0 0 0 2.5 2.5H15" /></>,
+      choice: <><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" /><path d="M15.5 17l1.5 1.5 2.5-3" /></>,
+      match: <><circle cx="5" cy="6" r="1.8" /><circle cx="5" cy="18" r="1.8" /><circle cx="19" cy="6" r="1.8" /><circle cx="19" cy="18" r="1.8" /><path d="M6.8 6.8l10.4 10.4M6.8 17.2L17.2 6.8" /></>,
+      gap: <><path d="M3 7h18M3 17h4M17 17h4" /><rect x="9" y="13.5" width="6" height="7" rx="1" strokeDasharray="2 2" /></>,
+      listen: <><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3" y="14" width="4" height="6.5" rx="1.5" /><rect x="17" y="14" width="4" height="6.5" rx="1.5" /></>,
+      speak: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" /></>,
+      scramble: <><path d="M3 7h3c3.5 0 5.5 10 9 10h5M17.5 14l2.5 3-2.5 3M3 17h3c1.4 0 2.5-1.6 3.5-3.4M14 9.5C15 8 15.8 7 17 7h3M17.5 4l2.5 3-2.5 3" /></>,
+    };
+    const INPUT_ICON = {
+      write: <><rect x="2.5" y="6" width="19" height="12" rx="2" /><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8" /></>,
+      pen: <><path d="M3 16c2-6 3.5-9 5-9s.5 6 2.5 6 2.5-6 4-6 1 6 3 6 2.5-2 3.5-3" /><path d="M3 20.5h18" /></>,
+      ink: <><path d="M3 14c2-5 3.5-7.5 5-7.5s.5 5 2.5 5 2.5-5 4-5 1 4 3 4" /><path d="M13.5 19l2.5 2.5 5-5.5" /></>,
+    };
 
     const Choice = ({ options, value, onChange }) => (
       <div className="flex flex-wrap gap-2">
@@ -2747,7 +2901,11 @@
     // mit einer Zeile «Eingabe» darunter. `pen` erkennt nie, `ink` immer: die
     // Wahl hängt nicht mehr still daran, ob Schlüssel im Browser liegen.
     const WRITE_INPUTS = ['write', 'pen', 'ink'];
-    const INPUT_LABEL = { write: 'inputKeys', pen: 'inputPen', ink: 'inputInk' }; // dazu je `…Hint`
+    const INPUT_LABEL = { write: 'inputKeys', pen: 'inputPen', ink: 'inputInk' }; // voller Name
+    // Set-Seite: kurzer Name und wer prüft — auch die Tastatur prüft, die zwei
+    // Handschriften unterscheiden sich nur darin
+    const INPUT_SHORT = { write: 'inputKeys', pen: 'handwriting', ink: 'handwriting' };
+    const INPUT_CHECK = { write: 'checkAuto', pen: 'checkSelf', ink: 'checkAuto' };
     const MODE_GROUP = { pen: 'write', ink: 'write' }; // kein eigener Knopf, eine Eingabe von
     const HAND_MODES = ['pen', 'ink']; // Schreibfläche statt Eingabefeld
     // Gleichwertiger Ersatz, wenn ein Modus bei diesem Set nicht geht (sonst «Schreiben»)
@@ -2824,16 +2982,27 @@
       // `gapFor` zerlegt jeden Satz und baut dabei Ausdrücke — das darf nicht
       // an jedem Tastendruck in den Bereichsfeldern hängen.
       const gapN = useMemo(() => set.words.filter(gapFor).length, [set]);
-      // Eine Stelle entscheidet, ob ein Modus geht — sonst können ausgegrauter
-      // Knopf und Rückfall auseinanderlaufen.
-      const modeOff = (m) => (m === 'gap' && !gapN) || (m === 'listen' && !canListen(set, wanted.dir)) || (m === 'speak' && !canSpeakMode(set, wanted.dir))
-        || (m === 'ink' && !(inkKeys && canInk(set, wanted.dir))) || !MODES.includes(m);
+      // Eine Stelle entscheidet, ob ein Modus geht, und warum nicht (der
+      // I18N-Schlüssel des Grundes, sonst null) — sonst können ausgegrauter
+      // Knopf, angezeigter Grund und Rückfall auseinanderlaufen.
+      const modeOff = (m) => {
+        if (!MODES.includes(m)) return 'modeUnknown';
+        if (m === 'gap' && !gapN) return 'modeGapOff';
+        if (m === 'ink' && !inkKeys) return 'inkOffKeys';
+        // Hören, Sprechen und die Erkennung hängen an den Sprachen des Sets —
+        // fehlen die, liegt es am Set, nicht am Browser
+        const langDep = { listen: canListen, speak: canSpeakMode, ink: canInk }[m];
+        if (!langDep || langDep(set, wanted.dir)) return null;
+        if (!listenLangs(set, wanted.dir).length) return 'modeNoLangs';
+        return { listen: 'modeListenOff', speak: SpeechRec ? 'modeSpeakLang' : 'modeSpeakOff', ink: 'inkOffLang' }[m];
+      };
       // Ein Modus, der bei diesem Set nicht geht, fällt zurück — berechnet,
       // nicht per Effekt nachgetragen: sonst sähe «Direkt starten» beim
       // ersten Aufbau noch den ungültigen Modus und startete nie.
       const mode = modeOff(wanted.mode) ? MODE_FALLBACK[wanted.mode] || 'write' : wanted.mode;
       const opts = useMemo(() => (mode === wanted.mode ? wanted : { ...wanted, mode }), [wanted, mode]);
-      const writing = (MODE_GROUP[opts.mode] || opts.mode) === 'write';
+      const group = MODE_GROUP[opts.mode] || opts.mode; // die Kachel dazu
+      const writing = group === 'write';
       const chosen = useMemo(() => selectWords(set, opts, prog), [set, opts, prog]);
       // «Direkt starten» aus dem Link — nur beim ersten Anzeigen (s. Trainer).
       // Ein gleichwertiger Ersatz (MODE_FALLBACK) startet auch, «Schreiben»
@@ -2846,7 +3015,7 @@
         <div className={`${SCREEN} p-4 sm:p-8`}>
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center gap-2 mb-6">
-              <button onClick={onBack} title={t('toOverview')} className="shrink-0 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">
+              <button onClick={onBack} title={t('toOverview')} className="shrink-0 bg-card px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">
                 ← {t('overview')}
               </button>
               <h1 className="flex-1 min-w-0 text-xl sm:text-3xl font-bold text-center text-gray-800 break-words">{set.title}</h1>
@@ -2855,48 +3024,58 @@
             {settingsPanel}
             <StorageWarning />
 
-            <div className={`${CARD} p-6 mb-6`}>
-              <h2 className="text-lg font-semibold text-gray-700 mb-4">{t('practiceTitle')}</h2>
-              <div className="space-y-4">
-                <div>
-                  <div className={`${LABEL} mb-2`}>{t('mode')}</div>
-                  {/* Zurück zu «Schreiben» holt die zuletzt gewählte Eingabe (`input`) */}
-                  <Choice value={MODE_GROUP[opts.mode] || opts.mode}
-                    onChange={(m) => { if (m !== 'write') set_({ mode: m }); else if (!writing) set_({ mode: opts.input }); }}
-                    options={MODES.filter((m) => !MODE_GROUP[m]).map((m) => [m, t(MODE_LABEL[m]), modeOff(m)])} />
-                  {!writing && <p className="text-sm text-gray-500 mt-1">{t(MODE_LABEL[opts.mode] + 'Hint')}</p>}
-                  {!gapN && <p className="text-sm text-gray-400 mt-1">{t('modeGapNone')}</p>}
-                  {!canListen(set, opts.dir) && <p className="text-sm text-gray-400 mt-1">{t('modeListenNone')}</p>}
-                  {!canSpeakMode(set, opts.dir) && canListen(set, opts.dir) && <p className="text-sm text-gray-400 mt-1">{t('modeSpeakNone')}</p>}
-                </div>
+            <div className={`${CARD} p-5 sm:p-6 mb-6`}>
+              <h2 className="text-lg font-semibold text-gray-700 mb-3">{t('modeHow')}</h2>
+              {/* Der Modus ist die eigentliche Wahl: Kacheln mit Icon und einer
+                  Zeile. Geht ein Modus bei diesem Set nicht, steht der Grund
+                  statt der Beschreibung auf der Kachel — ein Tooltip käme auf
+                  dem iPad nie an. Zurück zu «Schreiben» holt die zuletzt
+                  gewählte Eingabe (`input`). */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {MODES.filter((m) => !MODE_GROUP[m]).map((m) => {
+                  const on = group === m, off = modeOff(m);
+                  return (
+                    <button key={m} disabled={!!off} aria-pressed={on}
+                      onClick={() => { if (m !== 'write') set_({ mode: m }); else if (!writing) set_({ mode: opts.input }); }}
+                      className={`flex flex-col items-start text-left p-3 rounded-xl transition-all ${on ? 'bg-acc-500/10 ring-2 ring-acc-500' : 'bg-gray-100 hover:bg-gray-200'} ${off ? 'opacity-40 cursor-not-allowed' : ''}`}>
+                      <span className={on ? 'text-acc-500' : 'text-gray-400'}><Icon size={24}>{MODE_ICON[m]}</Icon></span>
+                      <span className="mt-2 text-sm font-semibold text-gray-800 break-words hyphens-auto" lang={currentLang}>{t(MODE_LABEL[m])}</span>
+                      <span className="text-xs text-gray-500 leading-snug">{t(off || MODE_LABEL[m] + 'Short')}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-4 mt-6">
                 {writing && (
-                  <div>
-                    <div className={`${LABEL} mb-2`}>{t('input')}</div>
-                    <Choice value={opts.mode} onChange={(m) => set_({ mode: m, input: m })}
-                      options={WRITE_INPUTS.map((m) => [m, t(INPUT_LABEL[m]), modeOff(m)])} />
-                    <p className="text-sm text-gray-500 mt-1">{t(INPUT_LABEL[opts.mode] + 'Hint')}</p>
+                  <OptRow label={t('input')}>
+                    <Seg even value={opts.mode} onChange={(m) => set_({ mode: m, input: m })}
+                      options={WRITE_INPUTS.map((m) => [m, (
+                        <span className="flex flex-col items-center py-0.5">
+                          <span className="flex items-center gap-1.5"><Icon size={16}>{INPUT_ICON[m]}</Icon>{t(INPUT_SHORT[m])}</span>
+                          <span className="text-xs font-normal opacity-75">{t(INPUT_CHECK[m])}</span>
+                        </span>
+                      ), !!modeOff(m), t(INPUT_LABEL[m])])} />
                     {/* Nur wer von Hand schreibt, bekommt den Weg zur Erkennung
                         gezeigt — wer tippt (etwa jede Klasse über einen
                         geteilten Link), braucht keine MyScript-Einrichtung */}
                     {modeOff('ink') && HAND_MODES.includes(opts.mode) && (
-                      <p className="text-sm text-gray-400 mt-1">
-                        {t(inkKeys ? 'inkOffLang' : 'inkOffKeys')} {!inkKeys && <HelpLink onClick={() => setHelp(true)} />}
+                      <p className={NOTE}>
+                        {t(modeOff('ink'))} {!inkKeys && <HelpLink onClick={() => setHelp(true)} />}
                       </p>
                     )}
                     {help && <Help only="ink" onClose={() => setHelp(false)} />}
-                  </div>
+                  </OptRow>
                 )}
                 {!DIRECTIONLESS.includes(opts.mode) && (
-                  <div>
-                    <div className={`${LABEL} mb-2`}>{t('direction')}</div>
-                    <Choice value={opts.dir} onChange={(dir) => set_({ dir })}
+                  <OptRow label={t('direction')}>
+                    <Seg value={opts.dir} onChange={(dir) => set_({ dir })}
                       options={[['ab', t('dirAB', A, B)], ['ba', t('dirAB', B, A)], ['mix', t('dirMix')]]} />
-                  </div>
+                  </OptRow>
                 )}
-                <div>
-                  <div className={`${LABEL} mb-2`}>{t('selection')}</div>
-                  <Choice value={opts.sel} onChange={(sel) => set_({ sel })}
-                    options={[['all', t('selAll')], ['wrong', t('selWrong', wrongN), !wrongN], ['due', t('selDue', dueN)], ['range', t('selRange')]]} />
+                <OptRow label={t('rowWords')}>
+                  <Seg value={opts.sel} onChange={(sel) => set_({ sel })}
+                    options={[['all', t('selAllN', n)], ['wrong', t('selWrongN', wrongN), !wrongN], ['due', t('selDueN', dueN)], ['range', t('selRange')]]} />
                   {opts.sel === 'range' && (
                     <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
                       {t('rangeFrom')}
@@ -2906,42 +3085,39 @@
                       <span className="text-gray-400">/ {n}</span>
                     </div>
                   )}
-                </div>
-                <div>
-                  <div className={`${LABEL} mb-2`}>{t('order')}</div>
-                  <Choice value={opts.order} onChange={(order) => set_({ order })} options={[['random', t('orderRandom')], ['file', t('orderFile')]]} />
-                </div>
+                </OptRow>
+                <OptRow label={t('order')}>
+                  <Seg value={opts.order} onChange={(order) => set_({ order })} options={[['random', t('orderRandom')], ['file', t('orderFile')]]} />
+                </OptRow>
                 {LEVEL_MODES.includes(opts.mode) && (
-                  <div>
-                    <div className={`${LABEL} mb-2`}>{t('tolerance')}</div>
-                    <Choice value={opts.level} onChange={(level) => set_({ level })}
-                      options={[['strict', t('tolStrict')], ['normal', t('tolNormal')], ['loose', t('tolLoose')]]} />
-                    <p className="text-sm text-gray-500 mt-1">{t('tolHint')}</p>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={opts.hints} onChange={(e) => set_({ hints: e.target.checked })} /> {t('showHints')}</label>
-                  {TYPED_MODES.includes(opts.mode) && !opts.exam && (
-                    <label className="flex items-center gap-2"><input type="checkbox" checked={opts.copy} onChange={(e) => set_({ copy: e.target.checked })} /> {t('copyWrong')}</label>
-                  )}
-                  {HAND_MODES.includes(opts.mode) && (
-                    <label className="flex items-center gap-2"><input type="checkbox" checked={opts.penOnly} onChange={(e) => set_({ penOnly: e.target.checked })} /> {t('penOnly')}</label>
-                  )}
-                </div>
-                {AUTO_MODES.includes(opts.mode) && (
-                  <div>
-                    <div className={`${LABEL} mb-2`}>{t('timerLabel')}</div>
-                    <Choice value={opts.timer} onChange={(timer) => set_({ timer })} options={TIMER_STEPS.map((s) => [s, s ? t('timerS', s) : t('timerOff')])} />
-                    {opts.timer > 0 && <p className="text-sm text-gray-500 mt-1">{t('timerHint')}</p>}
-                  </div>
+                  <OptRow label={t('tolerance')}>
+                    <Seg value={opts.level} onChange={(level) => set_({ level })} options={Object.entries(TOL_LABEL).map(([id, key]) => [id, t(key)])} />
+                    <p className={NOTE}>{t(TOL_LABEL[opts.level] + 'Hint')}</p>
+                  </OptRow>
                 )}
                 {AUTO_MODES.includes(opts.mode) && (
-                  <div className={`rounded-lg border p-3 ${opts.exam ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
-                    <label className="flex items-center gap-2 font-semibold text-gray-700"><input type="checkbox" checked={opts.exam} onChange={(e) => set_({ exam: e.target.checked })} /> {t('exam')}</label>
-                    <p className="text-sm text-gray-500 mt-1">{t('examHint')}</p>
-                    {!canFullscreen() && <p className="text-sm text-amber-700 mt-1">{t('examNoFs')}</p>}
-                  </div>
+                  <OptRow label={t('timerLabel')}>
+                    <Seg value={opts.timer} onChange={(timer) => set_({ timer })} options={TIMER_STEPS.map((s) => [s, s ? t('timerS', s) : t('timerOff')])} />
+                    {opts.timer > 0 && <p className={NOTE}>{t('timerHint')}</p>}
+                  </OptRow>
                 )}
+                <OptRow label={t('rowExtras')}>
+                  <div className="space-y-3">
+                    <Switch checked={opts.hints} onChange={(hints) => set_({ hints })}>{t('showHints')}</Switch>
+                    {TYPED_MODES.includes(opts.mode) && !opts.exam && (
+                      <Switch checked={opts.copy} onChange={(copy) => set_({ copy })}>{t('copyWrong')}</Switch>
+                    )}
+                    {HAND_MODES.includes(opts.mode) && (
+                      <Switch checked={opts.penOnly} onChange={(penOnly) => set_({ penOnly })}>{t('penOnly')}</Switch>
+                    )}
+                    {AUTO_MODES.includes(opts.mode) && (
+                      <Switch checked={opts.exam} onChange={(exam) => set_({ exam })} hint={opts.exam ? t('examHint') : t('examShort')}>
+                        <b>{t('exam')}</b>
+                        {opts.exam && !canFullscreen() && <span className="block text-xs text-amber-700">{t('examNoFs')}</span>}
+                      </Switch>
+                    )}
+                  </div>
+                </OptRow>
               </div>
               <button onClick={() => onStart(opts, chosen)} disabled={!chosen.length}
                 className={`w-full mt-6 px-6 py-3 text-lg ${chosen.length ? BTN_PRIMARY : 'bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed'}`}>
@@ -2953,7 +3129,7 @@
             <div className={`${CARD} p-6 mb-6`}>
               <h2 className="text-lg font-semibold text-gray-700 mb-1">{t('shareTitle')}</h2>
               <p className="text-sm text-gray-500 mb-3">{t('shareHint')}</p>
-              <label className="flex items-center gap-2 text-sm text-gray-600 mb-3"><input type="checkbox" checked={shareGo} onChange={(e) => setShareGo(e.target.checked)} /> {t('shareGo')}</label>
+              <div className="mb-3"><Switch checked={shareGo} onChange={setShareGo}>{t('shareGo')}</Switch></div>
               <div className="flex gap-2">
                 <button onClick={copyShare} className={`flex-1 ${BTN_PRIMARY} px-4 py-2 flex items-center justify-center gap-2`}><LinkIcon /> {t('shareCopy')}</button>
                 <IconButton onClick={async () => setQr({ title: set.title, url: await shareLink() })} title={t('showQr')}><QrIcon /></IconButton>
@@ -3053,7 +3229,7 @@
       return (
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-2 mb-4">
-            <button onClick={onQuit} className="shrink-0 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">← {t('quit')}</button>
+            <button onClick={onQuit} className="shrink-0 bg-card px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">← {t('quit')}</button>
             <div className="flex-1 min-w-0 text-center text-gray-500 truncate">{set.title}</div>
             {canFullscreen() && (
               <IconButton onClick={toggleFullscreen} title={fsElement() ? t('exitFullscreen') : t('fullscreen')}><ExpandIcon /></IconButton>
@@ -3063,7 +3239,7 @@
           {settingsPanel}
           <div className="flex items-center gap-3 mb-4 text-sm text-gray-500">
             <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all" style={{ width: `${(pos / queue) * 100}%` }} />
+              <div className="h-full bg-gradient-to-r from-acc-500 to-acc2-500 transition-all" style={{ width: `${(pos / queue) * 100}%` }} />
             </div>
             <span>
               {Math.min(done, total)} / {total}
@@ -3083,12 +3259,14 @@
     };
     const SpeakButton = ({ text, lang, big }) => canSpeak(lang) && (
       <button onClick={() => speak(text, lang)} title={t('speak')}
-        className={big ? `${BTN_PRIMARY} px-8 py-6 flex items-center justify-center gap-3 text-xl` : 'text-gray-400 hover:text-blue-500 align-middle'}>
+        className={big ? `${BTN_PRIMARY} px-8 py-6 flex items-center justify-center gap-3 text-xl` : 'text-gray-400 hover:text-acc-500 align-middle'}>
         <SpeakerIcon />{big && t('hear')}
       </button>
     );
     // Beide Schreibflächen sehen gleich aus — eine Stelle, sonst laufen sie
-    // beim ersten Nachjustieren der Höhe auseinander.
+    // beim ersten Nachjustieren der Höhe auseinander. Die Fläche bleibt auch
+    // im dunklen Modus weiss (echtes `bg-white`, nicht `bg-card`): ein Blatt
+    // Papier, und die Tinte von iink ist dunkel.
     const PAD_FRAME = 'w-full h-48 sm:h-56 bg-white rounded-lg border-2 border-dashed border-gray-300 overflow-hidden relative';
     const PAD_LINE = { backgroundImage: 'linear-gradient(to top, transparent 34%, #e5e7eb 34%, #e5e7eb calc(34% + 1px), transparent calc(34% + 1px))' };
     const POINTER_EVENTS = ['pointerdown', 'pointermove', 'pointerup'];
@@ -3517,7 +3695,7 @@
       const answerHint = showHints && sideHint(item.dir === 'ab' ? 'b' : 'a');
       const answerHintLine = answerHint && <div className="text-sm text-gray-500 mt-1">{answerHint}</div>;
       const needNote = task.need && (
-        <div className="text-sm font-semibold text-blue-700 mb-2">{t(HAND_MODES.includes(mode) ? 'needAllPen' : 'needAll', task.need.length)}</div>
+        <div className="text-sm font-semibold text-acc-700 mb-2">{t(HAND_MODES.includes(mode) ? 'needAllPen' : 'needAll', task.need.length)}</div>
       );
       const promptLabel = sideName(set, item.dir === 'ab' ? 0 : 1);
 
@@ -3569,7 +3747,7 @@
         <>
           <div className={`${LABEL} mb-1`}>{t('solution')}</div>
           <div className="flex items-start gap-3">
-            <div className="flex-1 text-3xl font-bold text-blue-700 break-words whitespace-pre-line">{task.solution}</div>
+            <div className="flex-1 text-3xl font-bold text-acc-700 break-words whitespace-pre-line">{task.solution}</div>
             <SpeakButton text={task.solution} lang={answerLang} />
           </div>
           {answerHintLine}
@@ -3672,7 +3850,7 @@
                   : o === picked ? 'bg-red-100 border-red-400 text-red-800' : 'opacity-50';
                 return (
                   <button key={o} onClick={() => pick(o)} disabled={phase !== 'ask'}
-                    className={`px-4 py-4 rounded-lg border-2 border-gray-200 bg-white text-lg font-semibold text-gray-800 text-left break-words whitespace-pre-line hover:border-blue-400 hover:bg-blue-50 transition-all ${state}`}>
+                    className={`px-4 py-4 rounded-lg border-2 border-gray-200 bg-card text-lg font-semibold text-gray-800 text-left break-words whitespace-pre-line hover:border-acc-400 hover:bg-acc-50 transition-all ${state}`}>
                     {o}
                   </button>
                 );
@@ -3688,13 +3866,13 @@
             <div className="min-h-[3.5rem] flex flex-wrap gap-1 items-center p-2 rounded-lg border-2 border-dashed border-gray-300 mb-3">
               {built.map((j, k) => (
                 <button key={k} onClick={() => phase === 'ask' && setBuilt(built.slice(0, k))}
-                  className="w-11 h-11 rounded-lg bg-blue-100 text-blue-800 text-xl font-bold">{task.letters[j]}</button>
+                  className="w-11 h-11 rounded-lg bg-acc-100 text-acc-800 text-xl font-bold">{task.letters[j]}</button>
               ))}
             </div>
             <div className="flex flex-wrap gap-1">
               {task.letters.map((ch, j) => (
                 <button key={j} onClick={() => addTile(j)} disabled={built.includes(j) || phase !== 'ask'}
-                  className={`w-11 h-11 rounded-lg text-xl font-bold shadow transition-all ${built.includes(j) ? 'bg-gray-100 text-gray-300' : 'bg-white text-gray-800 hover:bg-blue-50'}`}>
+                  className={`w-11 h-11 rounded-lg text-xl font-bold shadow transition-all ${built.includes(j) ? 'bg-gray-100 text-gray-300' : 'bg-card text-gray-800 hover:bg-acc-50'}`}>
                   {ch}
                 </button>
               ))}
@@ -3740,7 +3918,7 @@
           <>
             <div className={`${LABEL} mb-2`}>{t('sentence')}</div>
             <div className="text-2xl sm:text-3xl font-semibold text-gray-800 leading-relaxed mb-3">
-              {task.before}<span className="inline-block min-w-[5rem] border-b-4 border-blue-400 text-blue-700 px-1 text-center">
+              {task.before}<span className="inline-block min-w-[5rem] border-b-4 border-acc-400 text-acc-700 px-1 text-center">
                 {phase === 'ask' ? ' ' : task.solution}</span>{task.after}
             </div>
             <div className="text-gray-600"><span className={`${LABEL} mr-2`}>{promptLabel}</span><b className="text-xl">{inline(task.prompt)}</b>{hint && <span className="text-sm text-gray-500 ml-2">{hint}</span>}</div>
@@ -3853,8 +4031,8 @@
             className={`w-full px-3 py-3 rounded-lg border-2 text-left font-semibold break-words whitespace-pre-line transition-all ${
               isMatched ? 'bg-green-100 border-green-300 text-green-800 opacity-60'
               : isFlash ? 'bg-red-100 border-red-400 text-red-800'
-              : active ? 'bg-blue-100 border-blue-500 text-blue-900'
-              : 'bg-white border-gray-200 text-gray-800 hover:border-blue-400'}`}>
+              : active ? 'bg-acc-100 border-acc-500 text-acc-900'
+              : 'bg-card border-gray-200 text-gray-800 hover:border-acc-400'}`}>
             {side === 'l' ? w.a : w.b}
           </button>
         );
@@ -3890,14 +4068,14 @@
         <div className={`${SCREEN} p-4 sm:p-8`}>
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center gap-2 mb-6">
-              <button onClick={onBack} className="shrink-0 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">← {t('toSet')}</button>
+              <button onClick={onBack} className="shrink-0 bg-card px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">← {t('toSet')}</button>
               <div className="flex-1 min-w-0 text-center text-gray-500 truncate">{set.title}</div>
               {settingsButton}
             </div>
             {settingsPanel}
             <div className={`${CARD} p-6 sm:p-8 text-center mb-4`}>
               <h2 className="text-3xl font-bold text-gray-800 mb-2">{t('done')}</h2>
-              <div className="text-5xl font-bold my-4 bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold my-4 bg-gradient-to-r from-acc-500 to-acc2-500 bg-clip-text text-transparent">
                 {log.length ? Math.round((ok / log.length) * 100) : 0}%
               </div>
               <p className="text-gray-600">{t('result', ok, log.length)}</p>
