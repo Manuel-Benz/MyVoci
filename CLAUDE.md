@@ -145,9 +145,10 @@ umgeschaltet wurde.
 
 ## Anleitung (`Help`, `?`-Knopf oben)
 
-Die langen Erklärtexte stehen **an einer Stelle**: ein Modal mit vier
+Die langen Erklärtexte stehen **an einer Stelle**: ein Modal mit sechs
 Abschnitten (`HELP_SECTIONS`: iPad · Handschrift-Erkennung einrichten · Ordner
-auf dem Computer · Codes scannen), Titel und Schritte je über eine Tabelle auf
+auf dem Computer · Sets benennen und ablegen · Sets auf ein anderes Gerät
+bringen · Codes scannen), Titel und Schritte je über eine Tabelle auf
 I18N-Schlüssel (`HELP_TITLE`/`HELP_STEPS`). Vorher lagen sie verstreut in den
 Einstellungen (`myscriptHint`, `dirHint` — beide zu `…Short` gekürzt) und im
 Kasten «Üben auf dem iPad» zuunterst in der Übersicht, den es nicht mehr gibt.
@@ -406,6 +407,21 @@ verzweigen, wenn es um Inhalte geht.
 - **`writeLocal` meldet Fehlschläge** (`storageBroken` → Warnstreifen): ein
   stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
 
+## Speicher auf dem iPad (`persistStorage`, `StorageState`)
+
+Auf dem iPad gingen in der Home-Bildschirm-App immer mal wieder die Sets
+verloren: ohne `navigator.storage.persist()` darf iOS den Speicher einer
+Webapp räumen. Die App fragt darum beim Start danach (`App`) —
+nur im installierten Zustand (`standalone`), weil Firefox am Computer sonst
+ein Berechtigungsfenster zeigt. Unter «Sicherung» steht, wo man ist
+(Home-Bildschirm-App oder Browser — getrennte Speicher), wie viele eigene Sets
+dort liegen und ob der Speicher dauerhaft ist; so lässt sich ein «Verlust»
+vom falschen Speicher unterscheiden. Mit verbundenem Ordner sagt die Zeile
+stattdessen «Sets im Ordner …, Lernstand in diesem Browser» (s. «Texte, die
+den Speicherort nennen»). Chrome auf dem iPad hilft nicht: gleiche
+Engine (WebKit), gleiche Regeln. Verwaltete Schul-iPads können trotzdem
+zurücksetzen — dagegen hilft nur die Sicherung.
+
 ## Farben: Sonne (hell) / Nacht (dunkel)
 
 Das Skript im `<head>` legt jede Farbskala als CSS-Variable an und sagt
@@ -477,7 +493,47 @@ Im Code stehen nur die zwei eingebauten Beispiele. Die **echten Sets liegen in
 `voci/`** — wie `quizzes/` in MyKahoot lebendes Material, das die App direkt von
 der Platte liest (kein Code hängt an einer bestimmten Datei). Der Ordner steht in
 `.gitignore` und wird **nie** committet; Änderungen dort nie proaktiv zum
-Committen anbieten, auch nicht bei `/git`. Wie die Sets heissen und wo sie darin
-liegen (`<Kind>/<Sprache>/<Lehrmittel>/`, Titel `Unité 3 – La maison`, Zusätze
-`– Sätze`, `– Verben (présent)`), steht in Manuels Anleitungen:
-`~/Documents/Unterricht/Anleitungen/Prozesse/MyVoci-Voci-Benennung/kurz.md`.
+Committen anbieten, auch nicht bei `/git`.
+
+## Benennung und Ablage (steht in der App, nicht anderswo)
+
+Die Konvention lebt dort, wo sie wirkt — wer die App weitergibt, braucht keine
+weitere Datei. Quelle ist **der KI-Prompt** (Block «TITEL») und der Abschnitt
+«Sets benennen und ablegen» der Anleitung (`helpNamesSteps`); beide nachführen,
+wenn sich etwas ändert. Kurz:
+
+- **Titel** wie im Buch (`Lektion 12`, `Unité 3 – La maison`), ohne Buch das
+  Thema; Zusatz nur für andere Set-Arten (`– Sätze`, `– Verben (présent)`).
+  Nicht in den Titel: Sprache, Klasse, Datum, «Vocabulary». Kein eigenes
+  Eingabefeld dafür — die KI liest Einheit und Thema aus dem Material.
+- **Ordner** `<Sprache>/[Klasse N]`, automatisch beim Import (`placeFor` →
+  `autoDir`): ohne gewählten Ordner (Kasten auf «automatisch», aufs Fenster
+  oder auf die Liste gezogen, Link/QR) kommt ein Set in den Ordner seiner
+  Fremdsprache (`foreignLang`: die Seite, die nicht `de` ist). Ein vorhandener
+  Ordner der Sprache wird genommen, wie er auch heisst (`NAME_TO_CODE`,
+  `plainName`-Vergleich). Darin der **höchste Klassenordner** (`CLASS_DIR`,
+  `Klasse`/`Class`, natürlich sortiert: `Klasse 10` nach `Klasse 2`) — eine
+  feste Regel statt «zuletzt benutzt»: gleich auf jedem Gerät, nichts zu
+  merken, Bearbeiten oder Umbenennen verstellt nichts. Liegt schon genau ein
+  Set mit gleichem Titel und gleicher Fremdsprache irgendwo (auch zuoberst,
+  aus der Zeit vor der Ablage nach Sprache), ist es eine neue Fassung und
+  gehört dorthin (Import fragt «ersetzen?», ein korrigierter Link ersetzt).
+  `keepLink` muss denselben Ort nehmen wie `importSet` — sonst behält
+  importSet die alte id und die Route zeigt auf eine neue, die es nicht gibt
+  («nicht gespeichert»). Kein Lehrmittel-Ordner: pro Fach meist nur eines.
+  Von Hand im Editor angelegte Sets kommen in den dort gewählten Ordner.
+- **Datei- und neue Ordnernamen ohne Sonderzeichen** (`plainName`): Umlaute
+  ausgeschrieben, Akzente weg, Leerzeichen bleiben (lesbarer als `_` für
+  Leute, die nicht programmieren), `–` wird `-`: `Unite 3 - La maison.txt`.
+  Ein Titel ganz ohne lateinische Buchstaben (griechisch) behält seine Zeichen
+  (`safeName`), sonst hiessen alle solchen Sets `Voci.txt`. Weil verschiedene
+  Titel so dieselbe Datei ergeben können («Unité 3»/«Unite 3», Gross/Klein),
+  gilt ein Platz als besetzt, wenn Titel **oder Datei** gleich sind
+  (`samePath`/`sameSlot`: Editor-Prüfung, Import-Rückfrage, `importSet`) —
+  zwei Sets in einer Datei überschrieben sich, und beim Nachlesen fiele eines
+  weg. Bestehende Ordner laufen weiter über `safeDir` — sonst schriebe
+  `mirrorDir` neben `Französisch/` einen zweiten Ordner `Franzoesisch/`;
+  ein Ordner-Umbenennen mit unveränderter Vorgabe tut nichts. Alte, von der
+  App mit Umlaut/«–» benannte Dateien tragen seither `file`; beim Umbenennen
+  in der App fällt `file` weg (`saveSet`, nur wenn es der alte Automatikname
+  `safeName(titel).txt` war), damit der Name nicht festklebt.

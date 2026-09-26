@@ -232,6 +232,15 @@
             <li>Der Browser-Speicher ist dann nur noch Zwischenspeicher — nur der Lernstand bleibt dort.</li>
           </>
         ),
+        helpNamesTitle: 'Sets benennen und ablegen',
+        helpNamesSteps: (
+          <>
+            <li><b>Titel</b> wie im Buch: {code('Lektion 12')}, {code('Unité 3 – La maison')}; ohne Buch das Thema: {code('Im Restaurant')}. Zusatz nur, wenn es nicht einfach Wörter sind: {code('– Sätze')}, {code('– Verben (présent)')}. Nicht in den Titel: Sprache, Klasse, Datum. Der KI-Prompt hält sich schon daran.</li>
+            <li><b>Ablage</b>: Ein importiertes Set (KI-Datei, eingefügter Text, Link oder QR-Code) kommt ohne Ordnerwahl in den Ordner seiner Fremdsprache ({code('Franzoesisch')}, {code('Latein')} …) — gibt es darin Klassenordner, in den höchsten ({code('Klasse 3')} vor {code('Klasse 2')}). Einmal im Jahr den neuen Klassenordner anlegen genügt. Eine neue Fassung eines Sets, das schon irgendwo liegt, ersetzt es dort (nach Rückfrage). Von Hand angelegte Sets kommen in den Ordner, den du im Editor wählst.</li>
+            <li><b>Dateien und Ordner</b> heissen ohne Umlaute, Akzente und Sonderzeichen: {code('Unite 3 - La maison.txt')}. Der Titel in der App behält sie.</li>
+            <li>Den Titel in der App ändern oder das Set verschieben behält den Lernstand; den Titel von Hand in der Datei ändern setzt ihn zurück.</li>
+          </>
+        ),
         helpScanSteps: (
           <>
             <li>Der Knopf oben in der Übersicht öffnet die Kamera: Set-Code oder Schlüssel-Code davorhalten, fertig.</li>
@@ -262,6 +271,7 @@
         titlePh: 'Titel des Sets',
         folderLabel: 'Ordner',
         rootFolder: 'Hauptordner',
+        autoFolder: 'automatisch (nach Sprache)',
         makeFolder: 'Ordner anlegen',
         langA: 'Sprache A (Vorderseite)',
         langB: 'Sprache B (Rückseite)',
@@ -333,6 +343,22 @@
         shareCopy: 'Link kopieren',
         shareCopied: 'Link zur Übung kopiert!',
         backupTitle: 'Sicherung',
+        storageHere: (app, n) => `Hier: ${app ? 'Home-Bildschirm-App' : 'Browser'}, ${n} ${n === 1 ? 'eigenes Set' : 'eigene Sets'}`,
+        storageKept: 'Speicher dauerhaft',
+        storageVolatile: 'Speicher kann vom System geleert werden — Sicherung empfohlen',
+        storageHereDir: (name) => `Sets im Ordner «${name}», Lernstand in diesem Browser`,
+        storageVolatileDir: 'den Lernstand kann das System leeren — Sicherung empfohlen',
+        helpMoveTitle: 'Sets auf ein anderes Gerät bringen',
+        helpMoveSteps: (
+          <>
+            <li><b>Der Lernstand reist nur mit der Sicherung.</b> Link, QR-Code, .txt, ZIP und ein gemeinsamer Ordner nehmen nur die Wörter mit.</li>
+            <li><b>Ein Set schnell aufs iPad</b> (oder zu jemand anderem): beim Set den <b>QR-Code</b> zeigen und dort mit dem Scan-Knopf oben einlesen — oder den <b>Direktlink</b> schicken. Der Lernstand beginnt dort neu.</li>
+            <li><b>Alles mitnehmen</b> (Umzug, zweites Gerät): Einstellungen → <b>«Sicherung herunterladen»</b>, auf dem anderen Gerät <b>«Sicherung einlesen»</b>. Einlesen ergänzt, was fehlt, und behält den jeweils neueren Lernstand.</li>
+            <li><b>Zwei Computer dauerhaft</b>: auf beiden denselben Ordner (iCloud, Dropbox) verbinden — die Sets sind dann überall gleich, der Lernstand bleibt pro Browser.</li>
+            <li><b>Weitergeben oder in anderen Apps</b> (z. B. MyMemory): beim Set <b>.txt</b> oder unter der Liste <b>«Alle Sets als ZIP»</b>.</li>
+            <li><b>iPad:</b> Die App auf dem Home-Bildschirm hat einen eigenen Speicher, getrennt von Safari — darum Sets mit dem Scan-Knopf der App einlesen, nicht mit der Kamera-App. Wird das Icon gelöscht, ist ihr Speicher weg. Auf Schul-iPads kann auch die Geräteverwaltung zurücksetzen. Ab und zu eine Sicherung schützt den Lernstand; ob der Speicher dauerhaft ist, steht in den Einstellungen unter «Sicherung».</li>
+          </>
+        ),
         backupHint: 'Alle Sets, Ordner und der Lernstand als Datei — zum Umziehen auf ein anderes Gerät. Einlesen ergänzt, was fehlt, und behält den jeweils neueren Lernstand.',
         backupExport: 'Sicherung herunterladen',
         backupImport: 'Sicherung einlesen',
@@ -576,6 +602,15 @@
             <li>Browser storage is then only a cache — only your progress stays there.</li>
           </>
         ),
+        helpNamesTitle: 'Naming and filing sets',
+        helpNamesSteps: (
+          <>
+            <li><b>Title</b> as in the book: {code('Unit 12')}, {code('Unit 3 – At home')}; without a book the topic: {code('At the restaurant')}. Add something only if it is not simply words: {code('– Sentences')}, {code('– Verbs (present)')}. Not in the title: language, class, date. The AI prompt already follows this.</li>
+            <li><b>Filing</b>: An imported set (AI file, pasted text, link or QR code) without a chosen folder goes into the folder of its foreign language ({code('French')}, {code('Latin')} …) — if it has class folders, into the highest one ({code('Class 3')} before {code('Class 2')}). Creating the new class folder once a year is enough. A new version of a set that already exists somewhere replaces it there (after asking). Sets created by hand go into the folder you choose in the editor.</li>
+            <li><b>Files and folders</b> are named without umlauts, accents and special characters: {code('Unite 3 - La maison.txt')}. The title in the app keeps them.</li>
+            <li>Renaming a set in the app or moving it keeps its progress; changing the title by hand in the file resets it.</li>
+          </>
+        ),
         helpScanSteps: (
           <>
             <li>The button at the top of the overview opens the camera: hold a set code or key code in front of it, done.</li>
@@ -604,6 +639,7 @@
         titlePh: 'Title of the set',
         folderLabel: 'Folder',
         rootFolder: 'Main folder',
+        autoFolder: 'automatic (by language)',
         makeFolder: 'Create folder',
         langA: 'Language A (front)',
         langB: 'Language B (back)',
@@ -674,6 +710,22 @@
         shareCopy: 'Copy link',
         shareCopied: 'Exercise link copied!',
         backupTitle: 'Backup',
+        storageHere: (app, n) => `Here: ${app ? 'home screen app' : 'browser'}, ${n} ${n === 1 ? 'own set' : 'own sets'}`,
+        storageKept: 'storage persistent',
+        storageVolatile: 'storage may be cleared by the system — backup recommended',
+        storageHereDir: (name) => `Sets in the folder “${name}”, progress in this browser`,
+        storageVolatileDir: 'the system may clear the progress — backup recommended',
+        helpMoveTitle: 'Moving sets to another device',
+        helpMoveSteps: (
+          <>
+            <li><b>Progress only travels with the backup.</b> Link, QR code, .txt, ZIP and a shared folder carry only the words.</li>
+            <li><b>One set quickly to the iPad</b> (or to someone else): show the set's <b>QR code</b> and read it there with the scan button at the top — or send the <b>direct link</b>. Progress starts fresh there.</li>
+            <li><b>Take everything</b> (new device, second device): Settings → <b>“Download backup”</b>, on the other device <b>“Import backup”</b>. Importing adds what is missing and keeps the newer progress.</li>
+            <li><b>Two computers for good</b>: connect the same folder on both (iCloud, Dropbox) — the sets are the same everywhere, progress stays per browser.</li>
+            <li><b>Passing on or using in other apps</b> (e.g. MyMemory): <b>.txt</b> at the set or <b>“Download all sets as a ZIP”</b> below the list.</li>
+            <li><b>iPad:</b> The home screen app has its own storage, separate from Safari — so read sets with the app's scan button, not the Camera app. Deleting the icon deletes its storage. On school iPads the device management may reset it too. A backup now and then protects your progress; whether storage is persistent is shown in the settings under “Backup”.</li>
+          </>
+        ),
         backupHint: 'All sets, folders and progress as one file — for moving to another device. Importing adds what is missing and keeps the newer progress.',
         backupExport: 'Download backup',
         backupImport: 'Import backup',
@@ -841,15 +893,17 @@
       en: { de: 'Englisch', en: 'English' }, it: { de: 'Italienisch', en: 'Italian' },
       es: { de: 'Spanisch', en: 'Spanish' }, la: { de: 'Latein', en: 'Latin' },
       pt: { de: 'Portugiesisch', en: 'Portuguese' }, rm: { de: 'Rätoromanisch', en: 'Romansh' },
+      grc: { de: 'Altgriechisch', en: 'Ancient Greek' }, el: { de: 'Griechisch', en: 'Greek' },
     };
     const NAME_TO_CODE = {
       deutsch: 'de', german: 'de', französisch: 'fr', franzoesisch: 'fr', french: 'fr', français: 'fr', francais: 'fr',
       englisch: 'en', english: 'en', italienisch: 'it', italian: 'it', italiano: 'it', spanisch: 'es', spanish: 'es',
       español: 'es', espanol: 'es', latein: 'la', latin: 'la', portugiesisch: 'pt', portuguese: 'pt',
-      rätoromanisch: 'rm', romansh: 'rm', romantsch: 'rm',
+      rätoromanisch: 'rm', raetoromanisch: 'rm', romansh: 'rm', romantsch: 'rm',
+      altgriechisch: 'grc', 'ancient greek': 'grc', griechisch: 'el', greek: 'el',
     };
     const langCode = (raw) => {
-      const w = (raw || '').trim().toLowerCase();
+      const w = (raw || '').normalize('NFC').trim().toLowerCase();
       if (!w) return '';
       return LANG_NAMES[w] ? w : (NAME_TO_CODE[w] || w.slice(0, 12));
     };
@@ -966,8 +1020,8 @@
       "SO GIBST DU ES AUS — daran scheitert es sonst:",
       "- Gib beides aus, in dieser Reihenfolge:",
       "  1. eine Datei zum Herunterladen, Endung .txt (kein .docx, kein PDF). Der",
-      "     Dateiname beginnt mit «Voci_», danach folgt der Titel des Sets —",
-      "     kurz und passend, Wörter mit «_» getrennt: Voci_Unite_3_La_maison.txt",
+      "     Dateiname ist der Titel ohne Umlaute, Akzente und Sonderzeichen, mit",
+      "     Leerzeichen und normalem Bindestrich: Unite 3 - La maison.txt",
       "  2. denselben Inhalt nochmals in EINEM Code-Block (```), zum Kopieren.",
       "- Kannst du keine Dateien erzeugen, reicht der Code-Block allein.",
       "- Kein Wort davor oder danach: keine Einleitung, keine Erklärung, keine Rückfrage.",
@@ -986,6 +1040,16 @@
       "A: aller / marcher",
       "S: Je vais à l'école à pied.",
       "---",
+      "",
+      "TITEL (die Zeile «# …»):",
+      "- Zeigt das Material eine Einheit (Lektion 12, Unité 3, Unit 5), beginnt der",
+      "  Titel damit, genau wie im Buch. Steht dort auch ein Thema, folgt es nach",
+      "  « – »: «Unité 3 – La maison». Sonst nur die Einheit: «Lektion 12».",
+      "- Ohne Einheit im Material ist der Titel das Thema, kurz: «Im Restaurant».",
+      "- Nur wenn es nicht einfach Wörter sind, ein Zusatz nach « – »: «– Sätze»,",
+      "  «– Verben (présent)», «– Redewendungen».",
+      "- Nicht in den Titel: Sprache, Klasse, Datum, Wörter wie «Vocabulaire»,",
+      "  «Vocabulary» oder «Wortschatz».",
       "",
       "REGELN:",
       "- Erste Zeile «# Titel», zweite Zeile «Sprachen: <Code A> → <Code B>» mit",
@@ -1037,8 +1101,8 @@
       "HOW TO OUTPUT IT — this is where it usually goes wrong:",
       "- Give both, in this order:",
       "  1. a file to download, extension .txt (no .docx, no PDF). The file name",
-      "     starts with «Voci_», followed by the title of the set — short and",
-      "     fitting, words separated by «_»: Voci_Unit_3_At_home.txt",
+      "     is the title without umlauts, accents and special characters, with",
+      "     spaces and a plain hyphen: Unit 3 - At home.txt",
       "  2. the same content again in ONE code block (```), to copy.",
       "- If you cannot produce files, the code block alone is enough.",
       "- Not a word before or after: no introduction, no explanation, no follow-up question.",
@@ -1057,6 +1121,15 @@
       "S: I walk to school.",
       "H: irregular: went, gone",
       "---",
+      "",
+      "TITLE (the line «# …»):",
+      "- If the material shows a unit (Lektion 12, Unité 3, Unit 5), the title",
+      "  starts with it, exactly as in the book. If a topic is given there too, it",
+      "  follows after « – »: «Unit 3 – At home». Otherwise just the unit: «Unit 12».",
+      "- Without a unit in the material, the title is the topic, short: «At the restaurant».",
+      "- Only if it is not simply words, add after « – »: «– Sentences»,",
+      "  «– Verbs (present)», «– Phrases».",
+      "- Not in the title: language, class, date, words like «Vocabulary» or «Wortschatz».",
       "",
       "RULES:",
       "- First line «# Title», second line «Languages: <code A> → <code B>» with",
@@ -1190,7 +1263,7 @@
     };
 
     const parseFile = (text, filename) => {
-      // Der KI-Prompt verlangt «Voci_Thema.txt»: Präfix weg, nur mit Unterstrich.
+      // Frühere KI-Prompts verlangten «Voci_Thema.txt»: Präfix weg, «_» zu Leerzeichen.
       const fromName = filename.replace(/\.(txt|md)$/i, '').replace(/^(voci|memory)_+(?=.)/i, '').replace(/_/g, ' ').trim();
       const inFile = text.match(/^#\s+(.+)$/m);
       const lang = langInFile(text);
@@ -1215,6 +1288,21 @@
 
     const safeName = (title) => title.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'Voci';
     const safeDir = (dir) => dir.split('/').map(safeName).join('/');
+    // Neue Datei- und Ordnernamen ohne Sonderzeichen: Umlaute ausgeschrieben,
+    // Akzente weg, alles andere ausser Buchstaben, Ziffern, Leerzeichen und
+    // ( ) , . ' - wird zu «-» (auch der Halbgeviertstrich im Titel). Der Titel
+    // in der Datei bleibt, wie er ist. Bestehende Ordner laufen weiter über
+    // safeDir — sonst schriebe mirrorDir in einen zweiten Ordner daneben.
+    const UMLAUT = { ä: 'ae', ö: 'oe', ü: 'ue', Ä: 'Ae', Ö: 'Oe', Ü: 'Ue', ß: 'ss', æ: 'ae', œ: 'oe', Æ: 'Ae', Œ: 'Oe' };
+    const plainName = (title) => {
+      const ascii = title.normalize('NFC').replace(/[äöüÄÖÜßæœÆŒ]/g, (c) => UMLAUT[c])
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^A-Za-z0-9 (),.'-]+/g, '-').replace(/\s+/g, ' ').replace(/-+/g, '-')
+        .replace(/^[\s.-]+|[\s.-]+$/g, '');
+      // Ganz ohne lateinische Buchstaben (griechischer Titel) bliebe nur «Voci»
+      // oder eine Ziffer übrig — und zwei solche Sets teilten sich eine Datei.
+      return /[A-Za-z]/.test(ascii) ? ascii : safeName(title);
+    };
 
     const loadJsZip = () => loadScript('https://unpkg.com/jszip@3.10.1/dist/jszip.min.js', () => window.JSZip);
 
@@ -1224,7 +1312,7 @@
       const used = new Set();
       for (const folder of folders) zip.folder(safeDir(folder));
       for (const set of sets) {
-        const base = `${set.dir ? safeDir(set.dir) + '/' : ''}${safeName(set.title)}`;
+        const base = `${set.dir ? safeDir(set.dir) + '/' : ''}${plainName(set.title)}`;
         let name = `${base}.txt`;
         for (let i = 2; used.has(name); i++) name = `${base} (${i}).txt`;
         used.add(name);
@@ -1263,6 +1351,12 @@
     // Schlüssel — Editor, Import, Sicherung und Ordner fragen hier nach.
     const setPlace = (s) => `${s.dir || ''}\u0001${s.title}`;
     const samePlace = (a, b) => setPlace(a) === setPlace(b);
+    // Gleiche Datei: «Unité 3» und «Unite 3» (oder nur in Gross/Klein
+    // verschieden) landen im selben Ordner in derselben Datei — mirrorDir
+    // schriebe beide dorthin, und beim Nachlesen fiele eines weg. Darum gilt
+    // das beim Anlegen als besetzt und beim Import als dasselbe Set.
+    const samePath = (a, b) => (a.dir || '') === (b.dir || '') && fileName(a).toLowerCase() === fileName(b).toLowerCase();
+    const sameSlot = (a, b) => samePlace(a, b) || samePath(a, b);
     const allFolders = ({ sets, folders }) => {
       const all = new Set(folders);
       for (const s of sets) for (let d = s.dir || ''; d; d = parentDir(d)) all.add(d);
@@ -1278,6 +1372,39 @@
     const DEMOS_KEY = 'myvoci_demos';
     const loadShowDemos = () => readLocal(DEMOS_KEY, true) !== false;
     const loadOpen = () => readLocal(OPEN_KEY, []) || [];
+
+    // Ablage ohne Ordnerwahl: ein Set kommt in den Ordner seiner Fremdsprache
+    // (die Seite, die nicht Deutsch ist; aus `Sprachen: de → fr`), dort in den
+    // höchsten Klassenordner («Klasse 3» nach «Klasse 2», natürlich sortiert).
+    // Eine feste Regel statt «zuletzt benutzt»: gleich auf jedem Gerät, nichts
+    // zu merken, und Umbenennen oder Bearbeiten verstellt nichts. Einmal im
+    // Jahr den neuen Klassenordner anlegen genügt. Ein schon vorhandener
+    // Ordner der Sprache wird genommen, wie er auch heisst (Französisch,
+    // Franzoesisch, French), sonst entsteht einer ohne Umlaut. Ohne
+    // Sprachangabe bleibt das Set zuoberst.
+    const foreignLang = (set) => {
+      const langs = set.langs || [];
+      return langs.find((c) => c && c !== 'de') || langs[1] || '';
+    };
+    const CLASS_DIR = /^(klasse|class)\b/i;
+    const autoDir = (set, folders) => {
+      const code = foreignLang(set);
+      if (!code) return '';
+      const root = folders.find((f) => !f.includes('/') && langCode(f) === code)
+        || plainName(LANG_NAMES[code] ? langName(code) : code.charAt(0).toUpperCase() + code.slice(1));
+      const classes = folders.filter((f) => parentDir(f) === root && CLASS_DIR.test(dirName(f)))
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+      return classes.length ? classes[classes.length - 1] : root;
+    };
+    // Wohin ein Set ohne gewählten Ordner kommt: liegt schon genau ein Set mit
+    // gleichem Titel und gleicher Fremdsprache irgendwo, ist es eine neue
+    // Fassung davon und gehört dorthin (auch zuoberst, aus der Zeit vor der
+    // Ablage nach Sprache, oder in der Klasse vom letzten Jahr) — so fragt der
+    // Import «ersetzen?» statt still eine Zweitkopie anzulegen. Sonst autoDir.
+    const placeFor = (set, sets, folders) => {
+      const twins = sets.filter((s) => s.title === set.title && foreignLang(s) === foreignLang(set));
+      return twins.length === 1 ? twins[0].dir || '' : autoDir(set, folders);
+    };
     const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
 
     // ---------- Ordner auf der Platte (wie die Quizzes in MyKahoot) ----------
@@ -1338,7 +1465,7 @@
       return { sets: read.filter((s) => s.words.length), folders };
     };
 
-    const fileName = (set) => set.file || `${safeName(set.title)}.txt`;
+    const fileName = (set) => set.file || `${plainName(set.title)}.txt`;
     const setPath = (set) => `${set.dir ? safeDir(set.dir) + '/' : ''}${fileName(set)}`;
     const dirOf = async (root, path, create) => {
       let h = root;
@@ -2108,9 +2235,9 @@
     // `only` zeigt einen einzelnen Abschnitt: die Schlüsselfelder stehen auf
     // jeder Seite, von der aus geübt wird (auch nach einem geteilten Link),
     // die Übersicht mit dem ?-Knopf sieht dort aber niemand.
-    const HELP_SECTIONS = ['ipad', 'ink', 'dir', 'scan'];
-    const HELP_TITLE = { ipad: 'ipadTitle', ink: 'helpInkTitle', dir: 'dirTitle', scan: 'scan' };
-    const HELP_STEPS = { ipad: 'ipadSteps', ink: 'helpInkSteps', dir: 'helpDirSteps', scan: 'helpScanSteps' };
+    const HELP_SECTIONS = ['ipad', 'ink', 'dir', 'names', 'move', 'scan'];
+    const HELP_TITLE = { ipad: 'ipadTitle', ink: 'helpInkTitle', dir: 'dirTitle', names: 'helpNamesTitle', move: 'helpMoveTitle', scan: 'scan' };
+    const HELP_STEPS = { ipad: 'ipadSteps', ink: 'helpInkSteps', dir: 'helpDirSteps', names: 'helpNamesSteps', move: 'helpMoveSteps', scan: 'helpScanSteps' };
     const Help = ({ only, onClose }) => (
       <Modal wide onClose={onClose}>
         <h2 className="text-xl font-bold text-gray-800 mb-4">{only ? t(HELP_TITLE[only]) : t('helpTitle')}</h2>
@@ -2123,6 +2250,29 @@
         <button onClick={onClose} className={`w-full px-4 py-2 ${BTN_SECONDARY}`}>{t('close')}</button>
       </Modal>
     );
+    // Ohne Anmeldung als «dauerhaft» darf iOS die Daten einer Home-Bildschirm-
+    // App wegräumen (Speicher knapp, länger nicht benutzt) — die Sets waren
+    // dann «immer mal wieder» weg. Angefragt wird nur in der installierten
+    // App: Firefox am Computer fragte sonst mit einem Fenster nach, und dort
+    // liegen die Sets ohnehin im Ordner. Sonst nur nachsehen, für die Anzeige.
+    const standalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+    let persistAsked = null; // eine Anfrage pro Laden, App und Einstellungen teilen sie
+    const persistStorage = () => (persistAsked = persistAsked || (async () => {
+      try {
+        if (!navigator.storage || !navigator.storage.persisted) return null;
+        if (await navigator.storage.persisted()) return true;
+        return standalone() && navigator.storage.persist ? await navigator.storage.persist() : false;
+      } catch { return null; }
+    })());
+    // Mit verbundenem Ordner liegen die Sets als Dateien dort, im Browser nur
+    // der Lernstand — die Zeile sagt dann das (s. storedHintDir).
+    const StorageState = ({ count, folder }) => {
+      const [persisted, setPersisted] = useState(null);
+      useEffect(() => { persistStorage().then(setPersisted); }, []);
+      const risk = persisted === true ? ` · ${t('storageKept')}` : persisted === false ? ` · ${t(folder ? 'storageVolatileDir' : 'storageVolatile')}` : '';
+      return <p className="text-sm text-gray-500 mb-3">{folder ? t('storageHereDir', folder) : t('storageHere', standalone(), count)}{risk}</p>;
+    };
+
     // Verweis von einem Einstellungs-Kasten in den passenden Abschnitt
     const HelpLink = ({ onClick }) => (
       <button onClick={onClick} className="underline font-semibold hover:text-gray-700">{t('guide')} →</button>
@@ -2236,9 +2386,9 @@
     );
 
     // Ordnerwahl mit eingerückten Unterordnern — Editor und «Voci-Set erstellen»
-    const FolderSelect = ({ value, onChange, folders, className = '' }) => (
+    const FolderSelect = ({ value, onChange, folders, className = '', rootLabel = t('rootFolder') }) => (
       <select value={value} onChange={(e) => onChange(e.target.value)} className={`flex-1 min-w-0 ${INPUT} ${className}`}>
-        <option value="">{t('rootFolder')}</option>
+        <option value="">{rootLabel}</option>
         {folders.map((f) => <option key={f} value={f}>{'\u00a0\u00a0'.repeat(f.split('/').length - 1) + dirName(f)}</option>)}
       </select>
     );
@@ -2267,6 +2417,8 @@
       // braucht aber die Rückfrage «gibt es schon».
       const ownRef = useRef(own);
       ownRef.current = own;
+      const foldersRef = useRef(folders);
+      foldersRef.current = folders;
       // Schlüssel per Weitergabe-Link gekommen (s. takeKeysFromHash): einmal sagen
       useEffect(() => { if (keysArrived) { keysArrived = false; showToast(t('myscriptTaken')); } }, []);
       // In der App gescannt (s. Scanner): Schlüssel gleich übernehmen, ein Set
@@ -2332,7 +2484,8 @@
         </div>
         <div className="rounded-lg border border-gray-200 p-4 mt-4">
           <div className={`${LABEL} mb-2`}>{t('backupTitle')}</div>
-          <p className="text-sm text-gray-500 mb-3">{t('backupHint')}</p>
+          <p className="text-sm text-gray-500 mb-3">{t('backupHint')} <HelpLink onClick={() => setHelp('move')} /></p>
+          <StorageState count={own.length} folder={dir.status === 'ok' ? dir.name : null} />
           <div className="flex flex-wrap gap-2">
             <button onClick={backup.save} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('backupExport')}</button>
             <button onClick={() => backupInput.current.click()} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('backupImport')}</button>
@@ -2374,7 +2527,7 @@
         else { showToast(t('copyFailed')); setQr({ title: set.title, url: await directLink(set) }); }
       };
       const showQr = async (set) => setQr({ title: set.title, url: await directLink(set) });
-      const exportOne = (set) => { download(`${safeName(set.title)}.txt`, toFile(set)); showToast(t('downloadedOne', set.title)); };
+      const exportOne = (set) => { download(`${plainName(set.title)}.txt`, toFile(set)); showToast(t('downloadedOne', set.title)); };
       const exportAll = async () => {
         if (!own.length) { showToast(t('noOwnSets')); return; }
         try { download('MyVoci.zip', await zipBlob(own, folders)); }
@@ -2382,9 +2535,13 @@
         showToast(t('downloadedAll', own.length));
       };
 
-      const addImported = (text, name, dir, complain) => {
+      // Ohne gewählten Ordner (Kasten auf «automatisch», aufs Fenster gezogen)
+      // legt placeFor ab; `foldersRef`, weil der Fenster-Listener nur einmal
+      // entsteht.
+      const addImported = (text, name, chosen, complain) => {
         const parsed = parseFile(text, name);
         if (!parsed.words.length) { showToast(complain); return false; }
+        const dir = chosen || placeFor(parsed, ownRef.current, foldersRef.current);
         const put = () => {
           onImport({ id: newId(), ...parsed, ...(dir ? { dir } : {}) });
           openTo(dir);
@@ -2393,7 +2550,7 @@
         // Gleicher Titel im gleichen Ordner heisst «neue Fassung desselben
         // Sets» — die alten Wörter sind danach weg. Das ist einen Klick wert,
         // es gibt kein Zurück.
-        if (ownRef.current.some((s) => samePlace(s, { dir, title: parsed.title }))) {
+        if (ownRef.current.some((s) => sameSlot(s, { dir, title: parsed.title }))) {
           setDialog({ kind: 'confirm', ok: t('replace'), text: t('confirmReplace', parsed.title), onYes: put });
         } else put();
         return true;
@@ -2589,7 +2746,7 @@
               {folders.length > 0 && (
                 <label className="flex items-center gap-3 mb-4">
                   <span className={LABEL}>{t('createIn')}</span>
-                  <FolderSelect value={into} onChange={setTarget} folders={folders} className="text-sm" />
+                  <FolderSelect value={into} onChange={setTarget} folders={folders} className="text-sm" rootLabel={t('autoFolder')} />
                 </label>
               )}
               <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1 mb-4">{t('steps')}</ol>
@@ -2713,7 +2870,7 @@
         // Nur im selben Ordner: seit die Sets in Ordnern liegen, tragen zwei
         // Kinder gut denselben Set-Titel — global geprüft liess sich so ein
         // Set gar nicht mehr speichern.
-        if (sets.some((s) => s.id !== set.id && samePlace(s, { dir, title: name }))) return setError(t('errTitleTaken'));
+        if (sets.some((s) => s.id !== set.id && sameSlot(s, { dir, title: name }))) return setError(t('errTitleTaken'));
         if (!clean.length) return setError(t('errNoWord'));
         if (clean.some((w) => !w.a || !w.b)) return setError(t('errHalfWord'));
         const a = langCode(langA), b = langCode(langB);
@@ -4197,6 +4354,8 @@
       const [store, setStore] = useState(loadStore);
       const [progress, setProgress] = useState(loadProgress);
       const [, redraw] = useState(currentLang);
+      // Gleich beim Start, nicht erst in den Einstellungen (s. persistStorage).
+      useEffect(() => { persistStorage(); }, []);
       redrawLang = redraw;
       const own = store.sets;
       const folders = allFolders(store);
@@ -4303,8 +4462,8 @@
       // Dasselbe Set = gleicher Ort (s. samePlace). Nur über den Titel
       // ersetzte ein Import das gleichnamige Set eines anderen Kindes.
       const importSet = (set) => updateStore((prev) => {
-        const old = prev.sets.find((s) => samePlace(s, set));
-        return insertSet(prev, old ? { ...old, ...set, id: old.id } : set, (s) => !samePlace(s, set));
+        const old = prev.sets.find((s) => sameSlot(s, set));
+        return insertSet(prev, old ? { ...old, ...set, id: old.id } : set, (s) => !old || s.id !== old.id);
       });
       // ---- Sicherung: Sets + Ordner + Lernstand in einer Datei ----
       // Einlesen ergänzt: gleicher Titel im gleichen Ordner = dasselbe Set
@@ -4360,7 +4519,16 @@
       };
 
       const saveSet = (set) => {
-        const saved = set.id ? set : { ...set, id: newId() };
+        let saved = set.id ? set : { ...set, id: newId() };
+        // Früher benannte die App Dateien mit Umlaut und «–» nach dem Titel;
+        // solche Dateien tragen seither `file`. Beim Umbenennen in der App
+        // ziehen sie mit und heissen dann nach der neuen Regel — sonst klebte
+        // der alte Name fest (s. readDir).
+        const old = storeRef.current.sets.find((s) => s.id === saved.id);
+        if (old && old.file && old.title !== saved.title && old.file.normalize('NFC') === `${safeName(old.title)}.txt`.normalize('NFC')) {
+          const { file, ...rest } = saved;
+          saved = rest;
+        }
         updateStore((prev) => insertSet(prev, saved, (s) => s.id !== saved.id));
         back();
       };
@@ -4383,11 +4551,14 @@
       // Schlüssel), wandert auf die id.
       const keepLink = (set) => {
         const sets = storeRef.current.sets;
-        const here = sets.find((s) => samePlace(s, set));
+        // Der Ort muss derselbe sein, an dem importSet sucht — sonst behielte
+        // importSet die id des ersetzten Sets, die Route zeigte auf eine neue.
+        const dir = placeFor(set, sets, allFolders(storeRef.current));
+        const here = sets.find((s) => sameSlot(s, { ...set, dir }));
         const twins = here ? [] : sets.filter((s) => s.title === set.title);
         const same = twins.length === 1 && JSON.stringify(twins[0].words) === JSON.stringify(set.words) ? twins[0] : null;
         const id = here ? here.id : same ? same.id : newId();
-        if (!same) importSet({ ...set, id, dir: here ? here.dir || '' : '' });
+        if (!same) importSet({ ...set, id, dir: here ? here.dir || '' : dir });
         updateProgress((prev) => {
           const linkKey = `link:${set.title}`;
           if (!prev[linkKey] || prev[id]) return prev;
@@ -4400,7 +4571,8 @@
         setRoute(getRoute());
       };
 
-      const cleanName = (name) => (name || '').trim().replace(/\//g, '-').replace(/^\.+$/, '-');
+      // Neue Ordner ohne Sonderzeichen, wie die Dateien (plainName).
+      const cleanName = (name) => ((name || '').trim() ? plainName(name.trim()) : '');
       const makeFolder = (parent, rawName) => {
         const name = cleanName(rawName);
         if (!name) return null;
@@ -4413,6 +4585,9 @@
       // Weg zurück fehlt (remapDir schreibt die Pfade um und dedupliziert).
       const folderTaken = (target) => allFolders(store).includes(target);
       const renameFolder = (dir, rawName) => {
+        // Vorgabe unverändert bestätigt: nichts tun — sonst würde ein alter
+        // Ordner «Französisch» still zu «Franzoesisch» samt allen Dateien.
+        if ((rawName || '').trim() === dirName(dir)) return null;
         const name = cleanName(rawName);
         if (!name) return null;
         const target = parentDir(dir) ? `${parentDir(dir)}/${name}` : name;
