@@ -18,6 +18,7 @@ Ein einziges `<script type="text/babel">`, gegliedert durch
 Sprache/I18N → Beispiel-Sets → KI-Prompt → Parser/Export → Ordner → Lernstand →
 Direktlinks → Routing → **Korrektur** → Vorlesen/Spracherkennung/Vollbild →
 Bausteine (Modal, Icons, QR, Scanner, Anleitung, Einstellungen) → Seiten.
+Die Wortformen (`formSet`) stehen gleich nach den Listen, vor dem Parser.
 
 Die Übersicht ist gebaut wie die Quiz-Auswahl in MyKahoot: schlanke Zeilen
 statt Kacheln (`row`/`folderBox` in `Selection`), Titel in fester Spalte mit
@@ -66,8 +67,31 @@ Schriftzeile pro Punkt), bei Karteikarten nur als Vermerk. Im Direktlink
 stehen `ha`, `hb`, `all` hinten im Wort-Array, leere Enden fallen weg — alte
 Links bleiben gültig.
 
+**Formen** (`f` am Wort, Abschnitt «Formen»): eine Tabelle mit höchstens
+zwei Achsen, `{ r, c, t }` = Zeilen-, Spaltenbeschriftungen, Zellen. Datei:
+`Zeilen:`/`Spalten:` (vor einem `F:` für alle folgenden, danach nur für
+dieses Wort) und `T: amo | amavi` pro Zeile, `–` = gibt es nicht. Die Tabelle
+gehört zur Fremdsprache (`formSide`). Geübt wird über `formSet`: jede Zelle
+wird ein eigenes Wort («manger · nous · présent» → «mangeons», `src` = Index
+des Worts), beide Sprachen sind die Fremdsprache. Darum laufen **alle Modi**
+auf Formen, ohne dass `Practice` davon weiss — die Set-Seite rechnet mit
+`pool`, der Trainer mit `roundSet`, `opts.forms` (Link `&forms=1`) schaltet
+um. Die Wahl «Wörter · Formen» steht nur bei Sets mit Tabellen. Bei Formen
+prüft `checkAnswer` mit `forms`: keine Tippfehler- und keine
+Artikel-Toleranz («amat»/«amant», «dem»/«des» sind Grammatik, kein
+Vertipper). In der Oberfläche heisst es **«Wortformen»** («Formen» allein
+klang nach Formular). Zwei Modi gibt es nur dort (`FORM_MODES`, Kacheln
+sonst ausgeblendet): **Bestimmen** (`parse`, in `Practice`: Form gegeben,
+Zeile/Spalte wählen, jede Lesart zählt, `selectWords` fragt jede Form nur
+einmal) und **Tabelle** (`table`, eigene Komponente `TableRound`: die
+gewählten Formen sind leer, die übrigen stehen da). Dafür tragen die
+Form-Wörter `tab` (Tabelle mit fertigen Beschriftungen) und `ri`/`ci`.
+Im Editor ist die Tabelle ein Textfeld in Dateischreibweise
+(`formText`/`parseFormText` über `parseFA`), `formIssues` meldet live, was
+nicht passt.
+
 **Dateiformat** bleibt kompatibel zu MyMemory/MyTafelfussball (`F:`/`A:`/`---`);
-`S:`, `H:`, `HF:`, `HA:`, `W:` und `Sprachen: de → fr` sind Zusätze, die die
+`S:`, `H:`, `HF:`, `HA:`, `W:`, `Zeilen:`/`Spalten:`/`T:` und `Sprachen: de → fr` sind Zusätze, die die
 anderen Apps überlesen. Eine Liste schreibt `toFile` auf **eine** Zeile, Punkte
 mit ` | ` getrennt (`A: 1. petere | 2. appetere`): MyMemory liest nur die erste
 `A:`-Zeile und sähe sonst nur den ersten Punkt; für `F:` ginge es ohnehin nicht
@@ -145,10 +169,10 @@ umgeschaltet wurde.
 
 ## Anleitung (`Help`, `?`-Knopf oben)
 
-Die langen Erklärtexte stehen **an einer Stelle**: ein Modal mit sechs
+Die langen Erklärtexte stehen **an einer Stelle**: ein Modal mit sieben
 Abschnitten (`HELP_SECTIONS`: iPad · Handschrift-Erkennung einrichten · Ordner
-auf dem Computer · Sets benennen und ablegen · Sets auf ein anderes Gerät
-bringen · Codes scannen), Titel und Schritte je über eine Tabelle auf
+auf dem Computer · Sets benennen und ablegen · Wortformen · Sets auf ein
+anderes Gerät bringen · Codes scannen), Titel und Schritte je über eine Tabelle auf
 I18N-Schlüssel (`HELP_TITLE`/`HELP_STEPS`). Vorher lagen sie verstreut in den
 Einstellungen (`myscriptHint`, `dirHint` — beide zu `…Short` gekürzt) und im
 Kasten «Üben auf dem iPad» zuunterst in der Übersicht, den es nicht mehr gibt.
@@ -201,7 +225,8 @@ das mitgelieferte Set; wird navigiert, trägt `keysArrived` die Meldung nach.
 
 ## Modi
 
-`MODES` = write, pen, ink, cards, choice, match, gap, listen, speak, scramble.
+`MODES` = write, pen, ink, cards, choice, match, gap, listen, speak, scramble, parse, table
+(die letzten zwei nur mit Wortformen, s. Datenmodell).
 `write`/`pen`/`ink` sind die drei Eingaben von «Schreiben» (`WRITE_INPUTS`:
 Tastatur · Handschrift, selbst bewerten / automatisch geprüft): intern eigene Modi, damit Link
 (`&mode=`), `modeOff` und die Listen unten nichts Neues lernen müssen; die

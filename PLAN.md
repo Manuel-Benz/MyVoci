@@ -4,6 +4,22 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (28.09.2026, 17):** **Wortformen** (Phase 6): Ein Wort kann eine
+Tabelle mit seinen Formen tragen (`Zeilen:`/`Spalten:`/`T:`), auch nur
+einzelne Wörter eines Sets. Mit «Wortformen» auf der Set-Seite laufen alle
+Modi auf den einzelnen Formen, dazu **Bestimmen** und **Tabelle**; geprüft
+ohne Tippfehler- und Artikel-Toleranz. Der KI-Prompt entscheidet selbst, ob
+Tabellen passen, und fragt nur bei Unklarheit nach. Editor mit Textfeld und
+Meldungen, Abschnitt in der Anleitung, zwei Verben im Beispiel Französisch.
+Im Browser und mit 26 Node-Fällen geprüft; auf dem iPad noch nicht.
+
+**Stand (26.09.2026, 16):** Import ohne Ordnerwahl legt nach Fremdsprache
+ab (höchster Klassenordner), Datei- und neue Ordnernamen ohne Sonderzeichen,
+dauerhafter Speicher für die Home-Bildschirm-App (Status unter «Sicherung»).
+
+**Stand (24.09.2026, 15):** Übungsmenü mit Kacheln und Linien-Icons, Farben
+Sonne (hell) / Nacht (dunkel), neues Icon.
+
 **Stand (23.09.2026, 14):** «Handschrift» ist kein eigener Modus mehr, sondern
 eine Eingabe von **Schreiben**: Tastatur · Handschrift ohne Kontrolle ·
 Handschrift mit Kontrolle. «Mit Kontrolle» ist ohne MyScript-Schlüssel oder
@@ -291,10 +307,145 @@ ab `main`. Lokal: `python3 -m http.server` → http://localhost:8000.
   heraus oder per Datei-Ablage; Einlesen ergänzt (gleicher Titel = dasselbe
   Set, Lernstand pro Wort der neuere Versuch).
 
+- [x] **6 — Wortformen: Deklinieren und Konjugieren** (28.09.2026), s.
+  Abschnitt unten.
+
+## Formen (Phase 6)
+
+Formenlehre in allen Sprachen, geübt als eigene Übung statt als Umweg über
+Wortpaare. Ein Wort kann eine **Formentabelle** tragen, mit höchstens zwei
+Achsen (Zeilen × Spalten): Kasus × Numerus, Person × Tempus. Eine Achse ist
+einfach eine Tabelle mit einer Spalte. Eine dritte Achse (Adjektiv: Genus)
+wird ein eigener Eintrag: «bonus (m.)», «bona (f.)».
+
+**Die Sets unterscheiden sich durch ihren Inhalt, nicht durch eine Art.**
+Wie der Lückentext nur geht, wenn Sätze da sind (`gapN`), gehen die
+Formen-Modi nur, wenn Tabellen da sind. Ein Set kann beides: `F:`/`A:` bleiben
+Grundform und Bedeutung, sodass auch Schreiben, Karteikarten usw. laufen und
+MyMemory die Datei weiterhin als Wortliste liest (die neuen Zeilen überliest
+es).
+
+### Dateiformat
+
+```
+# Verben a-Konjugation
+Sprachen: la → de
+Zeilen: 1. Sg | 2. Sg | 3. Sg | 1. Pl | 2. Pl | 3. Pl
+Spalten: Präsens | Perfekt
+
+F: amare
+A: lieben
+T: amo | amavi
+T: amas | amavisti
+T: amat | amavit
+T: amamus | amavimus
+T: amatis | amavistis
+T: amant | amaverunt
+---
+F: rosa
+A: die Rose
+Zeilen: Nom | Gen | Dat | Akk | Abl
+Spalten: Singular | Plural
+T: rosa | rosae
+T: rosae | rosarum
+…
+---
+```
+
+- `Zeilen:`/`Spalten:` im Kopf gelten für alle Einträge, im Eintrag nur für
+  diesen (Verben und Nomen im selben Set). `T:` ist eine Tabellenzeile, Zellen
+  mit ` | ` getrennt. Fehlen die `Spalten:`, hat die Tabelle eine Spalte.
+- In einer Zelle gelten `/` (Alternativen, «amavisti / amasti») und `( )` wie
+  überall. `–` heisst «gibt es nicht»; die Zelle wird nicht abgefragt.
+- Die Tabelle gehört zur **Fremdsprache** (`foreignLang`), egal ob die auf
+  `F:` oder `A:` steht. So sind `de → fr` (F: gehen, A: aller, T: je vais …)
+  und `la → de` gleich zu schreiben. Stimme, Artikel und iink-Sprache kommen
+  von dort.
+- Passt die Zahl der Zellen nicht zu den Beschriftungen, wird der Eintrag
+  trotzdem gelesen. Der Editor zeigt die Abweichung an, statt sie zu schlucken.
+
+### Datenmodell
+
+Am Wort: `f: { r: [...], c: [...], t: [[...], ...] }` (Zeilen-, Spalten-
+beschriftungen, Zellen). Es entsteht über `cleanWord` wie alles andere und
+steht im Direktlink als achtes Feld des Wort-Arrays, sodass alte Links gültig
+bleiben. `toFile` schreibt `Zeilen:`/`Spalten:` pro Eintrag (dieselben
+Beschriftungen werden ausnahmsweise im Kopf zusammengefasst).
+
+**Lernstand pro Form** über `wordKey` der Form-Wörter (Grundform samt
+Beschriftungen + Form) — über die Beschriftungen, nicht über die Stelle,
+damit das Einfügen einer Spalte den Stand nicht verschiebt. Der Stand des
+Wortes selbst (Grundform ↔ Bedeutung) bleibt davon getrennt. Leitner,
+Fehlerliste und «fällig» funktionieren pro Form unverändert.
+
+### Modi
+
+**Umgesetzt (6a) anders als zuerst geplant:** Statt einer Kachel «Formen»
+steht bei Sets mit Tabellen über den Kacheln die Wahl **«Was willst du üben?
+Wörter · Formen»**. Mit «Formen» wird jede Zelle zu einem eigenen Wort
+(`formSet`: vorne «manger · nous · présent», hinten «mangeons»), und
+**alle bestehenden Modi** laufen darauf: Schreiben mit allen drei
+Eingaben, Karteikarten, Multiple Choice (Ablenker zuerst aus derselben
+Tabelle), Zuordnen, Hören, Sprechen, Buchstabensalat, dazu Blitzrunde und
+Prüfung. Die «Einzelform» ist damit kein eigener Modus mehr. Die Richtung
+steht fest (Grundform → Form), der Lückentext fällt mangels Sätzen weg.
+
+Dazu zwei Modi, deren Kacheln nur mit «Wortformen» erscheinen (`FORM_MODES`):
+
+1. **Bestimmen** (`parse`, 6b): Eine Form wird gezeigt (Grundform und
+   Bedeutung dabei), gesucht sind Zeile und Spalte, gewählt mit zwei
+   Knopfreihen (bei einer Spalte nur eine). Bei mehrdeutigen Formen
+   («rosae»: Gen. Sg., Dat. Sg., Nom. Pl.) genügt eine richtige Wahl; die
+   Lösung zeigt alle Lesarten, und jede Form wird nur einmal gefragt.
+   Automatisch geprüft, also auch mit Blitzrunde und Prüfung.
+2. **Tabelle** (`table`, 6c, `TableRound`): Die ganze Tabelle als Raster aus
+   Eingabefeldern. Statt einer eigenen Vorgabe-Wahl entscheidet die übliche
+   Auswahl: die gewählten Formen sind leer, die übrigen stehen schon da — mit
+   «nur Fehler» übt man genau die Lücken im Zusammenhang. «Prüfen» wertet
+   jede Zelle für sich, falsche zeigen die Lösung; gezählt wird pro Form.
+   Enter springt spaltenweise weiter. Nur Tastatur (auf dem iPad geht
+   Scribble), ohne Blitzrunde und Prüfung.
+
+**Toleranz:** Bei Formen gibt es **weder Tippfehler- noch
+Artikel-Toleranz** (`checkAnswer` mit `forms`). Ein Buchstabe ist hier die
+Grammatik: «amat» statt «amant» ist die falsche Person, «dem Hundes» statt
+«des Hundes» der falsche Fall. Gross/klein und Akzente folgen weiter der
+Stufe. Die übrigen Formen der Runde gehen wie immer als `others` mit.
+
+### Editor und KI-Prompt
+
+- **KI-Prompt:** neue Zeile im Ausfüllblock «Formen: [nein / z. B. Präsens
+  und Perfekt aktiv / alle Kasus]» und ein Block FORMEN mit Beispiel. Die KI
+  schreibt die Formen aus; eine Regelmaschine in der App gibt es bewusst
+  nicht (unregelmässige Formen, eine Sprache nach der anderen). Der Prompt
+  verlangt, unsichere Formen wegzulassen statt zu raten, und die Anleitung
+  sagt: Tabellen vor dem Üben durchsehen.
+- **Editor:** pro Wort «+ Wortformen» klappt ein Textfeld auf, mit den
+  Zeilen `Zeilen:`/`Spalten:`/`T:` in derselben Schreibweise wie die Datei
+  (gelesen von `parseFA`). Darunter steht live, was nicht zusammenpasst:
+  unverständliche Zeilen, falsche Anzahl Beschriftungen oder Zellen. Ein
+  echtes Tabellenraster kommt erst, wenn sich das Textfeld im Alltag als
+  mühsam erweist.
+
+### Reihenfolge
+
+- [x] **6a** (28.09.2026): Format lesen und schreiben (`parseFA`, `toFile`,
+  `cleanWord`, Direktlink `&forms=1`), Lernstand pro Form, «Wörter · Formen»
+  auf der Set-Seite, KI-Prompt (die KI entscheidet selbst und fragt nur bei
+  Unklarheit nach), zwei Verben mit Tabelle im Beispiel Französisch. Der
+  Editor zeigt die Tabelle nur an und behält sie beim Speichern. In Node
+  26 Fälle (Datei- und Link-Rundlauf, alte Links, Korrektur); im Browser
+  Schreiben, Multiple Choice und Zuordnen auf Formen.
+- [x] **6b/6c** (28.09.2026): «Wortformen» statt «Formen» in der
+  Oberfläche; **Bestimmen**, **Tabelle**, Tabellen im Editor, Abschnitt
+  «Wortformen» in der Anleitung (verlinkt von der Set-Seite). Im Browser
+  geprüft: Bestimmen mit einer und zwei Spalten, mehrdeutige Form, Link mit
+  `go=1`; Tabelle mit Fehler, leerem Feld und Gross/klein; Editor mit
+  Meldungen und Speichern.
+
 ## Backlog / Ideen
 
 - Lernstand geräteübergreifend live (ein Sync via GitHub/Gist bräuchte ein
   Token pro SchülerIn — eher nicht; die Sicherung als Datei deckt den Umzug ab).
 - Bilder statt Wort A (Bild-URL) für Anfänger.
-- Konjugations-/Formen-Sets (mehrere Spalten) — eigenes Format, erst wenn nötig.
 - Offline (Service Worker) für Schul-iPads ohne stabiles WLAN.

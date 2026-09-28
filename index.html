@@ -471,6 +471,40 @@
         resetProgress: 'Lernstand zurücksetzen',
         progressHint: 'Der Lernstand bleibt in diesem Browser. Richtig = ein Fach höher (Fach 5 alle zwei Wochen fällig), falsch = zurück in Fach 1.',
         wordList: 'Wörter',
+        formList: 'Wortformen',
+        modeParse: 'Bestimmen',
+        modeParseShort: 'Person, Fall … erkennen',
+        modeTable: 'Tabelle',
+        modeTableShort: 'ganze Tabelle ausfüllen',
+        modeFormsOnly: 'nur mit Wortformen',
+        parseOf: (lemma, meaning) => `Form von ${lemma}${meaning ? ` (${meaning})` : ''}`,
+        tableSelHint: 'Die gewählten Formen sind leer, die übrigen stehen schon in der Tabelle.',
+        tableScore: (n, of) => `${n} von ${of} richtig`,
+        tableN: (n) => `Tabelle mit ${n} ${n === 1 ? 'Lücke' : 'Lücken'}`,
+        formsLabel: 'Wortformen (Tabelle)',
+        formsAdd: 'Wortformen',
+        formsPh: 'Zeilen: je | tu | il/elle | nous | vous | ils/elles\nSpalten: présent | imparfait\nT: vais | allais\nT: vas | allais\n…',
+        formsIssueRows: (rows, labels) => `${rows} Zeilen, aber ${labels} Beschriftungen bei «Zeilen:».`,
+        formsIssueLine: (line) => `Nicht verstanden, wird übergangen: «${line}». Jede Zeile beginnt mit «Zeilen:», «Spalten:» oder «T:».`,
+        formsIssueCells: (which, n) => `Zeile ${which}: nicht ${n} ${n === 1 ? 'Zelle' : 'Zellen'} (so viele wie «Spalten:»). Fehlt eine Form, «–» schreiben.`,
+        helpFormsTitle: 'Wortformen: konjugieren und deklinieren',
+        helpFormsSteps: (
+          <>
+            <li><b>Was es ist:</b> Ein Wort kann eine Tabelle mit seinen Formen tragen — Konjugation (Person × Zeitform) oder Deklination (Fall × Zahl). Das geht auch nur bei einzelnen Wörtern eines Sets.</li>
+            <li><b>So entsteht sie:</b> am einfachsten über den KI-Prompt — die Zeile «Formen» leer lassen, dann entscheidet die KI und fragt nach, wenn es unklar ist. Oder im Editor beim Wort auf <b>«+ Wortformen»</b>.</li>
+            <li><b>Schreibweise</b> (Datei und Editor): <code>Zeilen: je | tu | il/elle …</code> und <code>Spalten: présent | imparfait</code>, dann pro Zeile <code>T: vais | allais</code>. «–» heisst: gibt es nicht. Mehrere richtige Formen mit « / ». Ohne «Spalten:» hat die Tabelle eine Spalte.</li>
+            <li><b>Vor dem Üben durchsehen:</b> Eine KI irrt sich bei seltenen Formen, und geprüft wird Buchstabe für Buchstabe — ohne Tippfehler- und ohne Artikel-Toleranz, weil dort ein Buchstabe die Grammatik ist.</li>
+            <li><b>Üben:</b> beim Set oben <b>«Wortformen»</b> wählen. Dann laufen alle Modi auf den einzelnen Formen, dazu <b>Bestimmen</b> (die Form ist gegeben, Person oder Fall wählen) und <b>Tabelle</b> (die ganze Tabelle ausfüllen; mit «nur Fehler» sind nur die Lücken leer).</li>
+          </>
+        ),
+        whatHow: 'Was willst du üben?',
+        whatWords: (n) => `Wörter (${n})`,
+        whatForms: (n) => `Wortformen (${n})`,
+        wordsHint: 'Grundform und Bedeutung, wie in jedem Set.',
+        formsHint: 'Konjugieren und deklinieren: jede Form aus den Tabellen einzeln, zum Beispiel «manger · nous · présent».',
+        selAllForms: (n) => `alle ${n}`,
+        nForms: (n) => `${n} ${n === 1 ? 'Form' : 'Formen'}`,
+        tolFormsHint: 'Bei Formen zählt jeder Buchstabe: kein Tippfehler, kein fehlender Artikel. Die Stufe regelt nur Gross/klein und Akzente.',
         // Üben
         check: 'Prüfen',
         next: 'Weiter',
@@ -838,6 +872,40 @@
         resetProgress: 'Reset progress',
         progressHint: 'Progress stays in this browser. Right = one box up (box 5 is due every two weeks), wrong = back to box 1.',
         wordList: 'Words',
+        formList: 'Word forms',
+        modeParse: 'Identify',
+        modeParseShort: 'name person, case …',
+        modeTable: 'Table',
+        modeTableShort: 'fill in the whole table',
+        modeFormsOnly: 'word forms only',
+        parseOf: (lemma, meaning) => `form of ${lemma}${meaning ? ` (${meaning})` : ''}`,
+        tableSelHint: 'The chosen forms are empty, the others are already filled in.',
+        tableScore: (n, of) => `${n} of ${of} right`,
+        tableN: (n) => `table with ${n} ${n === 1 ? 'gap' : 'gaps'}`,
+        formsLabel: 'Word forms (table)',
+        formsAdd: 'Word forms',
+        formsPh: 'Rows: I | you | he/she/it | we | you (pl.) | they\nColumns: present | past\nT: am | was\nT: are | were\n…',
+        formsIssueRows: (rows, labels) => `${rows} rows, but ${labels} labels in «Rows:».`,
+        formsIssueLine: (line) => `Not understood, skipped: «${line}». Every line starts with «Rows:», «Columns:» or «T:».`,
+        formsIssueCells: (which, n) => `Row ${which}: not ${n} ${n === 1 ? 'cell' : 'cells'} (as many as «Columns:»). If a form is missing, write «–».`,
+        helpFormsTitle: 'Word forms: conjugate and decline',
+        helpFormsSteps: (
+          <>
+            <li><b>What it is:</b> a word can carry a table of its forms — conjugation (person × tense) or declension (case × number). Only some words of a set may have one.</li>
+            <li><b>How to get one:</b> easiest via the AI prompt — leave the line «Forms» empty, the AI decides and asks back if it is unclear. Or in the editor, <b>«+ Word forms»</b> at the word.</li>
+            <li><b>Notation</b> (file and editor): <code>Rows: I | you | he/she/it …</code> and <code>Columns: present | past</code>, then one line per row <code>T: am | was</code>. «–» means: does not exist. Several correct forms with « / ». Without «Columns:» the table has one column.</li>
+            <li><b>Check before practising:</b> an AI gets rare forms wrong, and checking is letter by letter — no typo or article tolerance, since there one letter is the grammar.</li>
+            <li><b>Practise:</b> choose <b>«Word forms»</b> at the top of the set. All modes then run on the single forms, plus <b>Identify</b> (the form is given, choose person or case) and <b>Table</b> (fill in the whole table; with «wrong only» just the gaps are empty).</li>
+          </>
+        ),
+        whatHow: 'What do you want to practise?',
+        whatWords: (n) => `Words (${n})`,
+        whatForms: (n) => `Word forms (${n})`,
+        wordsHint: 'Base form and meaning, as in every set.',
+        formsHint: 'Conjugate and decline: each form from the tables on its own, e.g. “manger · nous · présent”.',
+        selAllForms: (n) => `all ${n}`,
+        nForms: (n) => `${n} ${n === 1 ? 'form' : 'forms'}`,
+        tolFormsHint: 'With forms every letter counts: no typos, no missing article. The level only covers upper/lower case and accents.',
         check: 'Check',
         next: 'Next',
         right: 'Correct!',
@@ -961,6 +1029,8 @@
     const inkQueue = (fn) => (inkChain = inkChain.then(fn, fn));
 
     // ---------- Eingebaute Beispiel-Sets ----------
+    // Zwei Verben mit Formentabelle, damit «Formen» ohne eigene Datei zu sehen ist
+    const DEMO_PERSONS = ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'];
     const DEMOS = [
       {
         id: 'unite1', title: 'Französisch – Unité 1', langs: ['de', 'fr'],
@@ -969,12 +1039,12 @@
           { a: 'die Schule', b: 'l\'école', s: ['L\'école commence à huit heures.'], h: 'f.' },
           { a: 'der Freund', b: 'l\'ami', s: ['Marc est mon meilleur ami.'], h: 'm.' },
           { a: 'gehen', b: 'aller / marcher', s: ['Je *vais* à l\'école à pied.'] },
-          { a: 'essen', b: 'manger', s: ['Nous mangeons à midi.'] },
+          { a: 'essen', b: 'manger', s: ['Nous mangeons à midi.'], f: { r: DEMO_PERSONS, c: ['présent'], t: [['mange'], ['manges'], ['mange'], ['mangeons'], ['mangez'], ['mangent']] } },
           { a: 'der Hund', b: 'le chien', s: ['Le chien dort dans le jardin.'], h: 'm.' },
           { a: 'die Katze', b: 'le chat', s: ['Le chat est sur la table.'], h: 'm.' },
           { a: 'heute', b: 'aujourd\'hui', s: ['Aujourd\'hui, il fait beau.'] },
           { a: 'morgen', b: 'demain', s: ['Demain, c\'est samedi.'] },
-          { a: 'sprechen', b: 'parler', s: ['Tu parles très bien français.'] },
+          { a: 'sprechen', b: 'parler', s: ['Tu parles très bien français.'], f: { r: DEMO_PERSONS, c: ['présent'], t: [['parle'], ['parles'], ['parle'], ['parlons'], ['parlez'], ['parlent']] } },
           { a: 'das Wasser', b: 'l\'eau', s: ['Je bois de l\'eau.'], h: 'f.' },
           { a: 'der Bruder', b: 'le frère', s: ['Mon frère a dix ans.'], h: 'm.' },
         ],
@@ -1011,6 +1081,7 @@
       "Anzahl Wörter: [z. B. 20]",
       "Anwendungssätze: [ja / nein]",
       "Besonderes: [optional, z. B. nur Verben, Reihenfolge wie im Buch]",
+      "Formen (konjugieren/deklinieren): [leer = du entscheidest / nein / z. B. Verben im Präsens]",
       "============================================================",
       "",
       "Schicke ich Material mit, nimm die Wörter NUR daraus, in der Reihenfolge des",
@@ -1024,7 +1095,8 @@
       "     Leerzeichen und normalem Bindestrich: Unite 3 - La maison.txt",
       "  2. denselben Inhalt nochmals in EINEM Code-Block (```), zum Kopieren.",
       "- Kannst du keine Dateien erzeugen, reicht der Code-Block allein.",
-      "- Kein Wort davor oder danach: keine Einleitung, keine Erklärung, keine Rückfrage.",
+      "- Kein Wort davor oder danach: keine Einleitung, keine Erklärung. Eine Rückfrage",
+      "  nur, wenn bei den Formen etwas unklar ist (s. FORMEN) — dann NUR die Frage.",
       "",
       "FORMAT (genau so):",
       "",
@@ -1073,12 +1145,51 @@
       "  Müssen alle gewusst werden, folgt die Zeile «W: alle».",
       "- Jedes Wort nur einmal. Keine Nummerierung der Wörter, keine Fettschrift, keine Erklärungen.",
       "",
+      "FORMEN (konjugieren, deklinieren):",
+      "- Du entscheidest selbst, ob ein Wort eine Formentabelle bekommt: ja, wenn oben",
+      "  Formen verlangt sind oder das Material sie zeigt (Konjugations- oder",
+      "  Deklinationstabellen); nein bei «Formen: nein». Auch nur einzelne Wörter eines",
+      "  Sets dürfen eine Tabelle haben — die übrigen bleiben ganz normale Wörter.",
+      "- Ist unklar, ob oder welche Formen gewünscht sind (etwa Verben im Material, oben",
+      "  nichts angegeben), frag VOR dem Set nach: eine kurze Frage mit deinem Vorschlag,",
+      "  z. B. «Soll ich die Verben im Präsens konjugieren?». Bis zur Antwort kein Set.",
+      "- Die Tabelle gehört zum Wort in der Fremdsprache (bei «de → fr» das Wort auf",
+      "  «A: ») und steht am Ende des Worts, vor «---»:",
+      "",
+      "F: gehen",
+      "A: aller",
+      "Zeilen: je | tu | il/elle | nous | vous | ils/elles",
+      "Spalten: présent | imparfait",
+      "T: vais | allais",
+      "T: vas | allais",
+      "T: va | allait",
+      "T: allons | allions",
+      "T: allez | alliez",
+      "T: vont | allaient",
+      "---",
+      "",
+      "- «Zeilen: » und «Spalten: » beschriften die Tabelle, «T: » ist eine Zeile, die",
+      "  Zellen mit « | » getrennt, in der Reihenfolge der Spalten. Ohne «Spalten: » hat",
+      "  die Tabelle eine Spalte. Haben viele Wörter dieselben Beschriftungen, darfst du",
+      "  sie einmal vor das erste «F: » schreiben; sie gelten dann für alle Wörter ohne eigene.",
+      "- Höchstens zwei Achsen, z. B. Person × Tempus oder Kasus × Numerus. Ein drittes",
+      "  Merkmal (Genus beim Adjektiv) wird ein eigenes Wort, eines pro Genus.",
+      "- Beschriftungen kurz: «1. Sg», «Nom», «présent». Personalpronomen stehen in der",
+      "  Beschriftung, nicht in der Zelle; in die Zelle kommt nur, was geschrieben werden",
+      "  soll (bei deutschen Nomen mit Artikel: «des Hundes»).",
+      "- Mehrere richtige Formen mit « / » trennen. Gibt es eine Form nicht: «–».",
+      "- Formen werden Buchstabe für Buchstabe geprüft, ohne Toleranz. Bist du bei einer",
+      "  Form nicht sicher, lass die Tabelle dieses Worts weg, statt zu raten.",
+      "",
       "ZUM SCHLUSS: geh die Liste nochmals durch und bessere STILL aus, was hier nicht",
       "stimmt — am Ende nur das fertige Set ausgeben, keine Liste der Änderungen.",
       "- Stimmen Rechtschreibung und Akzente in Sprache B genau? Sie werden Buchstabe",
       "  für Buchstabe geprüft.",
       "- Kommt das Wort im Satz wirklich vor?",
-      "- Stimmt das Format überall: «F: », «A: », «S: », «H: »/«HF: »/«HA: », «---»?",
+      "- Stimmt jede Form in den Tabellen, und hat jede «T: »-Zeile so viele Zellen, wie",
+      "  «Spalten: » nennt?",
+      "- Stimmt das Format überall: «F: », «A: », «S: », «H: »/«HF: »/«HA: »,",
+      "  «Zeilen: »/«Spalten: »/«T: », «---»?",
     ].join("\n");
 
     const KI_PROMPT_EN = [
@@ -1092,6 +1203,7 @@
       "Number of words: [e.g. 20]",
       "Example sentences: [yes / no]",
       "Special notes: [optional, e.g. verbs only, same order as the book]",
+      "Forms (conjugate/decline): [empty = you decide / no / e.g. verbs in the present]",
       "============================================================",
       "",
       "If I attach material, take the words ONLY from it, in the order of the",
@@ -1105,7 +1217,8 @@
       "     spaces and a plain hyphen: Unit 3 - At home.txt",
       "  2. the same content again in ONE code block (```), to copy.",
       "- If you cannot produce files, the code block alone is enough.",
-      "- Not a word before or after: no introduction, no explanation, no follow-up question.",
+      "- Not a word before or after: no introduction, no explanation. Ask back only if",
+      "  something about the forms is unclear (see FORMS) — then ONLY the question.",
       "",
       "FORMAT (exactly like this):",
       "",
@@ -1152,12 +1265,52 @@
       "  line separated by « | »: «A: 1. … | 2. …». If all must be known, add «W: all».",
       "- Every word once. No numbering of the words, no bold, no explanations.",
       "",
+      "FORMS (conjugate, decline):",
+      "- You decide yourself whether a word gets a table of forms: yes if forms are asked",
+      "  for above or the material shows them (conjugation or declension tables); no for",
+      "  «Forms: no». Only some words of a set may have a table — the others stay",
+      "  ordinary words.",
+      "- If it is unclear whether or which forms are wanted (e.g. verbs in the material,",
+      "  nothing said above), ask BEFORE the set: one short question with your",
+      "  suggestion, e.g. «Shall I conjugate the verbs in the present?». No set until",
+      "  the answer.",
+      "- The table belongs to the word in the foreign language (with «de → en» the word",
+      "  on «A: ») and comes at the end of the word, before «---»:",
+      "",
+      "F: sein",
+      "A: to be",
+      "Rows: I | you | he/she/it | we | you (pl.) | they",
+      "Columns: present | past",
+      "T: am | was",
+      "T: are | were",
+      "T: is | was",
+      "T: are | were",
+      "T: are | were",
+      "T: are | were",
+      "---",
+      "",
+      "- «Rows: » and «Columns: » label the table, «T: » is one row, cells separated by",
+      "  « | », in the order of the columns. Without «Columns: » the table has one",
+      "  column. If many words share the same labels, you may write them once before",
+      "  the first «F: »; they then apply to every word without its own.",
+      "- At most two axes, e.g. person × tense or case × number. A third feature",
+      "  (gender of adjectives) becomes a word of its own, one per gender.",
+      "- Short labels: «1st sg», «nom», «present». Personal pronouns go in the label, not",
+      "  in the cell; the cell holds only what is to be written (German nouns with",
+      "  article: «des Hundes»).",
+      "- Several correct forms separated by « / ». If a form does not exist: «–».",
+      "- Forms are checked letter by letter, without tolerance. If you are not sure of",
+      "  a form, leave out that word's table rather than guess.",
+      "",
       "FINALLY: go through the list again and QUIETLY fix whatever does not match",
       "the rules — output only the finished set, no list of changes.",
       "- Are spelling and accents in language B exactly right? They are checked",
       "  letter by letter.",
       "- Does the word really appear in the sentence?",
-      "- Is the format right everywhere: «F: », «A: », «S: », «H: »/«HF: »/«HA: », «---»?",
+      "- Is every form in the tables right, and does every «T: » row have as many cells",
+      "  as «Columns: » names?",
+      "- Is the format right everywhere: «F: », «A: », «S: », «H: »/«HF: »/«HA: »,",
+      "  «Rows: »/«Columns: »/«T: », «---»?",
     ].join("\n");
 
     const kiPrompt = () => (currentLang === 'en' ? KI_PROMPT_EN : KI_PROMPT_DE);
@@ -1203,12 +1356,77 @@
     // Ein Wort in fester Gestalt: gleiche Schlüssel in gleicher Reihenfolge,
     // egal ob es aus der Datei, dem Link oder dem Editor kommt. `keepLink`
     // vergleicht Sets per JSON — eine andere Reihenfolge hiesse «anderes Set».
-    const cleanWord = (w) => ({
-      a: w.a, b: w.b,
-      ...(w.s && w.s.length ? { s: w.s } : {}), ...(w.h ? { h: w.h } : {}),
-      ...(w.ha ? { ha: w.ha } : {}), ...(w.hb ? { hb: w.hb } : {}),
-      ...(w.all && (isList(w.a) || isList(w.b)) ? { all: true } : {}),
-    });
+    const cleanWord = (w) => {
+      const f = cleanForms(w.f);
+      return {
+        a: w.a, b: w.b,
+        ...(w.s && w.s.length ? { s: w.s } : {}), ...(w.h ? { h: w.h } : {}),
+        ...(w.ha ? { ha: w.ha } : {}), ...(w.hb ? { hb: w.hb } : {}),
+        ...(w.all && (isList(w.a) || isList(w.b)) ? { all: true } : {}),
+        ...(f ? { f } : {}),
+      };
+    };
+
+    // ---------- Formen (Deklinieren, Konjugieren) ----------
+    // Ein Wort kann eine Formentabelle tragen: `f = { r, c, t }` — Zeilen-
+    // und Spaltenbeschriftungen, Zellen zeilenweise. Höchstens zwei Achsen
+    // (Kasus × Numerus, Person × Tempus); ohne Spalten hat die Tabelle eine.
+    // Die Tabelle gehört zur Fremdsprache (`formSide`), egal ob die auf F:
+    // oder A: steht. Eine leere Zelle («–» in der Datei) gibt es nicht und
+    // wird nicht abgefragt. Datei:
+    //   Zeilen: 1. Sg | 2. Sg | …     (vor einem F: für alle folgenden,
+    //   Spalten: Präsens | Perfekt     nach einem F: nur für dieses Wort)
+    //   T: amo | amavi                 (eine Zeile, Zellen mit « | »)
+    const NO_FORM = /^[-–—]?$/;
+    const cleanForms = (f) => {
+      if (!f || !Array.isArray(f.t)) return null;
+      const t = f.t.map((row) => (row || []).map((x) => (NO_FORM.test((x || '').trim()) ? '' : x.trim())));
+      if (!t.some((row) => row.some(Boolean))) return null;
+      return { r: (f.r || []).map((x) => x.trim()), c: (f.c || []).map((x) => x.trim()), t };
+    };
+    const hasForms = (set) => set.words.some((w) => w.f);
+    // Seite der Fremdsprache: bei «la → de» steht das Wort mit der Tabelle
+    // auf F:, bei «de → fr» auf A:. Ohne Sprachen ist es B, wie im KI-Prompt.
+    const formSide = (set) => {
+      const f = foreignLang(set);
+      return set.langs && set.langs[0] === f && set.langs[1] !== f ? 'a' : 'b';
+    };
+    // Jede Zelle als eigenes Wort: vorne Grundform und Beschriftungen, hinten
+    // die Form. So laufen alle Modi darauf, der Lernstand gilt pro Form
+    // (`wordKey` wie bei jedem Wort), und Multiple Choice holt seine Ablenker
+    // aus derselben Tabelle (`src`). `tab` (die Tabelle mit fertigen
+    // Beschriftungen, eine pro Wort) und `ri`/`ci` (die Zelle) brauchen
+    // Bestimmen und Tabelle ausfüllen; `wordKey` sieht sie nicht. Beide Seiten sind Fremdsprache — vorne
+    // steht die Grundform, hinten die Form (Stimme, Artikel, Erkennung).
+    const formCache = new WeakMap();
+    const formSet = (set) => {
+      if (formCache.has(set)) return formCache.get(set);
+      const side = formSide(set);
+      const words = [];
+      set.words.forEach((w, src) => {
+        if (!w.f) return;
+        const lemma = inline(w[side], ' / ');
+        const n = Math.max(w.f.c.length, ...w.f.t.map((row) => row.length));
+        // Eine Spalte: keine Spaltenwahl beim Bestimmen, die Beschriftung
+        // (falls da) steht trotzdem in der Frage
+        const tab = {
+          lemma, meaning: inline(w[side === 'a' ? 'b' : 'a'], ' / '), h: w.h,
+          rows: w.f.t.map((_, i) => w.f.r[i] || String(i + 1)),
+          cols: n > 1 ? Array.from({ length: n }, (_, j) => w.f.c[j] || String(j + 1)) : [],
+          one: n > 1 ? '' : w.f.c[0] || '',
+          t: w.f.t.map((row) => Array.from({ length: n }, (_, j) => row[j] || '')),
+        };
+        tab.t.forEach((row, i) => row.forEach((form, j) => {
+          if (!form) return;
+          words.push({ a: [lemma, tab.rows[i], tab.cols[j] || tab.one].filter(Boolean).join(' · '), b: form, ...(w.h ? { h: w.h } : {}), src, tab, ri: i, ci: j });
+        }));
+      });
+      const lang = set.langs && set.langs[side === 'a' ? 0 : 1];
+      const langs = lang && [lang, lang];
+      const out = { ...set, ...(langs ? { langs } : {}), words };
+      formCache.set(set, out);
+      return out;
+    };
 
     // ---------- Dateien parsen ----------
     // F: Sprache A, A: Sprache B (beide auch als Liste, s. oben), S: Satz
@@ -1216,19 +1434,31 @@
     // Sprache A bzw. B (erscheint nur bei dieser Seite: gefragt sofort, gesucht
     // erst mit der Lösung), W: alle (Liste ganz verlangt), --- Trenner. Ein
     // neues F: schliesst das vorige Wort auch ohne ---.
+    // Formen: «Zeilen:»/«Spalten:» und «T:», s. Abschnitt Formen.
     const parseFA = (text) => {
       const words = [];
-      let cur = null, answer = [];
+      let cur = null, answer = [], table = [];
+      const head = { r: [], c: [] }; // Beschriftungen ausserhalb eines Worts: gelten ab da
       const flush = () => {
-        if (cur) cur.b = joinAnswer(answer);
+        if (cur) {
+          cur.b = joinAnswer(answer);
+          if (table.length) cur.f = { r: cur.r || head.r, c: cur.c || head.c, t: table };
+        }
         if (cur && cur.a && cur.b) words.push(cleanWord(cur));
-        cur = null; answer = [];
+        cur = null; answer = []; table = [];
       };
       const addHint = (key, val) => { if (val) cur[key] = cur[key] ? `${cur[key]} ${val}` : val; };
+      const cells = (val) => val.split('|').map((x) => x.trim());
       for (const raw of text.split(/\r?\n/)) {
         const line = raw.trim();
         if (/^-{3,}$/.test(line)) { flush(); continue; }
-        const m = line.match(/^(HF|HA|[FQASHW]):\s*(.*)$/i);
+        const lab = line.match(/^(zeilen|rows|spalten|columns):\s*(.*)$/i);
+        if (lab) {
+          const key = /^(zeilen|rows)$/i.test(lab[1]) ? 'r' : 'c';
+          (cur || head)[key] = cells(lab[2]).filter(Boolean);
+          continue;
+        }
+        const m = line.match(/^(HF|HA|[FQASHWT]):\s*(.*)$/i);
         if (!m) continue;
         const key = m[1].toUpperCase(), val = m[2].trim();
         if (key === 'F' || key === 'Q') { flush(); cur = { a: joinAnswer(splitLine(val)), b: '' }; continue; }
@@ -1239,6 +1469,7 @@
         else if (key === 'HF') addHint('ha', val);
         else if (key === 'HA') addHint('hb', val);
         else if (key === 'W' && /^(alle|all)$/i.test(val)) cur.all = true;
+        else if (key === 'T' && val) table.push(cells(val));
       }
       flush();
       return words;
@@ -1276,6 +1507,13 @@
     };
 
     // ---------- Dateien schreiben (Export) ----------
+    // Beschriftungen pro Wort: so bleibt jedes Wort für sich richtig, auch
+    // wenn Verben und Nomen im selben Set stehen. Leere Zelle = «–».
+    const formLines = (f) => (f
+      ? (f.r.length ? `${currentLang === 'en' ? 'Rows' : 'Zeilen'}: ${f.r.join(' | ')}\n` : '') +
+        (f.c.length ? `${currentLang === 'en' ? 'Columns' : 'Spalten'}: ${f.c.join(' | ')}\n` : '') +
+        f.t.map((row) => `T: ${row.map((x) => x || '–').join(' | ')}\n`).join('')
+      : '');
     const toFile = (set) =>
       `# ${set.title}\n` +
       (set.langs ? `${currentLang === 'en' ? 'Languages' : 'Sprachen'}: ${set.langs[0]} → ${set.langs[1]}\n` : '') +
@@ -1283,7 +1521,7 @@
       set.words.map((w) =>
         `F: ${fileSide(w.a)}\nA: ${fileSide(w.b)}\n` + (w.s || []).map((s) => `S: ${s}\n`).join('') +
         (w.h ? `H: ${w.h}\n` : '') + (w.ha ? `HF: ${w.ha}\n` : '') + (w.hb ? `HA: ${w.hb}\n` : '') +
-        (w.all ? 'W: alle\n' : '') + '---'
+        (w.all ? 'W: alle\n' : '') + formLines(w.f) + '---'
       ).join('\n') + '\n';
 
     const safeName = (title) => title.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'Voci';
@@ -1612,7 +1850,7 @@
       const json = new TextEncoder().encode(JSON.stringify([
         set.title, set.langs || 0, set.words.map((w) => {
           // Neue Felder hinten; was fehlt, fällt weg — alte Links bleiben gültig und kurz
-          const row = [w.a, w.b, w.s && w.s.length ? w.s : 0, w.h || 0, w.ha || 0, w.hb || 0, w.all ? 1 : 0];
+          const row = [w.a, w.b, w.s && w.s.length ? w.s : 0, w.h || 0, w.ha || 0, w.hb || 0, w.all ? 1 : 0, w.f ? [w.f.r, w.f.c, w.f.t] : 0];
           while (row.length > 2 && !row[row.length - 1]) row.pop();
           return row;
         }),
@@ -1632,7 +1870,7 @@
       const [title, langs, words] = JSON.parse(json);
       return {
         title, ...(langs ? { langs } : {}),
-        words: words.map(([a, b, s, h, ha, hb, all]) => cleanWord({ a, b, s: s || [], h, ha, hb, all })),
+        words: words.map(([a, b, s, h, ha, hb, all, f]) => cleanWord({ a, b, s: s || [], h, ha, hb, all, f: f && { r: f[0], c: f[1], t: f[2] } })),
       };
     };
 
@@ -1643,10 +1881,10 @@
     // Ein geteilter Übungs-Link trägt die Einstellungen als eigene Teile
     // (…&mode=write&dir=ab…); die Route ist der erste Teil, der weder Sprache
     // noch Option ist. `go=1` startet die Übung ohne Einstellungsseite.
-    const OPT_KEYS = ['mode', 'dir', 'sel', 'from', 'to', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', 'go'];
+    const OPT_KEYS = ['mode', 'forms', 'dir', 'sel', 'from', 'to', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', 'go'];
     const isOptPart = (x) => OPT_KEYS.includes(x.split('=')[0]);
     const routePart = () => hashParts().find((x) => !x.startsWith('l=') && !isOptPart(x)) || '';
-    const OPT_NUM = ['from', 'to', 'timer'], OPT_BOOL = ['hints', 'copy', 'exam', 'penOnly', 'go'];
+    const OPT_NUM = ['from', 'to', 'timer'], OPT_BOOL = ['forms', 'hints', 'copy', 'exam', 'penOnly', 'go'];
     const optsFromHash = () => {
       const out = {};
       for (const part of hashParts().filter(isOptPart)) {
@@ -1656,7 +1894,8 @@
       return out;
     };
     const optsToHash = (opts, go) => {
-      const keep = ['mode', 'dir', 'sel', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', ...(opts.sel === 'range' ? ['from', 'to'] : [])];
+      // `forms` nur, wenn gesetzt: Links auf Wort-Sets bleiben wie bisher
+      const keep = ['mode', ...(opts.forms ? ['forms'] : []), 'dir', 'sel', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', ...(opts.sel === 'range' ? ['from', 'to'] : [])];
       return keep.map((k) => `&${k}=${typeof opts[k] === 'boolean' ? (opts[k] ? 1 : 0) : opts[k]}`).join('') + (go ? '&go=1' : '');
     };
     const applyLang = (id) => {
@@ -1776,7 +2015,12 @@
       return prev[b.length];
     };
 
-    const checkAnswer = (input, solution, { level = 'normal', lang, others = [] } = {}) => {
+    // `forms`: Formen abfragen (s. formSet) — dort ist ein Buchstabe die
+    // Grammatik: «amat» statt «amant» ist die falsche Person, «dem Hund» statt
+    // «des Hundes» der falsche Fall. Also weder Artikel- noch Tippfehler-Toleranz;
+    // Gross/klein und Akzente folgen weiter der Stufe.
+    const checkAnswer = (input, solution, { level = 'normal', lang, others = [], forms = false } = {}) => {
+      const art = (x) => (forms ? x : stripArticle(x, lang));
       const inp = baseNorm(input || '');
       const vars = variants(solution);
       const wrong = () => {
@@ -1799,20 +2043,21 @@
       }
       if (level === 'loose') {
         for (const v of vars) {
-          if (stripArticle(stripAccents(lo), lang) === stripArticle(stripAccents(v.toLowerCase()), lang)) return { status: 'right', solution: v };
+          if (art(stripAccents(lo)) === art(stripAccents(v.toLowerCase()))) return { status: 'right', solution: v };
         }
-      } else {
+      } else if (!forms) {
         for (const v of vars) {
-          if (stripArticle(lo, lang) === stripArticle(v.toLowerCase(), lang)) return { status: 'almost', solution: v, note: 'noteArticle' };
+          if (art(lo) === art(v.toLowerCase())) return { status: 'almost', solution: v, note: 'noteArticle' };
         }
       }
       // Ein Tippfehler bei Wörtern ab vier Zeichen: fast richtig. Wer aber
       // exakt ein ANDERES Wort desselben Sets tippt, hat sich nicht vertippt,
       // sondern verwechselt (vous/nous, kein/sein) — das darf nicht durchgehen.
       if (others.some((o) => variants(o).some((v) => v.toLowerCase() === lo))) return wrong();
+      if (forms) return wrong();
       for (const v of vars) {
-        const a = level === 'loose' ? stripArticle(stripAccents(lo), lang) : lo;
-        const b = level === 'loose' ? stripArticle(stripAccents(v.toLowerCase()), lang) : v.toLowerCase();
+        const a = level === 'loose' ? art(stripAccents(lo)) : lo;
+        const b = level === 'loose' ? art(stripAccents(v.toLowerCase())) : v.toLowerCase();
         if (b.length >= 4 && levenshtein(a, b) <= 1) return { status: 'almost', solution: v, note: 'noteTypo' };
       }
       return wrong();
@@ -2235,9 +2480,9 @@
     // `only` zeigt einen einzelnen Abschnitt: die Schlüsselfelder stehen auf
     // jeder Seite, von der aus geübt wird (auch nach einem geteilten Link),
     // die Übersicht mit dem ?-Knopf sieht dort aber niemand.
-    const HELP_SECTIONS = ['ipad', 'ink', 'dir', 'names', 'move', 'scan'];
-    const HELP_TITLE = { ipad: 'ipadTitle', ink: 'helpInkTitle', dir: 'dirTitle', names: 'helpNamesTitle', move: 'helpMoveTitle', scan: 'scan' };
-    const HELP_STEPS = { ipad: 'ipadSteps', ink: 'helpInkSteps', dir: 'helpDirSteps', names: 'helpNamesSteps', move: 'helpMoveSteps', scan: 'helpScanSteps' };
+    const HELP_SECTIONS = ['ipad', 'ink', 'dir', 'names', 'forms', 'move', 'scan'];
+    const HELP_TITLE = { ipad: 'ipadTitle', ink: 'helpInkTitle', dir: 'dirTitle', names: 'helpNamesTitle', forms: 'helpFormsTitle', move: 'helpMoveTitle', scan: 'scan' };
+    const HELP_STEPS = { ipad: 'ipadSteps', ink: 'helpInkSteps', dir: 'helpDirSteps', names: 'helpNamesSteps', forms: 'helpFormsSteps', move: 'helpMoveSteps', scan: 'helpScanSteps' };
     const Help = ({ only, onClose }) => (
       <Modal wide onClose={onClose}>
         <h2 className="text-xl font-bold text-gray-800 mb-4">{only ? t(HELP_TITLE[only]) : t('helpTitle')}</h2>
@@ -2824,7 +3069,25 @@
     };
 
     // ---------- Editor ----------
-    const EMPTY_WORD = { a: '', b: '', s: '', h: '', ha: '', hb: '', all: false };
+    const EMPTY_WORD = { a: '', b: '', s: '', h: '', ha: '', hb: '', all: false, ft: '' };
+    // Wortformen im Editor: ein Textfeld in derselben Schreibweise wie die
+    // Datei (Zeilen:/Spalten:/T:), gelesen von parseFA — ein Leser für beides.
+    const formText = (f) => formLines(f).trimEnd();
+    const parseFormText = (text) => (text.trim() ? (parseFA(`F: x\nA: x\n${text}\n---`)[0] || {}).f : undefined);
+    // Was nicht zusammenpasst, sagen statt schlucken: fehlende oder
+    // überzählige Beschriftungen, Zeilen mit anderer Zellenzahl
+    const formIssues = (text) => {
+      const out = text.split('\n').map((x) => x.trim())
+        .filter((x) => x && !/^(zeilen|rows|spalten|columns|t)\s*:/i.test(x))
+        .map((x) => t('formsIssueLine', x));
+      const f = parseFormText(text);
+      if (!f) return out;
+      if (f.r.length && f.r.length !== f.t.length) out.push(t('formsIssueRows', f.t.length, f.r.length));
+      const width = f.c.length || Math.max(...f.t.map((row) => row.length));
+      const odd = f.t.map((row, i) => (row.length !== width ? i + 1 : 0)).filter(Boolean);
+      if (odd.length) out.push(t('formsIssueCells', odd.join(', '), width));
+      return out;
+    };
     const SetEditor = ({ set, sets, folders, onSave, onCancel, onNewFolder }) => {
       const [title, setTitle] = useState(set.title);
       const [dir, setDir] = useState(set.dir || '');
@@ -2833,7 +3096,7 @@
       const [langB, setLangB] = useState(set.langs ? set.langs[1] : '');
       const [words, setWords] = useState(() =>
         set.words.length
-          ? set.words.map((w) => ({ ...EMPTY_WORD, ...w, s: (w.s || []).join('\n'), all: !!w.all }))
+          ? set.words.map((w) => ({ ...EMPTY_WORD, ...w, s: (w.s || []).join('\n'), all: !!w.all, ft: w.f ? formText(w.f) : '' }))
           : [{ ...EMPTY_WORD }]);
       const [error, setError] = useState('');
       const [dialog, setDialog] = useState(null);
@@ -2862,6 +3125,7 @@
           .map((w) => ({
             a: joinAnswer(w.a.split('\n')), b: joinAnswer(w.b.split('\n')),
             s: w.s.split('\n').map((x) => x.trim()).filter(Boolean), h: w.h.trim(), ha: w.ha.trim(), hb: w.hb.trim(), all: w.all,
+            f: parseFormText(w.ft),
           }))
           .filter((w) => w.a || w.b)
           .map(cleanWord);
@@ -2967,6 +3231,20 @@
                   {field(i, 'ha', t('hintSide', nameA), t('hintSidePh'))}
                   {field(i, 'hb', t('hintSide', nameB), t('hintSidePh'))}
                 </div>
+                {/* Wortformen: zugeklappt, solange das Wort keine hat — die
+                    meisten Wörter brauchen keine Tabelle */}
+                {w.ft || w.fOpen ? (
+                  <label className="block mt-3">
+                    <span className={LABEL}>{t('formsLabel')}</span>
+                    <textarea rows={Math.max(4, w.ft.split('\n').length)} value={w.ft} placeholder={t('formsPh')}
+                      onChange={(e) => setWord(i, 'ft', e.target.value)} spellCheck={false}
+                      className={`w-full mt-1 ${INPUT} text-sm font-mono`} />
+                    {formIssues(w.ft).map((x, k) => <span key={k} className="block text-xs text-amber-700 mt-1">{x}</span>)}
+                  </label>
+                ) : (
+                  <button type="button" onClick={() => setWords((ws) => ws.map((x, j) => (j === i ? { ...x, fOpen: true } : x)))}
+                    className="mt-3 text-sm font-semibold text-acc-700 hover:underline">+ {t('formsAdd')}</button>
+                )}
               </div>
             ))}
 
@@ -2987,7 +3265,7 @@
 
     // ---------- Set-Seite: Einstellungen für die Runde + Lernstand ----------
     const OPTS_KEY = 'myvoci_practice';
-    const DEFAULT_OPTS = { mode: 'write', input: 'write', dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false, timer: 0 };
+    const DEFAULT_OPTS = { mode: 'write', input: 'write', forms: false, dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false, timer: 0 };
     const loadOpts = () => ({ ...DEFAULT_OPTS, ...(readLocal(OPTS_KEY, {}) || {}) });
 
     // Bausteine der Set-Seite: Segment-Schalter für kleine Wahlen, Schalter
@@ -3033,6 +3311,8 @@
       listen: <><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3" y="14" width="4" height="6.5" rx="1.5" /><rect x="17" y="14" width="4" height="6.5" rx="1.5" /></>,
       speak: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" /></>,
       scramble: <><path d="M3 7h3c3.5 0 5.5 10 9 10h5M17.5 14l2.5 3-2.5 3M3 17h3c1.4 0 2.5-1.6 3.5-3.4M14 9.5C15 8 15.8 7 17 7h3M17.5 4l2.5 3-2.5 3" /></>,
+      parse: <><path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8.5-8.5 8.5z" /><circle cx="8" cy="8" r="1.5" /></>,
+      table: <><rect x="3.5" y="4" width="17" height="16" rx="2" /><path d="M3.5 9.5h17M3.5 14.5h17M9.5 4v16" /></>,
     };
     const INPUT_ICON = {
       write: <><rect x="2.5" y="6" width="19" height="12" rx="2" /><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8" /></>,
@@ -3052,7 +3332,12 @@
     );
 
     // Welche Modi gibt es, und was braucht ein Modus vom Set?
-    const MODES = ['write', 'pen', 'ink', 'cards', 'choice', 'match', 'gap', 'listen', 'speak', 'scramble'];
+    const MODES = ['write', 'pen', 'ink', 'cards', 'choice', 'match', 'gap', 'listen', 'speak', 'scramble', 'parse', 'table'];
+    // Nur mit Wortformen (`opts.forms`): Bestimmen (Form → Zeile/Spalte) und
+    // Tabelle ausfüllen. Ohne Wortformen fehlen die Kacheln ganz — bei den
+    // meisten Sets wären sie sonst dauerhaft grau, und am Set liesse sich das
+    // nicht beheben.
+    const FORM_MODES = ['parse', 'table'];
     // «Schreiben» hat drei Eingaben. Intern sind es eigene Modi — daran hängen
     // Link (`&mode=`), `modeOff` und die Listen hier —, gezeigt wird ein Knopf
     // mit einer Zeile «Eingabe» darunter. `pen` erkennt nie, `ink` immer: die
@@ -3067,20 +3352,20 @@
     const HAND_MODES = ['pen', 'ink']; // Schreibfläche statt Eingabefeld
     // Gleichwertiger Ersatz, wenn ein Modus bei diesem Set nicht geht (sonst «Schreiben»)
     const MODE_FALLBACK = { ink: 'pen' };
-    const MODE_LABEL = { write: 'modeWrite', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', speak: 'modeSpeak', scramble: 'modeScramble' };
+    const MODE_LABEL = { write: 'modeWrite', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', speak: 'modeSpeak', scramble: 'modeScramble', parse: 'modeParse', table: 'modeTable' };
     // Modi, die der Rechner selber werten kann — Voraussetzung für Blitzrunde
     // und Prüfung (beides braucht ein Urteil ohne Zutun des Übenden).
-    const AUTO_MODES = ['write', 'gap', 'listen', 'choice', 'scramble'];
+    const AUTO_MODES = ['write', 'gap', 'listen', 'choice', 'scramble', 'parse'];
     const TIMER_STEPS = [0, 5, 10, 20];
     const TYPED_MODES = ['write', 'gap', 'listen']; // Eingabefeld + Toleranz + Abschreiben
     // Wer nach Toleranz gewertet wird, muss sie auch einstellen können: die
     // Handschrift mit Kontrolle hat kein Eingabefeld, wird aber genauso
     // gemessen — sonst gälte still, was zuletzt bei der Tastatur gewählt war.
-    const LEVEL_MODES = [...TYPED_MODES, 'ink'];
+    const LEVEL_MODES = [...TYPED_MODES, 'ink', 'table'];
     // Liste ganz verlangt (`W: alle`): gewertet beim Schreiben, von Hand oder
     // getippt, bei Karteikarten nur als Vermerk
     const NEED_ALL_MODES = [...WRITE_INPUTS, 'cards'];
-    const DIRECTIONLESS = ['gap', 'match']; // Satz ist immer Sprache B, Zuordnen zeigt beide
+    const DIRECTIONLESS = ['gap', 'match', ...FORM_MODES]; // Satz ist immer Sprache B, Zuordnen zeigt beide, Formen haben keine Richtung
     // Hören: gehört wird die Antwortseite — bei «gemischt» müssen beide gehen
     const listenLangs = (set, dir) => (set.langs ? (dir === 'ab' ? [set.langs[1]] : dir === 'ba' ? [set.langs[0]] : set.langs) : []);
     const canListen = (set, dir) => { const l = listenLangs(set, dir); return l.length > 0 && l.every(canSpeak); };
@@ -3090,13 +3375,22 @@
 
     const selectWords = (set, opts, prog) => {
       const recs = set.words.map((w) => prog[wordKey(w)]);
-      return set.words.filter((w, i) => {
+      // Bestimmen: «rosae» steht dreimal in der Tabelle, gefragt wird es
+      // einmal — jede Lesart zählt (s. task in Practice)
+      const seen = new Set();
+      const once = (w) => {
+        if (opts.mode !== 'parse') return true;
+        const k = `${w.src}\u0001${firstAlt(w.b)}`;
+        return !seen.has(k) && seen.add(k);
+      };
+      return set.words.filter((w, i) => (() => {
         if (opts.mode === 'gap' && !gapFor(w)) return false;
         if (opts.sel === 'wrong') return isWrong(recs[i]);
         if (opts.sel === 'due') return isDue(recs[i]);
         if (opts.sel === 'range') return i + 1 >= Math.min(opts.from, opts.to) && i + 1 <= Math.max(opts.from, opts.to);
         return true;
-      });
+      })() && once(w)); // erst die Auswahl, dann einmal: sonst verdrängte eine
+                        // nicht gewählte Lesart die gewählte (nur Fehler)
     };
 
     const SetPage = ({ set, prog, preset, go, onStart, onReset, onBack }) => {
@@ -3108,7 +3402,7 @@
       // vor `useSettings`, das JSX des Panels wird vorher ausgewertet
       const [inkKeys, setInkKeys] = useState(() => !!myscriptKeys());
       const [settingsButton, settingsPanel] = useSettings(<MyScriptKeys onSaved={() => setInkKeys(!!myscriptKeys())} />);
-      const [help, setHelp] = useState(false);
+      const [help, setHelp] = useState(false); // Anleitung: false oder der Abschnitt ('ink', 'forms')
       const [dialog, setDialog] = useState(null);
       const [listOpen, setListOpen] = useState(false);
       const [shareGo, setShareGo] = useState(false);
@@ -3129,8 +3423,15 @@
         setWanted((o) => ({ ...o, ...patch }));
       };
 
-      const n = set.words.length;
-      const recs = set.words.map((w) => prog[wordKey(w)]);
+      // Formen: jede Zelle der Tabellen wird ein eigenes Wort (formSet). Ab
+      // hier rechnet die Seite mit `pool` — Zähler, Auswahl, Lernstand und
+      // welche Modi gehen, gelten dann für die Formen.
+      const formsOk = useMemo(() => hasForms(set), [set]);
+      const forms = formsOk && !!wanted.forms;
+      const pool = forms ? formSet(set) : set;
+      const dir = forms ? 'ab' : wanted.dir; // Formen: immer Grundform → Form
+      const n = pool.words.length;
+      const recs = pool.words.map((w) => prog[wordKey(w)]);
       const wrongN = recs.filter(isWrong).length;
       const dueN = recs.filter((r) => isDue(r)).length;
       const boxes = [0, 0, 0, 0, 0, 0];
@@ -3138,29 +3439,30 @@
       const seen = recs.filter(Boolean).length;
       // `gapFor` zerlegt jeden Satz und baut dabei Ausdrücke — das darf nicht
       // an jedem Tastendruck in den Bereichsfeldern hängen.
-      const gapN = useMemo(() => set.words.filter(gapFor).length, [set]);
+      const gapN = useMemo(() => pool.words.filter(gapFor).length, [pool]);
       // Eine Stelle entscheidet, ob ein Modus geht, und warum nicht (der
       // I18N-Schlüssel des Grundes, sonst null) — sonst können ausgegrauter
       // Knopf, angezeigter Grund und Rückfall auseinanderlaufen.
       const modeOff = (m) => {
         if (!MODES.includes(m)) return 'modeUnknown';
+        if (FORM_MODES.includes(m) && !forms) return 'modeFormsOnly';
         if (m === 'gap' && !gapN) return 'modeGapOff';
         if (m === 'ink' && !inkKeys) return 'inkOffKeys';
         // Hören, Sprechen und die Erkennung hängen an den Sprachen des Sets —
         // fehlen die, liegt es am Set, nicht am Browser
         const langDep = { listen: canListen, speak: canSpeakMode, ink: canInk }[m];
-        if (!langDep || langDep(set, wanted.dir)) return null;
-        if (!listenLangs(set, wanted.dir).length) return 'modeNoLangs';
+        if (!langDep || langDep(pool, dir)) return null;
+        if (!listenLangs(pool, dir).length) return 'modeNoLangs';
         return { listen: 'modeListenOff', speak: SpeechRec ? 'modeSpeakLang' : 'modeSpeakOff', ink: 'inkOffLang' }[m];
       };
       // Ein Modus, der bei diesem Set nicht geht, fällt zurück — berechnet,
       // nicht per Effekt nachgetragen: sonst sähe «Direkt starten» beim
       // ersten Aufbau noch den ungültigen Modus und startete nie.
       const mode = modeOff(wanted.mode) ? MODE_FALLBACK[wanted.mode] || 'write' : wanted.mode;
-      const opts = useMemo(() => (mode === wanted.mode ? wanted : { ...wanted, mode }), [wanted, mode]);
+      const opts = useMemo(() => (mode === wanted.mode && forms === !!wanted.forms ? wanted : { ...wanted, mode, forms }), [wanted, mode, forms]);
       const group = MODE_GROUP[opts.mode] || opts.mode; // die Kachel dazu
       const writing = group === 'write';
-      const chosen = useMemo(() => selectWords(set, opts, prog), [set, opts, prog]);
+      const chosen = useMemo(() => selectWords(pool, opts, prog), [pool, opts, prog]);
       // «Direkt starten» aus dem Link — nur beim ersten Anzeigen (s. Trainer).
       // Ein gleichwertiger Ersatz (MODE_FALLBACK) startet auch, «Schreiben»
       // statt Lückentext nicht: das wäre eine andere Übung.
@@ -3182,6 +3484,16 @@
             <StorageWarning />
 
             <div className={`${CARD} p-5 sm:p-6 mb-6`}>
+              {/* Nur bei Sets mit Formentabellen: vor dem Wie das Was. Die
+                  Modi darunter laufen dann auf den einzelnen Formen. */}
+              {formsOk && (
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-gray-700 mb-3">{t('whatHow')}</h2>
+                  <Seg even value={forms ? 'forms' : 'words'} onChange={(v) => set_({ forms: v === 'forms' })}
+                    options={[['words', t('whatWords', set.words.length)], ['forms', t('whatForms', formSet(set).words.length)]]} />
+                  <p className={NOTE}>{t(forms ? 'formsHint' : 'wordsHint')} <HelpLink onClick={() => setHelp('forms')} /></p>
+                </div>
+              )}
               <h2 className="text-lg font-semibold text-gray-700 mb-3">{t('modeHow')}</h2>
               {/* Der Modus ist die eigentliche Wahl: Kacheln mit Icon und einer
                   Zeile. Geht ein Modus bei diesem Set nicht, steht der Grund
@@ -3189,7 +3501,7 @@
                   dem iPad nie an. Zurück zu «Schreiben» holt die zuletzt
                   gewählte Eingabe (`input`). */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {MODES.filter((m) => !MODE_GROUP[m]).map((m) => {
+                {MODES.filter((m) => !MODE_GROUP[m] && (forms || !FORM_MODES.includes(m))).map((m) => {
                   const on = group === m, off = modeOff(m);
                   return (
                     <button key={m} disabled={!!off} aria-pressed={on}
@@ -3218,21 +3530,20 @@
                         geteilten Link), braucht keine MyScript-Einrichtung */}
                     {modeOff('ink') && HAND_MODES.includes(opts.mode) && (
                       <p className={NOTE}>
-                        {t(modeOff('ink'))} {!inkKeys && <HelpLink onClick={() => setHelp(true)} />}
+                        {t(modeOff('ink'))} {!inkKeys && <HelpLink onClick={() => setHelp('ink')} />}
                       </p>
                     )}
-                    {help && <Help only="ink" onClose={() => setHelp(false)} />}
                   </OptRow>
                 )}
-                {!DIRECTIONLESS.includes(opts.mode) && (
+                {!DIRECTIONLESS.includes(opts.mode) && !forms && (
                   <OptRow label={t('direction')}>
                     <Seg value={opts.dir} onChange={(dir) => set_({ dir })}
                       options={[['ab', t('dirAB', A, B)], ['ba', t('dirAB', B, A)], ['mix', t('dirMix')]]} />
                   </OptRow>
                 )}
-                <OptRow label={t('rowWords')}>
+                <OptRow label={t(forms ? 'formList' : 'rowWords')}>
                   <Seg value={opts.sel} onChange={(sel) => set_({ sel })}
-                    options={[['all', t('selAllN', n)], ['wrong', t('selWrongN', wrongN), !wrongN], ['due', t('selDueN', dueN)], ['range', t('selRange')]]} />
+                    options={[['all', t(forms ? 'selAllForms' : 'selAllN', n)], ['wrong', t('selWrongN', wrongN), !wrongN], ['due', t('selDueN', dueN)], ['range', t('selRange')]]} />
                   {opts.sel === 'range' && (
                     <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
                       {t('rangeFrom')}
@@ -3242,6 +3553,7 @@
                       <span className="text-gray-400">/ {n}</span>
                     </div>
                   )}
+                  {opts.mode === 'table' && <p className={NOTE}>{t('tableSelHint')}</p>}
                 </OptRow>
                 <OptRow label={t('order')}>
                   <Seg value={opts.order} onChange={(order) => set_({ order })} options={[['random', t('orderRandom')], ['file', t('orderFile')]]} />
@@ -3249,7 +3561,7 @@
                 {LEVEL_MODES.includes(opts.mode) && (
                   <OptRow label={t('tolerance')}>
                     <Seg value={opts.level} onChange={(level) => set_({ level })} options={Object.entries(TOL_LABEL).map(([id, key]) => [id, t(key)])} />
-                    <p className={NOTE}>{t(TOL_LABEL[opts.level] + 'Hint')}</p>
+                    <p className={NOTE}>{t(forms ? 'tolFormsHint' : TOL_LABEL[opts.level] + 'Hint')}</p>
                   </OptRow>
                 )}
                 {AUTO_MODES.includes(opts.mode) && (
@@ -3278,7 +3590,7 @@
               </div>
               <button onClick={() => onStart(opts, chosen)} disabled={!chosen.length}
                 className={`w-full mt-6 px-6 py-3 text-lg ${chosen.length ? BTN_PRIMARY : 'bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed'}`}>
-                {t('start')} · {t('nWords', chosen.length)}
+                {t('start')} · {t(forms ? 'nForms' : 'nWords', chosen.length)}
               </button>
               {!chosen.length && <p className="text-sm text-red-600 mt-2">{t('nothingSelected')}</p>}
             </div>
@@ -3313,9 +3625,9 @@
               )}
             </div>
 
-            <Collapsible title={`${t('wordList')} (${n})`} open={listOpen} onToggle={() => setListOpen((v) => !v)}>
+            <Collapsible title={`${t(forms ? 'formList' : 'wordList')} (${n})`} open={listOpen} onToggle={() => setListOpen((v) => !v)}>
               <ol className="text-sm text-gray-700 space-y-1">
-                {set.words.map((w, i) => {
+                {pool.words.map((w, i) => {
                   const r = recs[i];
                   return (
                     <li key={i} className="flex items-start gap-2">
@@ -3330,6 +3642,7 @@
           </div>
           {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
           {qr && <QrModal title={qr.title} url={qr.url} onClose={() => setQr(null)} onCopy={copyShare} />}
+          {help && <Help only={help} onClose={() => setHelp(false)} />}
           {toastNode}
         </div>
       );
@@ -3346,7 +3659,8 @@
       // Richtung wird dort gar nicht angeboten, also darf auch keine alte
       // Einstellung durchschlagen. Sonst zeigte `langOf` die falsche Sprache
       // und `checkAnswer` prüfte mit den Artikeln der anderen Sprache.
-      const fixed = DIRECTIONLESS.includes(opts.mode) ? 'ab' : null;
+      // Formen ebenso: gefragt ist immer die Form zur Grundform.
+      const fixed = DIRECTIONLESS.includes(opts.mode) || opts.forms ? 'ab' : null;
       return list.map((word) => ({
         word, retry: false,
         dir: fixed || (opts.dir === 'mix' ? (Math.random() < 0.5 ? 'ab' : 'ba') : opts.dir),
@@ -3357,11 +3671,15 @@
     const langOf = (set, item, side) => set.langs && set.langs[(item.dir === 'ab') === (side === 'prompt') ? 0 : 1];
     // Erste Alternative ohne Klammern: was vorgelesen und im Buchstabensalat gezeigt wird
     const firstAlt = (solution) => (listItems(solution)[0] || '').split(/\s*\/\s*/)[0].replace(/[()]/g, '').replace(/\s+/g, ' ').trim();
-    // Drei Ablenker aus demselben Set, gleiche Seite, nie die Lösung selbst
+    // Drei Ablenker aus demselben Set, gleiche Seite, nie die Lösung selbst.
+    // Bei Formen zuerst aus derselben Tabelle (`src`): «amas» gegen «amat»
+    // prüft die Endung, «amas» gegen «rosarum» nichts.
     const distractors = (set, item, n = 3) => {
       const side = item.dir === 'ab' ? 'b' : 'a';
-      const pool = [...new Set(set.words.map((w) => w[side]).filter((x) => x !== solutionOf(item)))];
-      return shuffleArray(pool).slice(0, n);
+      const from = (ws) => shuffleArray([...new Set(ws.map((w) => w[side]).filter((x) => x !== solutionOf(item)))]);
+      const src = item.word.src;
+      const near = src == null ? [] : from(set.words.filter((w) => w.src === src));
+      return [...new Set([...near, ...from(set.words)])].slice(0, n);
     };
     const scrambleLetters = (text) => {
       const letters = [...text.replace(/\s+/g, '')];
@@ -3608,6 +3926,7 @@
       const [copyMiss, setCopyMiss] = useState(false);
       const [result, setResult] = useState(null);
       const [picked, setPicked] = useState(null); // Multiple Choice: gewählte Antwort
+      const [parsed, setParsed] = useState({}); // Bestimmen: gewählte Zeile `r` und Spalte `c`
       const [mic, setMic] = useState('idle'); // Sprechen: idle | listening | nothing | denied
       const [heard, setHeard] = useState(''); // Sprechen: was verstanden wurde
       const timed = opts.timer > 0 && AUTO_MODES.includes(opts.mode);
@@ -3646,6 +3965,18 @@
         if (mode === 'listen') return { solution: firstAlt(solution), spoken: firstAlt(solution), prompt: promptOf(item) };
         if (mode === 'choice') return { solution, prompt: promptOf(item), options: shuffleArray([solution, ...distractors(set, item)]) };
         if (mode === 'scramble') return { solution: firstAlt(solution), prompt: promptOf(item), letters: scrambleLetters(firstAlt(solution)) };
+        // Bestimmen: die Form zeigen, gesucht sind Zeile und Spalte. Jede Zelle
+        // mit derselben Form ist eine richtige Lesart («rosae»: Gen. Sg.,
+        // Dat. Sg., Nom. Pl.) — eine genügt, die Lösung nennt alle.
+        if (mode === 'parse') {
+          const { tab } = item.word, form = firstAlt(solution), want = baseNorm(form).toLowerCase();
+          const readings = [];
+          tab.t.forEach((row, i) => row.forEach((cell, j) => {
+            if (cell && variants(cell).some((v) => v.toLowerCase() === want)) readings.push([i, j]);
+          }));
+          const name = ([i, j]) => [tab.rows[i], tab.cols[j]].filter(Boolean).join(' · ');
+          return { prompt: form, readings, name, solution: readings.map(name).join(' / ') };
+        }
         // Liste ganz verlangt: gewertet beim Schreiben und bei der Handschrift
         // (ein Feld bzw. eine Zeile pro Punkt), bei Karteikarten nur als
         // Vermerk. Sonst genügt ein Punkt (Hören, Sprechen, Buchstabensalat)
@@ -3710,7 +4041,7 @@
       // Eine Stelle fürs Werten — Knopf, Handschrift und Wecker. Bei «alle
       // Punkte» trägt `typed` die Felder bzw. Schriftzeilen mit \n getrennt.
       const grade = (typed) => {
-        const o = { level: opts.level, lang: answerLang, others };
+        const o = { level: opts.level, lang: answerLang, others, forms: !!opts.forms };
         return task.need ? checkAll(typed.split('\n'), task.solution, o) : checkAnswer(typed, task.solution, o);
       };
       // Für Protokoll und Prüfungstabelle einzeilig
@@ -3754,6 +4085,16 @@
         if (checkAnswer(copyInput, result.solution, { level: 'strict' }).status === 'wrong') { setCopyMiss(true); return; }
         setPhase('feedback');
       };
+      // Bestimmen: fertig gewählt, wenn Zeile und (falls es sie gibt) Spalte stehen
+      const parseReady = (p) => p.r != null && (!item.word.tab.cols.length || p.c != null);
+      const gradeParse = (p) => ({
+        status: task.readings.some(([i, j]) => i === p.r && (!item.word.tab.cols.length || j === p.c)) ? 'right' : 'wrong',
+        solution: task.solution,
+      });
+      const checkParse = () => {
+        if (phase !== 'ask' || !parseReady(parsed)) return;
+        settle(gradeParse(parsed), task.name([parsed.r, parsed.c]));
+      };
       const pick = (option) => {
         if (phase !== 'ask') return;
         setPicked(option);
@@ -3782,6 +4123,7 @@
         setCopyMiss(false);
         setResult(null);
         setPicked(null);
+        setParsed({});
         setBuilt([]);
         setMic('idle');
         setHeard('');
@@ -3805,6 +4147,7 @@
           return;
         }
         if (phase === 'ask' && TYPED_MODES.includes(mode)) { e.preventDefault(); check(); }
+        else if (phase === 'ask' && mode === 'parse') { e.preventDefault(); checkParse(); }
         else if (phase === 'copy') { e.preventDefault(); checkCopy(); }
         else if (phase === 'feedback') { e.preventDefault(); next(); }
       };
@@ -3827,11 +4170,16 @@
 
       // Blitzrunde: der Wecker liest den Stand aus der Ref — die Closure wäre
       // vom Moment des Stellens. Was schon dasteht, wird noch gewertet.
-      latest.current = { input, built, grade };
+      latest.current = { input, built, grade, parsed };
       useEffect(() => {
         if (!timed || phase !== 'ask' || !item) return;
         const id = setTimeout(() => {
-          const { input, built, grade } = latest.current;
+          const { input, built, grade, parsed } = latest.current;
+          if (mode === 'parse') {
+            const r = parseReady(parsed) ? gradeParse(parsed) : { status: 'wrong', solution: task.solution };
+            settle(r.status === 'wrong' ? { ...r, note: 'timeUp' } : r, parseReady(parsed) ? task.name([parsed.r, parsed.c]) : '');
+            return;
+          }
           const typed = mode === 'scramble' ? built.map((j) => task.letters[j]).join('') : input;
           // Bei «alle Punkte» auch leer werten: dann stehen alle Punkte als
           // fehlend da, statt der ganzen Liste in einer Zeile
@@ -3891,7 +4239,7 @@
               </div>
             );
           })() : (
-            <div className="text-lg whitespace-pre-line"><b>{task.solution}</b> <SpeakButton text={task.solution} lang={answerLang} /></div>
+            <div className="text-lg whitespace-pre-line"><b>{task.solution}</b> {mode !== 'parse' && <SpeakButton text={task.solution} lang={answerLang} />}</div>
           )}
           {answerHintLine}
           {mode === 'listen' && <div className="text-gray-700 mt-1">{promptLabel}: <b>{inline(task.prompt)}</b></div>}
@@ -4017,6 +4365,41 @@
             {nextButton}
           </>
         );
+      } else if (mode === 'parse') {
+        // Zwei Knopfreihen: Zeilen (Person, Kasus), darunter die Spalten
+        // (Tempus, Numerus). Nach dem Prüfen bleibt die eigene Wahl stehen,
+        // grün oder rot; die Lösung darunter nennt alle Lesarten.
+        const { tab } = item.word;
+        const row = (axis, labels) => (
+          <div className="flex flex-wrap gap-2">
+            {labels.map((l, i) => {
+              const on = parsed[axis] === i;
+              const state = phase === 'ask'
+                ? (on ? 'bg-acc-100 border-acc-500 text-acc-900' : 'bg-card border-gray-200 text-gray-800 hover:border-acc-400')
+                : on ? (result && result.status === 'right' ? 'bg-green-100 border-green-400 text-green-800' : 'bg-red-100 border-red-400 text-red-800')
+                : 'bg-card border-gray-200 text-gray-400';
+              return (
+                <button key={i} disabled={phase !== 'ask'} onClick={() => setParsed((p) => ({ ...p, [axis]: i }))} aria-pressed={on}
+                  className={`px-4 py-2.5 rounded-lg border-2 font-semibold transition-all ${state}`}>{l}</button>
+              );
+            })}
+          </div>
+        );
+        const ready = parseReady(parsed);
+        body = (
+          <>
+            <div className="space-y-3">
+              {row('r', tab.rows)}
+              {tab.cols.length > 0 && row('c', tab.cols)}
+            </div>
+            {phase === 'ask' && (
+              <button onClick={checkParse} disabled={!ready}
+                className={`w-full mt-4 px-6 py-3 text-lg ${ready ? BTN_PRIMARY : 'bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed'}`}>{t('check')}</button>
+            )}
+            {phase === 'feedback' && <div className="mt-4">{feedbackBox(null)}</div>}
+            {nextButton}
+          </>
+        );
       } else if (mode === 'scramble') {
         body = (
           <>
@@ -4097,6 +4480,7 @@
               <div className="flex-1 text-3xl sm:text-4xl font-bold text-gray-800 break-words whitespace-pre-line">{task.prompt}</div>
               <SpeakButton text={task.prompt} lang={promptLang} />
             </div>
+            {mode === 'parse' && <div className="text-gray-600 mb-1">{t('parseOf', item.word.tab.lemma, item.word.tab.meaning)}</div>}
             {hint && <div className="text-sm text-gray-500 mb-2">{hint}</div>}
             {needNote}
           </>
@@ -4216,6 +4600,139 @@
       );
     };
 
+    // ---------- Tabelle ausfüllen ----------
+    // Eine Tabelle nach der anderen. Leer sind die gewählten Formen (alle,
+    // nur Fehler, fällig, Bereich — dieselbe Auswahl wie sonst), die übrigen
+    // stehen schon da: so übt «nur Fehler» genau die Lücken, im Zusammenhang.
+    // «Prüfen» wertet jede leere Zelle für sich (`forms`: ohne Tippfehler-
+    // und Artikel-Toleranz); gezählt wird pro Form, wie in den anderen Modi.
+    // Enter springt spaltenweise weiter — eine Zeitform von oben nach unten.
+    const TableRound = ({ set, opts, words, onDone, onBack, onResult }) => {
+      const [tables] = useState(() => {
+        const bySrc = new Map();
+        for (const w of words) {
+          if (!bySrc.has(w.src)) bySrc.set(w.src, { tab: w.tab, ask: [] });
+          bySrc.get(w.src).ask.push(w);
+        }
+        const list = [...bySrc.values()];
+        return opts.order === 'random' ? shuffleArray(list) : list;
+      });
+      const [g, setG] = useState(0);
+      const [vals, setVals] = useState({});
+      const [results, setResults] = useState(null); // nach dem Prüfen: { 'i,j': Ergebnis }
+      const [log, setLog] = useState([]);
+      const [startedAt] = useState(Date.now);
+      const [dialog, setDialog] = useState(null);
+      const rootRef = useRef(null);
+      const { tab, ask } = tables[g];
+      const lang = set.langs && set.langs[1];
+      const key = (i, j) => `${i},${j}`;
+      const asked = new Map(ask.map((w) => [key(w.ri, w.ci), w]));
+      // Spaltenweise, damit Enter eine Zeitform von oben nach unten füllt
+      const order = [];
+      tab.t[0].forEach((_, j) => tab.t.forEach((_, i) => { if (asked.has(key(i, j))) order.push(key(i, j)); }));
+      const focusCell = (k) => { const el = rootRef.current && rootRef.current.querySelector(`[data-cell="${k}"]`); if (el) el.focus(); };
+      useEffect(() => { focusCell(order[0]); }, [g]);
+
+      const check = () => {
+        if (results) return;
+        const out = {}, entries = [];
+        for (const k of order) {
+          const w = asked.get(k), typed = (vals[k] || '').trim();
+          const r = typed ? checkAnswer(typed, w.b, { level: opts.level, lang, forms: true }) : { status: 'wrong', solution: variants(w.b)[0] };
+          out[k] = { ...r, typed };
+          const ok = r.status !== 'wrong';
+          onResult(w, ok);
+          entries.push({ item: { word: w, dir: 'ab' }, ok, input: typed, solution: r.solution });
+        }
+        setResults(out);
+        setLog((l) => [...l, ...entries]);
+      };
+      const next = () => {
+        if (g + 1 >= tables.length) { onDone({ log, seconds: Math.round((Date.now() - startedAt) / 1000) }); return; }
+        setG(g + 1);
+        setVals({});
+        setResults(null);
+      };
+      const onKey = (e) => {
+        if (e.key !== 'Enter' || e.repeat) return;
+        e.preventDefault();
+        if (results) { next(); return; }
+        const at = order.indexOf(e.target.dataset && e.target.dataset.cell);
+        if (at >= 0 && at < order.length - 1) focusCell(order[at + 1]);
+        else check();
+      };
+      const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
+      const right = results && Object.values(results).filter((r) => r.status !== 'wrong').length;
+
+      const cell = (form, i, j) => {
+        const k = key(i, j);
+        if (!asked.has(k)) {
+          return <td key={j} className="px-2 py-1.5 text-gray-500">{form ? inline(form, ' / ') : <span className="text-gray-300">–</span>}</td>;
+        }
+        const r = results && results[k];
+        return (
+          <td key={j} className="px-1 py-1 align-top">
+            <input type="text" value={vals[k] || ''} data-cell={k} disabled={!!results}
+              onChange={(e) => setVals((v) => ({ ...v, [k]: e.target.value }))}
+              autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[lang] || undefined}
+              className={`w-full min-w-[7rem] ${INPUT} text-lg py-1.5 ${r ? (r.status === 'wrong' ? 'border-red-400 bg-red-50' : r.status === 'almost' ? 'border-yellow-400 bg-yellow-50' : 'border-green-400 bg-green-50') : ''}`} />
+            {r && r.status !== 'right' && (
+              <div className="text-sm mt-0.5 px-1">
+                {r.typed ? <b><DiffText parts={charDiff(baseNorm(r.typed), r.solution)[1]} cls="diff-ins" /></b> : <b>{r.solution}</b>}
+                {r.note && <span className="text-gray-500"> · {t(r.note)}</span>}
+              </div>
+            )}
+          </td>
+        );
+      };
+
+      return (
+        <div className={`${SCREEN} p-4 sm:p-8`} onKeyDown={onKey}>
+          <PracticeFrame set={set} pos={g + (results ? 1 : 0)} queue={tables.length} done={g + 1} total={tables.length} item={null} onQuit={quit}
+            extra={<span className="ml-2 text-xs text-gray-400">· {t('tableN', order.length)}</span>}>
+            <div className={`${CARD} p-4 sm:p-6 mb-4`} ref={rootRef}>
+              <div className="flex items-baseline gap-3 flex-wrap mb-1">
+                <div className="text-3xl font-bold text-gray-800 break-words">{tab.lemma}</div>
+                <div className="text-gray-500">{tab.meaning}</div>
+                <SpeakButton text={tab.lemma} lang={lang} />
+              </div>
+              {opts.hints && tab.h && <div className="text-sm text-gray-500 mb-2">{tab.h}</div>}
+              <div className="overflow-x-auto mt-4 -mx-1">
+                <table className="text-left border-separate border-spacing-0">
+                  {(tab.cols.length > 0 || tab.one) && (
+                    <thead>
+                      <tr>
+                        <th />
+                        {(tab.cols.length ? tab.cols : [tab.one]).map((c, j) => <th key={j} className={`${LABEL} px-2 pb-1 font-semibold`}>{c}</th>)}
+                      </tr>
+                    </thead>
+                  )}
+                  <tbody>
+                    {tab.t.map((row, i) => (
+                      <tr key={i}>
+                        <th className="pr-3 pt-3 text-sm font-semibold text-gray-500 whitespace-nowrap align-top">{tab.rows[i]}</th>
+                        {row.map((form, j) => cell(form, i, j))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {!results ? (
+                <button onClick={check} className={`w-full mt-5 ${BTN_PRIMARY} px-6 py-3 text-lg`}>{t('check')}</button>
+              ) : (
+                <>
+                  <p className={`mt-5 font-semibold ${right === order.length ? 'text-green-700' : 'text-gray-700'}`}>{t('tableScore', right, order.length)}</p>
+                  <button autoFocus onClick={next} className={`w-full mt-3 ${BTN_PRIMARY} px-6 py-3 text-lg`}>{t('next')} →</button>
+                </>
+              )}
+            </div>
+          </PracticeFrame>
+          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+        </div>
+      );
+    };
+
     // ---------- Rundenende ----------
     const Summary = ({ set, log, seconds, exam, leaves, watched, onRetry, onAgain, onBack }) => {
       const ok = log.filter((e) => e.ok).length;
@@ -4290,11 +4807,13 @@
       const go = goRef.current;
       goRef.current = false;
       const startRound = (opts, words) => setStage({ kind: 'run', opts, words, n: Date.now() });
+      // Formen: die Runde sieht die Tabellen als Wörter (gedrehte Sprachen, s. formSet)
+      const roundSet = stage.opts && stage.opts.forms ? formSet(set) : set;
 
       if (stage.kind === 'run') {
-        const Round = stage.opts.mode === 'match' ? MatchRound : Practice;
+        const Round = { match: MatchRound, table: TableRound }[stage.opts.mode] || Practice;
         return (
-          <Round key={stage.n} set={set} opts={stage.opts} words={stage.words}
+          <Round key={stage.n} set={roundSet} opts={stage.opts} words={stage.words}
             onResult={(word, ok) => onResult(setKey, word, ok)}
             onDone={({ log, seconds, exam, leaves, watched }) => setStage({ kind: 'done', opts: stage.opts, words: stage.words, log, seconds, exam, leaves, watched })}
             onBack={() => setStage({ kind: 'setup' })} />
@@ -4302,7 +4821,7 @@
       }
       if (stage.kind === 'done') {
         return (
-          <Summary set={set} log={stage.log} seconds={stage.seconds} exam={stage.exam} leaves={stage.leaves} watched={stage.watched}
+          <Summary set={roundSet} log={stage.log} seconds={stage.seconds} exam={stage.exam} leaves={stage.leaves} watched={stage.watched}
             onRetry={(words) => startRound(stage.opts, words)}
             onAgain={() => startRound(stage.opts, stage.words)}
             onBack={() => setStage({ kind: 'setup' })} />
