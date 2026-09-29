@@ -4,6 +4,17 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (29.09.2026, 18):** Review über die Wortformen mit 14 behobenen
+Befunden, danach ein Vereinfachungs-Durchgang. Die wichtigsten: ein Link
+trägt die Wahl Wörter/Wortformen immer (sonst lief eine Wörter-Übung beim
+Empfänger als Wortformen), Enter prüft nur aus der Karte bzw. einem
+Tabellenfeld (nicht mehr aus Einstellungen oder «Beenden?»), der Editor
+verliert keine Tabelle mehr, Bestimmen geht mit der Tastatur und wertet in
+`grade`. Hören zeigt bei Wortformen die Frage (gleich klingende Formen),
+Sprechen prüft ohne Tippfehler-Toleranz, der KI-Prompt fragt nicht mehr bei
+jeder Liste mit Verben nach, und welche Seite die Tabelle trägt, sagen die
+Formen selbst (auch `fr → de`). 30 Node-Fälle, im Browser geprüft.
+
 **Stand (28.09.2026, 17):** **Wortformen** (Phase 6): Ein Wort kann eine
 Tabelle mit seinen Formen tragen (`Zeilen:`/`Spalten:`/`T:`), auch nur
 einzelne Wörter eines Sets. Mit «Wortformen» auf der Set-Seite laufen alle
@@ -357,10 +368,11 @@ T: rosae | rosarum
   mit ` | ` getrennt. Fehlen die `Spalten:`, hat die Tabelle eine Spalte.
 - In einer Zelle gelten `/` (Alternativen, «amavisti / amasti») und `( )` wie
   überall. `–` heisst «gibt es nicht»; die Zelle wird nicht abgefragt.
-- Die Tabelle gehört zur **Fremdsprache** (`foreignLang`), egal ob die auf
-  `F:` oder `A:` steht. So sind `de → fr` (F: gehen, A: aller, T: je vais …)
-  und `la → de` gleich zu schreiben. Stimme, Artikel und iink-Sprache kommen
-  von dort.
+- Die Tabelle gehört zu der Seite, mit deren Grundform die Formen anfangen
+  (`formSide`: amare/amo, der Hund/des Hundes), sonst zur **Fremdsprache**
+  (`foreignLang`) — egal ob die auf `F:` oder `A:` steht. So sind `de → fr`
+  (F: gehen, A: aller, T: je vais …), `la → de` und `fr → de` gleich zu
+  schreiben. Stimme, Artikel und iink-Sprache kommen von dort.
 - Passt die Zahl der Zellen nicht zu den Beschriftungen, wird der Eintrag
   trotzdem gelesen. Der Editor zeigt die Abweichung an, statt sie zu schlucken.
 
@@ -410,19 +422,25 @@ Dazu zwei Modi, deren Kacheln nur mit «Wortformen» erscheinen (`FORM_MODES`):
 Artikel-Toleranz** (`checkAnswer` mit `forms`). Ein Buchstabe ist hier die
 Grammatik: «amat» statt «amant» ist die falsche Person, «dem Hundes» statt
 «des Hundes» der falsche Fall. Gross/klein und Akzente folgen weiter der
-Stufe. Die übrigen Formen der Runde gehen wie immer als `others` mit.
+Stufe. Die übrigen Formen der Runde gehen wie immer als `others` mit. Das
+gilt auch beim Sprechen. Beim Hören steht bei Wortformen die Frage da —
+mange/manges/mangent klingen gleich.
 
 ### Editor und KI-Prompt
 
-- **KI-Prompt:** neue Zeile im Ausfüllblock «Formen: [nein / z. B. Präsens
-  und Perfekt aktiv / alle Kasus]» und ein Block FORMEN mit Beispiel. Die KI
+- **KI-Prompt:** neue Zeile im Ausfüllblock «Formen: [leer = du entscheidest
+  / nein / z. B. Verben im Präsens]» und ein Block FORMEN mit Beispiel. Ohne
+  Angabe und ohne Formen im Material gibt es keine Tabelle und keine
+  Rückfrage; gefragt wird nur, wenn Formen gewünscht sind, aber offen bleibt,
+  welche. Die KI
   schreibt die Formen aus; eine Regelmaschine in der App gibt es bewusst
   nicht (unregelmässige Formen, eine Sprache nach der anderen). Der Prompt
   verlangt, unsichere Formen wegzulassen statt zu raten, und die Anleitung
   sagt: Tabellen vor dem Üben durchsehen.
 - **Editor:** pro Wort «+ Wortformen» klappt ein Textfeld auf, mit den
   Zeilen `Zeilen:`/`Spalten:`/`T:` in derselben Schreibweise wie die Datei
-  (gelesen von `parseFA`). Darunter steht live, was nicht zusammenpasst:
+  (derselbe Zeilenleser `readTableLine` wie für Dateien; andere Zeilen, auch
+  `F:` und `---`, werden übergangen). Darunter steht live, was nicht zusammenpasst:
   unverständliche Zeilen, falsche Anzahl Beschriftungen oder Zellen. Ein
   echtes Tabellenraster kommt erst, wenn sich das Textfeld im Alltag als
   mühsam erweist.
@@ -442,6 +460,7 @@ Stufe. Die übrigen Formen der Runde gehen wie immer als `others` mit.
   geprüft: Bestimmen mit einer und zwei Spalten, mehrdeutige Form, Link mit
   `go=1`; Tabelle mit Fehler, leerem Feld und Gross/klein; Editor mit
   Meldungen und Speichern.
+- [x] **Review** (29.09.2026): 14 Befunde behoben, s. Stand 18.
 
 ## Backlog / Ideen
 

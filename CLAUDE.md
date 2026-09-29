@@ -71,7 +71,9 @@ Links bleiben gültig.
 zwei Achsen, `{ r, c, t }` = Zeilen-, Spaltenbeschriftungen, Zellen. Datei:
 `Zeilen:`/`Spalten:` (vor einem `F:` für alle folgenden, danach nur für
 dieses Wort) und `T: amo | amavi` pro Zeile, `–` = gibt es nicht. Die Tabelle
-gehört zur Fremdsprache (`formSide`). Geübt wird über `formSet`: jede Zelle
+gehört zu der Seite, mit deren Grundform die Formen anfangen (`formSide`:
+amare/amo, der Hund/des Hundes — so stimmt auch `fr → de`), erst ohne Befund
+zur Fremdsprache. Geübt wird über `formSet`: jede Zelle
 wird ein eigenes Wort («manger · nous · présent» → «mangeons», `src` = Index
 des Worts), beide Sprachen sind die Fremdsprache. Darum laufen **alle Modi**
 auf Formen, ohne dass `Practice` davon weiss — die Set-Seite rechnet mit
@@ -87,8 +89,18 @@ einmal) und **Tabelle** (`table`, eigene Komponente `TableRound`: die
 gewählten Formen sind leer, die übrigen stehen da). Dafür tragen die
 Form-Wörter `tab` (Tabelle mit fertigen Beschriftungen) und `ri`/`ci`.
 Im Editor ist die Tabelle ein Textfeld in Dateischreibweise
-(`formText`/`parseFormText` über `parseFA`), `formIssues` meldet live, was
-nicht passt.
+(`formText`/`parseTable`), `formIssues` meldet live, was nicht passt. Die
+Schlüsselwörter stehen an **einer** Stelle (`TABLE_KEY`/`TABLE_WORD`, gelesen über
+`readTableLine` in `parseFA`, `parseTable` und `formIssues`, geschrieben über
+`tableWord`) — vorher lasen Editor und Warnung verschieden, und eine
+eingefügte `F:`-Zeile verwarf beim Speichern still die ganze Tabelle.
+«Dieselbe Form» (einmal fragen, Lesarten finden) ist `formKey`. Ob die
+Richtung feststeht, entscheidet `fixedDir` (richtungslose Modi und alle
+Wortformen) für Runde und Set-Seite. **Ein Link trägt `forms` immer, auch
+als 0** — sonst lief eine Wörter-Übung beim
+Empfänger als Wortformen, wenn der dort zuletzt Wortformen gewählt hatte.
+Hören zeigt bei Wortformen die Frage (`task.prompt`): mange/manges/mangent
+klingen gleich.
 
 **Dateiformat** bleibt kompatibel zu MyMemory/MyTafelfussball (`F:`/`A:`/`---`);
 `S:`, `H:`, `HF:`, `HA:`, `W:`, `Zeilen:`/`Spalten:`/`T:` und `Sprachen: de → fr` sind Zusätze, die die
@@ -294,8 +306,14 @@ verzweigen, wenn es um Inhalte geht.
 - **Die Felder von «alle Punkte» leben als Zeilen in `input`, nicht in einem
   Array.** `[...xs]` macht aus einer Lücke (Feld 1 übersprungen) ein echtes
   `undefined`, und `checkAll` stürzte beim `.trim()` ab — «Prüfen» tat nichts.
-- **Gewertet wird an einer Stelle (`grade`)**: Knopf, Handschrift und Wecker.
-  Der Wecker hatte zuvor eine eigene Kopie ohne `others`.
+- **Gewertet wird an einer Stelle (`grade`)**: Knopf, Handschrift, Bestimmen
+  und Wecker. Der Wecker hatte zuvor eine eigene Kopie ohne `others`.
+- **Enter zählt nur aus der Karte** (`onKeyDown` an der Karte in `Practice`, in `TableRound`
+  nur aus einem Tabellenfeld). Hing der Listener an der ganzen Seite, kam
+  Enter in den Schlüsselfeldern der Einstellungen oder in der Rückfrage
+  «Beenden?» bubbelte hierher, prüfte die Antwort bzw. die ganze Tabelle und
+  nahm dem Knopf dort seine Taste. Beim Bestimmen wählt Enter auf einem
+  ungewählten Knopf diesen, geprüft wird erst mit vollständiger Wahl.
 - **`checkAnswer` bekommt die übrigen Lösungen der Runde** (`others`): wer exakt
   ein anderes Wort des Sets tippt (vous/nous), hat verwechselt, nicht sich
   vertippt — sonst zählt die Ein-Zeichen-Toleranz das als gewusst.

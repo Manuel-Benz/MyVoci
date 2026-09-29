@@ -502,7 +502,6 @@
         whatForms: (n) => `Wortformen (${n})`,
         wordsHint: 'Grundform und Bedeutung, wie in jedem Set.',
         formsHint: 'Konjugieren und deklinieren: jede Form aus den Tabellen einzeln, zum Beispiel «manger · nous · présent».',
-        selAllForms: (n) => `alle ${n}`,
         nForms: (n) => `${n} ${n === 1 ? 'Form' : 'Formen'}`,
         tolFormsHint: 'Bei Formen zählt jeder Buchstabe: kein Tippfehler, kein fehlender Artikel. Die Stufe regelt nur Gross/klein und Akzente.',
         // Üben
@@ -903,7 +902,6 @@
         whatForms: (n) => `Word forms (${n})`,
         wordsHint: 'Base form and meaning, as in every set.',
         formsHint: 'Conjugate and decline: each form from the tables on its own, e.g. “manger · nous · présent”.',
-        selAllForms: (n) => `all ${n}`,
         nForms: (n) => `${n} ${n === 1 ? 'form' : 'forms'}`,
         tolFormsHint: 'With forms every letter counts: no typos, no missing article. The level only covers upper/lower case and accents.',
         check: 'Check',
@@ -1148,11 +1146,14 @@
       "FORMEN (konjugieren, deklinieren):",
       "- Du entscheidest selbst, ob ein Wort eine Formentabelle bekommt: ja, wenn oben",
       "  Formen verlangt sind oder das Material sie zeigt (Konjugations- oder",
-      "  Deklinationstabellen); nein bei «Formen: nein». Auch nur einzelne Wörter eines",
-      "  Sets dürfen eine Tabelle haben — die übrigen bleiben ganz normale Wörter.",
-      "- Ist unklar, ob oder welche Formen gewünscht sind (etwa Verben im Material, oben",
-      "  nichts angegeben), frag VOR dem Set nach: eine kurze Frage mit deinem Vorschlag,",
-      "  z. B. «Soll ich die Verben im Präsens konjugieren?». Bis zur Antwort kein Set.",
+      "  Deklinationstabellen); nein bei «Formen: nein». Enthält das Material einfach",
+      "  Wörter (auch Verben) ohne ihre Formen und ist oben nichts verlangt: keine Tabelle,",
+      "  und nicht nachfragen. Auch nur einzelne Wörter eines Sets dürfen eine Tabelle",
+      "  haben — die übrigen bleiben ganz normale Wörter.",
+      "- Nachfragen nur, wenn Formen verlangt sind oder das Material sie zeigt, aber offen",
+      "  bleibt, welche (z. B. mehrere Zeitformen im Material, oben keine genannt): VOR",
+      "  dem Set eine kurze Frage mit deinem Vorschlag, z. B. «Nur das Präsens oder auch",
+      "  das Imperfekt?». Bis zur Antwort kein Set.",
       "- Die Tabelle gehört zum Wort in der Fremdsprache (bei «de → fr» das Wort auf",
       "  «A: ») und steht am Ende des Worts, vor «---»:",
       "",
@@ -1268,12 +1269,13 @@
       "FORMS (conjugate, decline):",
       "- You decide yourself whether a word gets a table of forms: yes if forms are asked",
       "  for above or the material shows them (conjugation or declension tables); no for",
-      "  «Forms: no». Only some words of a set may have a table — the others stay",
-      "  ordinary words.",
-      "- If it is unclear whether or which forms are wanted (e.g. verbs in the material,",
-      "  nothing said above), ask BEFORE the set: one short question with your",
-      "  suggestion, e.g. «Shall I conjugate the verbs in the present?». No set until",
-      "  the answer.",
+      "  «Forms: no». If the material simply lists words (verbs too) without their forms",
+      "  and nothing is asked above: no table, and do not ask. Only some words of a set",
+      "  may have a table — the others stay ordinary words.",
+      "- Ask back only if forms are asked for or shown in the material, but it stays",
+      "  open which ones (e.g. several tenses in the material, none named above): BEFORE",
+      "  the set, one short question with your suggestion, e.g. «Only the present, or",
+      "  the past as well?». No set until the answer.",
       "- The table belongs to the word in the foreign language (with «de → en» the word",
       "  on «A: ») and comes at the end of the word, before «---»:",
       "",
@@ -1385,9 +1387,29 @@
       return { r: (f.r || []).map((x) => x.trim()), c: (f.c || []).map((x) => x.trim()), t };
     };
     const hasForms = (set) => set.words.some((w) => w.f);
-    // Seite der Fremdsprache: bei «la → de» steht das Wort mit der Tabelle
-    // auf F:, bei «de → fr» auf A:. Ohne Sprachen ist es B, wie im KI-Prompt.
+    // «Dieselbe Form» — eine Regel fürs Bestimmen: einmal fragen
+    // (selectWords) und alle Lesarten finden (task in Practice)
+    const formKey = (form) => baseNorm(firstAlt(form)).toLowerCase();
+    // Welche Seite trägt die Tabelle? Zuerst fragen die Formen selbst: die
+    // Seite, mit deren Grundform mehr Formen anfangen (amare/amo, manger/
+    // mange, der Hund/des Hundes — Artikel zählen nicht). So stimmt es auch
+    // bei «fr → de» (deutsche Deklination) oder ohne Deutsch. Erst wenn das
+    // nichts sagt (aller/vais), gilt die Fremdsprache: bei «la → de» F:, bei
+    // «de → fr» A:; ohne Sprachen B, wie im KI-Prompt.
     const formSide = (set) => {
+      const stem = (x) => stripAnyArticle(formKey(x)).slice(0, 2);
+      let a = 0, b = 0;
+      for (const w of set.words) {
+        if (!w.f) continue;
+        const sa = stem(w.a), sb = stem(w.b);
+        for (const row of w.f.t) for (const cell of row) {
+          if (!cell) continue;
+          const c = stem(cell);
+          if (c === sa) a++;
+          if (c === sb) b++;
+        }
+      }
+      if (a !== b) return a > b ? 'a' : 'b';
       const f = foreignLang(set);
       return set.langs && set.langs[0] === f && set.langs[1] !== f ? 'a' : 'b';
     };
@@ -1434,7 +1456,34 @@
     // Sprache A bzw. B (erscheint nur bei dieser Seite: gefragt sofort, gesucht
     // erst mit der Lösung), W: alle (Liste ganz verlangt), --- Trenner. Ein
     // neues F: schliesst das vorige Wort auch ohne ---.
-    // Formen: «Zeilen:»/«Spalten:» und «T:», s. Abschnitt Formen.
+    // Formen: «Zeilen:»/«Spalten:» und «T:», s. Abschnitt Formen. Die
+    // Schlüsselwörter stehen an EINER Stelle (TABLE_KEY zum Lesen, TABLE_WORD
+    // zum Schreiben): Datei, Editor, Warnungen und Export verstehen dieselben.
+    // Ein Leerzeichen vor dem Doppelpunkt ist erlaubt («T : vais») — sonst
+    // fiele die Zeile still weg.
+    const TABLE_KEY = { zeilen: 'r', rows: 'r', spalten: 'c', columns: 'c', t: 't' };
+    const TABLE_WORD = { r: ['Zeilen', 'Rows'], c: ['Spalten', 'Columns'] };
+    const TABLE_LINE = new RegExp(`^(${Object.keys(TABLE_KEY).join('|')})\\s*:\\s*(.*)$`, 'i');
+    const tableCells = (val) => val.split('|').map((x) => x.trim());
+    // { key: 'r' | 'c' | 't', cells } oder null. Leere Beschriftungen fallen
+    // weg; eine Tabellenzeile ganz ohne Form hat `cells: null`.
+    const readTableLine = (line) => {
+      const m = line.match(TABLE_LINE);
+      if (!m) return null;
+      const key = TABLE_KEY[m[1].toLowerCase()], cells = tableCells(m[2]);
+      return { key, cells: key !== 't' ? cells.filter(Boolean) : cells.some(Boolean) ? cells : null };
+    };
+    // Nur Tabellenzeilen (Editor): alles andere wird übergangen, auch F:/---
+    const parseTable = (text) => {
+      const f = { r: [], c: [], t: [] };
+      for (const raw of text.split(/\r?\n/)) {
+        const x = readTableLine(raw.trim());
+        if (!x) continue;
+        if (x.key !== 't') f[x.key] = x.cells;
+        else if (x.cells) f.t.push(x.cells);
+      }
+      return cleanForms(f) || undefined;
+    };
     const parseFA = (text) => {
       const words = [];
       let cur = null, answer = [], table = [];
@@ -1448,17 +1497,16 @@
         cur = null; answer = []; table = [];
       };
       const addHint = (key, val) => { if (val) cur[key] = cur[key] ? `${cur[key]} ${val}` : val; };
-      const cells = (val) => val.split('|').map((x) => x.trim());
       for (const raw of text.split(/\r?\n/)) {
         const line = raw.trim();
         if (/^-{3,}$/.test(line)) { flush(); continue; }
-        const lab = line.match(/^(zeilen|rows|spalten|columns):\s*(.*)$/i);
-        if (lab) {
-          const key = /^(zeilen|rows)$/i.test(lab[1]) ? 'r' : 'c';
-          (cur || head)[key] = cells(lab[2]).filter(Boolean);
+        const tl = readTableLine(line);
+        if (tl) {
+          if (tl.key !== 't') (cur || head)[tl.key] = tl.cells;
+          else if (cur && tl.cells) table.push(tl.cells);
           continue;
         }
-        const m = line.match(/^(HF|HA|[FQASHWT]):\s*(.*)$/i);
+        const m = line.match(/^(HF|HA|[FQASHW]):\s*(.*)$/i);
         if (!m) continue;
         const key = m[1].toUpperCase(), val = m[2].trim();
         if (key === 'F' || key === 'Q') { flush(); cur = { a: joinAnswer(splitLine(val)), b: '' }; continue; }
@@ -1469,7 +1517,6 @@
         else if (key === 'HF') addHint('ha', val);
         else if (key === 'HA') addHint('hb', val);
         else if (key === 'W' && /^(alle|all)$/i.test(val)) cur.all = true;
-        else if (key === 'T' && val) table.push(cells(val));
       }
       flush();
       return words;
@@ -1509,9 +1556,10 @@
     // ---------- Dateien schreiben (Export) ----------
     // Beschriftungen pro Wort: so bleibt jedes Wort für sich richtig, auch
     // wenn Verben und Nomen im selben Set stehen. Leere Zelle = «–».
+    const tableWord = (key) => TABLE_WORD[key][currentLang === 'en' ? 1 : 0];
     const formLines = (f) => (f
-      ? (f.r.length ? `${currentLang === 'en' ? 'Rows' : 'Zeilen'}: ${f.r.join(' | ')}\n` : '') +
-        (f.c.length ? `${currentLang === 'en' ? 'Columns' : 'Spalten'}: ${f.c.join(' | ')}\n` : '') +
+      ? (f.r.length ? `${tableWord('r')}: ${f.r.join(' | ')}\n` : '') +
+        (f.c.length ? `${tableWord('c')}: ${f.c.join(' | ')}\n` : '') +
         f.t.map((row) => `T: ${row.map((x) => x || '–').join(' | ')}\n`).join('')
       : '');
     const toFile = (set) =>
@@ -1893,9 +1941,11 @@
       }
       return out;
     };
+    // `forms` steht immer drin, auch als 0 — sonst gälte beim Empfänger seine
+    // eigene letzte Wahl, und eine Wörter-Übung (samt `go=1`) liefe dort als
+    // Wortformen. Bei einem Set ohne Tabellen tut `forms=0` nichts.
     const optsToHash = (opts, go) => {
-      // `forms` nur, wenn gesetzt: Links auf Wort-Sets bleiben wie bisher
-      const keep = ['mode', ...(opts.forms ? ['forms'] : []), 'dir', 'sel', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', ...(opts.sel === 'range' ? ['from', 'to'] : [])];
+      const keep = ['mode', 'forms', 'dir', 'sel', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', ...(opts.sel === 'range' ? ['from', 'to'] : [])];
       return keep.map((k) => `&${k}=${typeof opts[k] === 'boolean' ? (opts[k] ? 1 : 0) : opts[k]}`).join('') + (go ? '&go=1' : '');
     };
     const applyLang = (id) => {
@@ -3071,16 +3121,17 @@
     // ---------- Editor ----------
     const EMPTY_WORD = { a: '', b: '', s: '', h: '', ha: '', hb: '', all: false, ft: '' };
     // Wortformen im Editor: ein Textfeld in derselben Schreibweise wie die
-    // Datei (Zeilen:/Spalten:/T:), gelesen von parseFA — ein Leser für beides.
+    // Datei (Zeilen:/Spalten:/T:), gelesen mit demselben Zeilenleser
+    // (readTableLine). Andere Zeilen (auch F:, ---) werden übergangen — und
+    // genau das meldet formIssues, statt still die ganze Tabelle zu verlieren.
     const formText = (f) => formLines(f).trimEnd();
-    const parseFormText = (text) => (text.trim() ? (parseFA(`F: x\nA: x\n${text}\n---`)[0] || {}).f : undefined);
     // Was nicht zusammenpasst, sagen statt schlucken: fehlende oder
     // überzählige Beschriftungen, Zeilen mit anderer Zellenzahl
     const formIssues = (text) => {
       const out = text.split('\n').map((x) => x.trim())
-        .filter((x) => x && !/^(zeilen|rows|spalten|columns|t)\s*:/i.test(x))
+        .filter((x) => x && !readTableLine(x))
         .map((x) => t('formsIssueLine', x));
-      const f = parseFormText(text);
+      const f = parseTable(text);
       if (!f) return out;
       if (f.r.length && f.r.length !== f.t.length) out.push(t('formsIssueRows', f.t.length, f.r.length));
       const width = f.c.length || Math.max(...f.t.map((row) => row.length));
@@ -3125,7 +3176,7 @@
           .map((w) => ({
             a: joinAnswer(w.a.split('\n')), b: joinAnswer(w.b.split('\n')),
             s: w.s.split('\n').map((x) => x.trim()).filter(Boolean), h: w.h.trim(), ha: w.ha.trim(), hb: w.hb.trim(), all: w.all,
-            f: parseFormText(w.ft),
+            f: parseTable(w.ft),
           }))
           .filter((w) => w.a || w.b)
           .map(cleanWord);
@@ -3365,7 +3416,12 @@
     // Liste ganz verlangt (`W: alle`): gewertet beim Schreiben, von Hand oder
     // getippt, bei Karteikarten nur als Vermerk
     const NEED_ALL_MODES = [...WRITE_INPUTS, 'cards'];
-    const DIRECTIONLESS = ['gap', 'match', ...FORM_MODES]; // Satz ist immer Sprache B, Zuordnen zeigt beide, Formen haben keine Richtung
+    const DIRECTIONLESS = ['gap', 'match']; // Satz ist immer Sprache B, Zuordnen zeigt beide
+    // Steht die Richtung fest? EINE Stelle für Runde (buildQueue) und Set-Seite
+    // (Richtungswahl, Sprachprüfung in modeOff): richtungslose Modi und alles
+    // mit Wortformen (gefragt ist immer die Form zur Grundform; Bestimmen und
+    // Tabelle gibt es nur dort).
+    const fixedDir = (opts) => DIRECTIONLESS.includes(opts.mode) || !!opts.forms;
     // Hören: gehört wird die Antwortseite — bei «gemischt» müssen beide gehen
     const listenLangs = (set, dir) => (set.langs ? (dir === 'ab' ? [set.langs[1]] : dir === 'ba' ? [set.langs[0]] : set.langs) : []);
     const canListen = (set, dir) => { const l = listenLangs(set, dir); return l.length > 0 && l.every(canSpeak); };
@@ -3380,7 +3436,7 @@
       const seen = new Set();
       const once = (w) => {
         if (opts.mode !== 'parse') return true;
-        const k = `${w.src}\u0001${firstAlt(w.b)}`;
+        const k = `${w.src}\u0001${formKey(w.b)}`;
         return !seen.has(k) && seen.add(k);
       };
       return set.words.filter((w, i) => (() => {
@@ -3429,7 +3485,7 @@
       const formsOk = useMemo(() => hasForms(set), [set]);
       const forms = formsOk && !!wanted.forms;
       const pool = forms ? formSet(set) : set;
-      const dir = forms ? 'ab' : wanted.dir; // Formen: immer Grundform → Form
+      const dir = fixedDir({ mode: wanted.mode, forms }) ? 'ab' : wanted.dir;
       const n = pool.words.length;
       const recs = pool.words.map((w) => prog[wordKey(w)]);
       const wrongN = recs.filter(isWrong).length;
@@ -3459,7 +3515,7 @@
       // nicht per Effekt nachgetragen: sonst sähe «Direkt starten» beim
       // ersten Aufbau noch den ungültigen Modus und startete nie.
       const mode = modeOff(wanted.mode) ? MODE_FALLBACK[wanted.mode] || 'write' : wanted.mode;
-      const opts = useMemo(() => (mode === wanted.mode && forms === !!wanted.forms ? wanted : { ...wanted, mode, forms }), [wanted, mode, forms]);
+      const opts = useMemo(() => (mode === wanted.mode && forms === wanted.forms ? wanted : { ...wanted, mode, forms }), [wanted, mode, forms]);
       const group = MODE_GROUP[opts.mode] || opts.mode; // die Kachel dazu
       const writing = group === 'write';
       const chosen = useMemo(() => selectWords(pool, opts, prog), [pool, opts, prog]);
@@ -3535,7 +3591,7 @@
                     )}
                   </OptRow>
                 )}
-                {!DIRECTIONLESS.includes(opts.mode) && !forms && (
+                {!fixedDir(opts) && (
                   <OptRow label={t('direction')}>
                     <Seg value={opts.dir} onChange={(dir) => set_({ dir })}
                       options={[['ab', t('dirAB', A, B)], ['ba', t('dirAB', B, A)], ['mix', t('dirMix')]]} />
@@ -3543,7 +3599,7 @@
                 )}
                 <OptRow label={t(forms ? 'formList' : 'rowWords')}>
                   <Seg value={opts.sel} onChange={(sel) => set_({ sel })}
-                    options={[['all', t(forms ? 'selAllForms' : 'selAllN', n)], ['wrong', t('selWrongN', wrongN), !wrongN], ['due', t('selDueN', dueN)], ['range', t('selRange')]]} />
+                    options={[['all', t('selAllN', n)], ['wrong', t('selWrongN', wrongN), !wrongN], ['due', t('selDueN', dueN)], ['range', t('selRange')]]} />
                   {opts.sel === 'range' && (
                     <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
                       {t('rangeFrom')}
@@ -3659,8 +3715,8 @@
       // Richtung wird dort gar nicht angeboten, also darf auch keine alte
       // Einstellung durchschlagen. Sonst zeigte `langOf` die falsche Sprache
       // und `checkAnswer` prüfte mit den Artikeln der anderen Sprache.
-      // Formen ebenso: gefragt ist immer die Form zur Grundform.
-      const fixed = DIRECTIONLESS.includes(opts.mode) || opts.forms ? 'ab' : null;
+      // Wortformen ebenso (fixedDir).
+      const fixed = fixedDir(opts) ? 'ab' : null;
       return list.map((word) => ({
         word, retry: false,
         dir: fixed || (opts.dir === 'mix' ? (Math.random() < 0.5 ? 'ab' : 'ba') : opts.dir),
@@ -3727,6 +3783,9 @@
       );
     };
 
+    // Antwortfelder: keine Autokorrektur, keine Grossschreibung, Sprache der
+    // Antwort — geprüft wird Buchstabe für Buchstabe (Practice und Tabelle)
+    const answerProps = (lang) => ({ autoCapitalize: 'none', autoCorrect: 'off', autoComplete: 'off', spellCheck: false, lang: TTS_LOCALE[lang] || undefined });
     const STATUS_CLASS = {
       right: 'bg-green-50 border-green-300 text-green-800',
       almost: 'bg-yellow-50 border-yellow-300 text-yellow-800',
@@ -3962,6 +4021,9 @@
         if (!item) return null;
         const solution = solutionOf(item);
         if (mode === 'gap') { const gap = gapFor(item.word); return { ...gap, solution: gap.form, prompt: item.word.a }; }
+        // Hören bei Wortformen: die Frage (Grundform · Person · Zeit) steht da —
+        // sonst liessen sich gleich klingende Formen (mange/manges/mangent)
+        // nicht auseinanderhalten
         if (mode === 'listen') return { solution: firstAlt(solution), spoken: firstAlt(solution), prompt: promptOf(item) };
         if (mode === 'choice') return { solution, prompt: promptOf(item), options: shuffleArray([solution, ...distractors(set, item)]) };
         if (mode === 'scramble') return { solution: firstAlt(solution), prompt: promptOf(item), letters: scrambleLetters(firstAlt(solution)) };
@@ -3969,10 +4031,10 @@
         // mit derselben Form ist eine richtige Lesart («rosae»: Gen. Sg.,
         // Dat. Sg., Nom. Pl.) — eine genügt, die Lösung nennt alle.
         if (mode === 'parse') {
-          const { tab } = item.word, form = firstAlt(solution), want = baseNorm(form).toLowerCase();
+          const { tab } = item.word, form = firstAlt(solution), want = formKey(solution);
           const readings = [];
           tab.t.forEach((row, i) => row.forEach((cell, j) => {
-            if (cell && variants(cell).some((v) => v.toLowerCase() === want)) readings.push([i, j]);
+            if (cell && variants(cell).some((v) => formKey(v) === want)) readings.push([i, j]);
           }));
           const name = ([i, j]) => [tab.rows[i], tab.cols[j]].filter(Boolean).join(' · ');
           return { prompt: form, readings, name, solution: readings.map(name).join(' / ') };
@@ -4038,14 +4100,23 @@
       // Die übrigen Lösungen dieser Runde: wer eine davon exakt tippt, hat
       // verwechselt, nicht sich vertippt (s. checkAnswer).
       const others = useMemo(() => (item ? words.map((w) => (item.dir === 'ab' ? w.b : w.a)).filter((s) => s !== task.solution) : []), [item]);
-      // Eine Stelle fürs Werten — Knopf, Handschrift und Wecker. Bei «alle
-      // Punkte» trägt `typed` die Felder bzw. Schriftzeilen mit \n getrennt.
-      const grade = (typed) => {
+      // Bestimmen: fertig gewählt, wenn Zeile und (falls es sie gibt) Spalte stehen
+      const parseReady = (p) => p.r != null && (!item.word.tab.cols.length || p.c != null);
+      // Eine Stelle fürs Werten — Knopf, Handschrift, Bestimmen und Wecker.
+      // `answer` ist Text (bei «alle Punkte» die Felder bzw. Schriftzeilen mit
+      // \n getrennt), beim Bestimmen die Wahl { r, c }: jede Lesart zählt.
+      const grade = (answer) => {
+        if (mode === 'parse') {
+          const hit = task.readings.some(([i, j]) => i === answer.r && (!item.word.tab.cols.length || j === answer.c));
+          return { status: hit ? 'right' : 'wrong', solution: task.solution };
+        }
         const o = { level: opts.level, lang: answerLang, others, forms: !!opts.forms };
-        return task.need ? checkAll(typed.split('\n'), task.solution, o) : checkAnswer(typed, task.solution, o);
+        return task.need ? checkAll(answer.split('\n'), task.solution, o) : checkAnswer(answer, task.solution, o);
       };
       // Für Protokoll und Prüfungstabelle einzeilig
-      const shown = (typed) => typed.split('\n').map((x) => x.trim()).filter(Boolean).join(' / ');
+      const shown = (answer) => (mode === 'parse'
+        ? (parseReady(answer) ? task.name([answer.r, answer.c]) : '')
+        : answer.split('\n').map((x) => x.trim()).filter(Boolean).join(' / '));
       const check = () => {
         if (!input.trim()) return;
         settle(grade(input), shown(input));
@@ -4085,15 +4156,9 @@
         if (checkAnswer(copyInput, result.solution, { level: 'strict' }).status === 'wrong') { setCopyMiss(true); return; }
         setPhase('feedback');
       };
-      // Bestimmen: fertig gewählt, wenn Zeile und (falls es sie gibt) Spalte stehen
-      const parseReady = (p) => p.r != null && (!item.word.tab.cols.length || p.c != null);
-      const gradeParse = (p) => ({
-        status: task.readings.some(([i, j]) => i === p.r && (!item.word.tab.cols.length || j === p.c)) ? 'right' : 'wrong',
-        solution: task.solution,
-      });
       const checkParse = () => {
         if (phase !== 'ask' || !parseReady(parsed)) return;
-        settle(gradeParse(parsed), task.name([parsed.r, parsed.c]));
+        settle(grade(parsed), shown(parsed));
       };
       const pick = (option) => {
         if (phase !== 'ask') return;
@@ -4136,6 +4201,9 @@
       // Kartenphase ('back') schaltete es sogar weiter, ohne zu werten.
       // `e.repeat` hält gedrückt gehaltene Tasten davon ab, die Rückmeldung
       // gleich wieder wegzuklicken.
+      // Hängt an der Karte, nicht an der Seite: Enter in den Einstellungen
+      // (Schlüsselfelder) oder in der Rückfrage «Beenden?» käme sonst hierher,
+      // prüfte die Antwort und nähme dem Knopf dort seine Taste.
       const onKey = (e) => {
         if (e.key !== 'Enter' || e.repeat) return;
         // Mehrere Felder: Enter springt ins nächste, erst im letzten wird geprüft
@@ -4147,7 +4215,15 @@
           return;
         }
         if (phase === 'ask' && TYPED_MODES.includes(mode)) { e.preventDefault(); check(); }
-        else if (phase === 'ask' && mode === 'parse') { e.preventDefault(); checkParse(); }
+        else if (phase === 'ask' && mode === 'parse') {
+          // Bestimmen: Enter auf einem noch nicht gewählten Knopf wählt ihn
+          // (Tastatur); geprüft wird erst, wenn die Wahl vollständig ist
+          const { axis, i } = e.target.dataset || {};
+          if (axis !== undefined && parsed[axis] !== +i) return;
+          if (!parseReady(parsed)) return;
+          e.preventDefault();
+          checkParse();
+        }
         else if (phase === 'copy') { e.preventDefault(); checkCopy(); }
         else if (phase === 'feedback') { e.preventDefault(); next(); }
       };
@@ -4160,7 +4236,8 @@
         setMic('listening');
         try {
           const alts = await recognizeOnce(answerLang);
-          const scored = alts.map((a) => ({ a, r: checkAnswer(a, task.solution, { level: 'loose', lang: answerLang }) }));
+          // Wortformen auch hier ohne Tippfehler-Toleranz: «amat» für «amant» ist die falsche Person
+          const scored = alts.map((a) => ({ a, r: checkAnswer(a, task.solution, { level: 'loose', lang: answerLang, forms: !!opts.forms }) }));
           const best = scored.find((x) => x.r.status !== 'wrong') || scored[0];
           setHeard(best.a);
           setMic('idle');
@@ -4175,17 +4252,12 @@
         if (!timed || phase !== 'ask' || !item) return;
         const id = setTimeout(() => {
           const { input, built, grade, parsed } = latest.current;
-          if (mode === 'parse') {
-            const r = parseReady(parsed) ? gradeParse(parsed) : { status: 'wrong', solution: task.solution };
-            settle(r.status === 'wrong' ? { ...r, note: 'timeUp' } : r, parseReady(parsed) ? task.name([parsed.r, parsed.c]) : '');
-            return;
-          }
-          const typed = mode === 'scramble' ? built.map((j) => task.letters[j]).join('') : input;
+          const answer = mode === 'scramble' ? built.map((j) => task.letters[j]).join('') : mode === 'parse' ? parsed : input;
           // Bei «alle Punkte» auch leer werten: dann stehen alle Punkte als
           // fehlend da, statt der ganzen Liste in einer Zeile
-          const r = TYPED_MODES.includes(mode) && (typed.trim() || task.need)
-            ? grade(typed) : { status: 'wrong', solution: task.solution };
-          settle(r.status === 'wrong' ? { ...r, note: 'timeUp' } : r, shown(typed));
+          const given = mode === 'parse' ? parseReady(answer) : TYPED_MODES.includes(mode) && (answer.trim() || task.need);
+          const r = given ? grade(answer) : { status: 'wrong', solution: task.solution };
+          settle(r.status === 'wrong' ? { ...r, note: 'timeUp' } : r, shown(answer));
         }, opts.timer * 1000);
         return () => clearTimeout(id);
       }, [pos, phase]);
@@ -4205,8 +4277,7 @@
       const promptLabel = sideName(set, item.dir === 'ab' ? 0 : 1);
 
       const inputField = (ref, value, onChange, cls = '', at) => (
-        <input ref={ref} type="text" value={value} onChange={onChange} placeholder={t('answerPh')} data-at={at}
-          autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[answerLang] || undefined}
+        <input ref={ref} type="text" value={value} onChange={onChange} placeholder={t('answerPh')} data-at={at} {...answerProps(answerLang)}
           className={`flex-1 min-w-0 ${INPUT} text-2xl py-3 ${cls}`} />
       );
 
@@ -4379,7 +4450,7 @@
                 : on ? (result && result.status === 'right' ? 'bg-green-100 border-green-400 text-green-800' : 'bg-red-100 border-red-400 text-red-800')
                 : 'bg-card border-gray-200 text-gray-400';
               return (
-                <button key={i} disabled={phase !== 'ask'} onClick={() => setParsed((p) => ({ ...p, [axis]: i }))} aria-pressed={on}
+                <button key={i} disabled={phase !== 'ask'} onClick={() => setParsed((p) => ({ ...p, [axis]: i }))} aria-pressed={on} data-axis={axis} data-i={i}
                   className={`px-4 py-2.5 rounded-lg border-2 font-semibold transition-all ${state}`}>{l}</button>
               );
             })}
@@ -4468,6 +4539,7 @@
         head = (
           <div className="flex flex-col items-center gap-3 py-2">
             <SpeakButton text={task.spoken} lang={answerLang} big />
+            {item.word.tab && <div className="text-2xl font-bold text-gray-800 text-center break-words">{task.prompt}</div>}
             <div className="text-sm text-gray-400">{t('hearAgain')}: {langName(answerLang)}</div>
             {hint && <div className="text-sm text-gray-500">{hint}</div>}
           </div>
@@ -4488,10 +4560,10 @@
       }
 
       return (
-        <div className={`${SCREEN} p-4 sm:p-8`} onKeyDown={onKey}>
+        <div className={`${SCREEN} p-4 sm:p-8`}>
           <PracticeFrame set={set} pos={pos} queue={queue.length} done={pos + 1} total={total} item={item} onQuit={quit}
             extra={exam && <span className="ml-2 px-1.5 rounded bg-red-100 text-red-700 text-xs font-semibold">{t('examTag')}</span>}>
-            <div className={`${CARD} p-6 sm:p-8 mb-4 relative overflow-hidden ${HAND_MODES.includes(mode) ? 'sketch' : ''}`}>
+            <div onKeyDown={onKey} className={`${CARD} p-6 sm:p-8 mb-4 relative overflow-hidden ${HAND_MODES.includes(mode) ? 'sketch' : ''}`}>
               {timed && phase === 'ask' && (
                 <div key={pos} className="absolute left-0 top-0 h-1.5 bg-orange-400" style={{ animation: `shrink ${opts.timer}s linear forwards` }} />
               )}
@@ -4654,12 +4726,15 @@
         setVals({});
         setResults(null);
       };
+      // Nur aus einem Tabellenfeld: Enter auf «Beenden», in den Einstellungen
+      // oder in der Rückfrage bubbelt sonst hierher und prüfte die ganze
+      // Tabelle. Nach dem Prüfen hat «Weiter» den Fokus, Enter drückt ihn selbst.
       const onKey = (e) => {
-        if (e.key !== 'Enter' || e.repeat) return;
-        e.preventDefault();
-        if (results) { next(); return; }
+        if (e.key !== 'Enter' || e.repeat || results) return;
         const at = order.indexOf(e.target.dataset && e.target.dataset.cell);
-        if (at >= 0 && at < order.length - 1) focusCell(order[at + 1]);
+        if (at < 0) return;
+        e.preventDefault();
+        if (at < order.length - 1) focusCell(order[at + 1]);
         else check();
       };
       const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
@@ -4673,13 +4748,13 @@
         const r = results && results[k];
         return (
           <td key={j} className="px-1 py-1 align-top">
-            <input type="text" value={vals[k] || ''} data-cell={k} disabled={!!results}
+            <input type="text" value={vals[k] || ''} data-cell={k} disabled={!!results} {...answerProps(lang)}
               onChange={(e) => setVals((v) => ({ ...v, [k]: e.target.value }))}
-              autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false} lang={TTS_LOCALE[lang] || undefined}
-              className={`w-full min-w-[7rem] ${INPUT} text-lg py-1.5 ${r ? (r.status === 'wrong' ? 'border-red-400 bg-red-50' : r.status === 'almost' ? 'border-yellow-400 bg-yellow-50' : 'border-green-400 bg-green-50') : ''}`} />
+              className={`w-full min-w-[7rem] ${INPUT} text-lg py-1.5 ${r ? STATUS_CLASS[r.status] : ''}`} />
             {r && r.status !== 'right' && (
               <div className="text-sm mt-0.5 px-1">
-                {r.typed ? <b><DiffText parts={charDiff(baseNorm(r.typed), r.solution)[1]} cls="diff-ins" /></b> : <b>{r.solution}</b>}
+                {r.typed ? <b><DiffText parts={charDiff(baseNorm(r.typed), r.solution)[1]} cls="diff-ins" /></b>
+                  : <><b>{r.solution}</b> <span className="text-gray-500">· {t('noAnswer')}</span></>}
                 {r.note && <span className="text-gray-500"> · {t(r.note)}</span>}
               </div>
             )}
