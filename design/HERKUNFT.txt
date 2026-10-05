@@ -1,0 +1,1 @@
+Kopie aus MySuite (9850074 2026-10-04) – nicht hier ändern, sondern in ~/MySuite und ./sync.sh voci

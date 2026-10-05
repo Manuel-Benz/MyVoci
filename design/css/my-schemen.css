@@ -1,0 +1,86 @@
+/* my-schemen.css – fünf Farbschemen. <html data-schema="fox" data-ton="5"> */
+/* data-ton fehlt = Akzent des Schemas. Spiel-/Rad-/Bühnenfarben sind in Hell und Dunkel gleich. */
+/* --spiel-N-ink: Schrift auf der Spielfarbe (weiss ab 3:1, sonst dunkel). --akzent-buehne: Akzent auf
+   dunkler Bühne, unabhängig vom OS-Modus (= Dunkel-Akzent), mit --akzent-buehne-ink als Schrift. */
+
+[data-schema="fox"] { /* Fantastic Mr. Fox – Warmer Herbst · Gegenpol Cyan */
+  --akzent:#D95B0F; --akzent-ink:#FFFFFF;
+  --rot:#B0261F; --gruen:#556E1E; --orange:#D95B0F; --blau:#1B93BE;
+  --ton-1:#1B93BE; --ton-2:#0F5C6B; --ton-3:#556E1E; --ton-4:#D95B0F; --ton-5:#900B2E; --ton-6:#522A12; --ton-7:#5E3550; --ton-8:#8F4E52; --ton-9:#7E5E00; /* Azid-Himmelblau, Dunkles Petrol, Moos-Oliv, Kürbis, Rost-Karmin, Schokolade, Pflaume, Altrosa, Bronze-Senf */
+  --spiel-1:#B40F20; --spiel-2:#46ACC8; --spiel-3:#E2D200; --spiel-4:#DD8D29; --buehne-1:#3F0A10; --buehne-2:#935A12;
+  --spiel-1-ink:#FFFFFF; --spiel-2-ink:#1D1D1F; --spiel-3-ink:#1D1D1F; --spiel-4-ink:#1D1D1F; --akzent-buehne:#EC7024; --akzent-buehne-ink:#1D1D1F;
+  --rad-1:#D95B0F; --rad-2:#E8B307; --rad-3:#900B2E; --rad-4:#DCC08A; --rad-5:#556E1E; --rad-6:#0F5C6B; --rad-7:#522A12; --rad-8:#1B93BE;
+}
+[data-schema="budapest"] { /* Grand Budapest Hotel – Violett & Magenta · Gegenpol Messing */
+  --akzent:#8A34C4; --akzent-ink:#FFFFFF;
+  --rot:#C0392B; --gruen:#6E9B75; --orange:#C08A2A; --blau:#5B62D6;
+  --ton-1:#5B62D6; --ton-2:#7A3FC0; --ton-3:#4A2569; --ton-4:#C169D6; --ton-5:#B02F8C; --ton-6:#8A6478; --ton-7:#E05C93; --ton-8:#A81B47; --ton-9:#A8851C; /* Indigoblau, Lobby-Violett, Aubergine, Orchidee, Magenta, Mauve-Taupe, Mendl's Zuckerrosa, Himbeere, Messing-Gold */
+  --spiel-1:#F49BC4; --spiel-2:#4A2569; --spiel-3:#C79E24; --spiel-4:#5B62D6; --buehne-1:#2A1238; --buehne-2:#6A2F6E;
+  --spiel-1-ink:#1D1D1F; --spiel-2-ink:#FFFFFF; --spiel-3-ink:#1D1D1F; --spiel-4-ink:#FFFFFF; --akzent-buehne:#AC70D5; --akzent-buehne-ink:#1D1D1F;
+  --rad-1:#F49BC4; --rad-2:#C169D6; --rad-3:#A81B47; --rad-4:#4A2569; --rad-5:#D9C4EC; --rad-6:#5B62D6; --rad-7:#B02F8C; --rad-8:#7A3FC0;
+}
+[data-schema="moonrise"] { /* Moonrise Kingdom – Wald & See · Gegenpol Rot */
+  --akzent:#1E7A9E; --akzent-ink:#FFFFFF;
+  --rot:#CB3F28; --gruen:#3E8F2E; --orange:#C08A24; --blau:#1E7A9E;
+  --ton-1:#8B8A2E; --ton-2:#799F23; --ton-3:#2F7523; --ton-4:#17603F; --ton-5:#33A08E; --ton-6:#2E86B5; --ton-7:#1E4F7A; --ton-8:#5B5FA8; --ton-9:#CB3F28; /* Oliv-Khaki, Limette, Gras, Tanne, Seegrün, Petrol, Navy, Schieferblau, Suzy-Rot */
+  --spiel-1:#CB3F28; --spiel-2:#33A08E; --spiel-3:#E4D6B4; --spiel-4:#1E4F7A; --buehne-1:#0F2A33; --buehne-2:#2D6B5A;
+  --spiel-1-ink:#FFFFFF; --spiel-2-ink:#FFFFFF; --spiel-3-ink:#1D1D1F; --spiel-4-ink:#FFFFFF; --akzent-buehne:#2793BE; --akzent-buehne-ink:#1D1D1F;
+  --rad-1:#7CA226; --rad-2:#17603F; --rad-3:#33A08E; --rad-4:#1E4F7A; --rad-5:#6FA8CE; --rad-6:#E4D6B4; --rad-7:#5B5FA8; --rad-8:#257F96;
+}
+[data-schema="zissou"] { /* The Life Aquatic – Gelb & Rot · Gegenpol Meerblau */
+  --akzent:#E1AF00; --akzent-ink:#2B2400;
+  --rot:#960C09; --gruen:#3E7A2A; --orange:#C3693C; --blau:#23768C;
+  --ton-1:#C21500; --ton-2:#C25E00; --ton-3:#8C6E00; --ton-4:#4A4A10; --ton-5:#23768C; --ton-6:#1B3F5C; --ton-7:#7A2E14; --ton-8:#B24A6A; --ton-9:#1F6E5E; /* Zissou-Rot, Orange, Gold, Oliv, Meerblau, Tiefsee, Rost, Mützenrosa, Petrol */
+  --spiel-1:#F21A00; --spiel-2:#3B9AB2; --spiel-3:#E1AF00; --spiel-4:#78B7C5; --buehne-1:#0D3542; --buehne-2:#2E7D94;
+  --spiel-1-ink:#FFFFFF; --spiel-2-ink:#FFFFFF; --spiel-3-ink:#1D1D1F; --spiel-4-ink:#1D1D1F; --akzent-buehne:#EBCC2A; --akzent-buehne-ink:#1D1D1F;
+  --rad-1:#F21A00; --rad-2:#3B9AB2; --rad-3:#E1AF00; --rad-4:#1F6E5E; --rad-5:#E58AA6; --rad-6:#1B3F5C; --rad-7:#C27A55; --rad-8:#7A2E14;
+}
+[data-schema="isle"] { /* Isle of Dogs – Erdtöne, entsättigt · Gegenpol Lavendel */
+  --akzent:#8A6232; --akzent-ink:#FFFFFF;
+  --rot:#A0412D; --gruen:#5E6B3A; --orange:#B06A2A; --blau:#4A6A8E;
+  --ton-1:#8A6232; --ton-2:#39312F; --ton-3:#9A3E26; --ton-4:#7A6A60; --ton-5:#7E5C94; --ton-6:#6E6A1A; --ton-7:#3F6A4A; --ton-8:#3E5A80; --ton-9:#A0566A; /* Sand, Kaffee, Rost, Taupe, Lavendel, Stroh, Moos, Schiefer, Altrosa */
+  --spiel-1:#B6854D; --spiel-2:#39312F; --spiel-3:#EAD3BF; --spiel-4:#AA9486; --buehne-1:#1C1718; --buehne-2:#4A403C;
+  --spiel-1-ink:#FFFFFF; --spiel-2-ink:#FFFFFF; --spiel-3-ink:#1D1D1F; --spiel-4-ink:#1D1D1F; --akzent-buehne:#B6854D; --akzent-buehne-ink:#1D1D1F;
+  --rad-1:#B6854D; --rad-2:#39312F; --rad-3:#EAD3BF; --rad-4:#AA9486; --rad-5:#79402E; --rad-6:#CCBA72; --rad-7:#9986A5; --rad-8:#3E5A80;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-schema="fox"] {
+    --akzent:#EC7024; --akzent-ink:#FFFFFF;
+    --rot:#DB605A; --gruen:#73942B; --orange:#EC7024; --blau:#25ACDD;
+    --ton-1:#16AEE4; --ton-2:#2B96A9; --ton-3:#74952C; --ton-4:#ED7125; --ton-5:#EC5E86; --ton-6:#CA7340; --ton-7:#AE799F; --ton-8:#B57A7A; --ton-9:#AE830A; /* Azid-Himmelblau, Dunkles Petrol, Moos-Oliv, Kürbis, Rost-Karmin, Schokolade, Pflaume, Altrosa, Bronze-Senf */
+  }
+  [data-schema="budapest"] {
+    --akzent:#AC70D5; --akzent-ink:#FFFFFF;
+    --rot:#E06A50; --gruen:#87AB8C; --orange:#D29E40; --blau:#7D83DD;
+    --ton-1:#7385E0; --ton-2:#A373DB; --ton-3:#A17BBC; --ton-4:#E396EB; --ton-5:#D35FB2; --ton-6:#A28092; --ton-7:#E385AF; --ton-8:#E35A83; --ton-9:#C79E24; /* Indigoblau, Lobby-Violett, Aubergine, Orchidee, Magenta, Mauve-Taupe, Mendl's Zuckerrosa, Himbeere, Messing-Gold */
+  }
+  [data-schema="moonrise"] {
+    --akzent:#2793BE; --akzent-ink:#FFFFFF;
+    --rot:#D96552; --gruen:#4DAC3A; --orange:#D69F37; --blau:#2793BE;
+    --ton-1:#A8A73A; --ton-2:#94C231; --ton-3:#439C33; --ton-4:#2D9C69; --ton-5:#40BEA9; --ton-6:#3E9EC7; --ton-7:#418ED7; --ton-8:#8885B9; --ton-9:#DA6753; /* Oliv-Khaki, Limette, Gras, Tanne, Seegrün, Petrol, Navy, Schieferblau, Suzy-Rot */
+  }
+  [data-schema="zissou"] {
+    --akzent:#EBCC2A; --akzent-ink:#2B2400;
+    --rot:#F9786C; --gruen:#6FAE4A; --orange:#E76006; --blau:#3B9AB2;
+    --ton-1:#F2553F; --ton-2:#EE8A2A; --ton-3:#E1AF00; --ton-4:#B5B033; --ton-5:#3B9AB2; --ton-6:#6A8FE8; --ton-7:#C27A55; --ton-8:#E58AA6; --ton-9:#4DB39A; /* Zissou-Rot, Orange, Gold, Oliv, Meerblau, Tiefsee, Rost, Mützenrosa, Petrol */
+  }
+  [data-schema="isle"] {
+    --akzent:#B6854D; --akzent-ink:#1D1D1F;
+    --rot:#D9725A; --gruen:#97A56A; --orange:#D9954E; --blau:#8AA6C6;
+    --ton-1:#B6854D; --ton-2:#EAD3BF; --ton-3:#D0765C; --ton-4:#AA9486; --ton-5:#AC8AC4; --ton-6:#D4C060; --ton-7:#8FA36A; --ton-8:#7FA0C8; --ton-9:#D59AA8; /* Sand, Kaffee, Rost, Taupe, Lavendel, Stroh, Moos, Schiefer, Altrosa */
+  }
+}
+
+/* Ton als Akzent: */
+[data-ton="1"] { --akzent: var(--ton-1); }
+[data-ton="2"] { --akzent: var(--ton-2); }
+[data-ton="3"] { --akzent: var(--ton-3); }
+[data-ton="4"] { --akzent: var(--ton-4); }
+[data-ton="5"] { --akzent: var(--ton-5); }
+[data-ton="6"] { --akzent: var(--ton-6); }
+[data-ton="7"] { --akzent: var(--ton-7); }
+[data-ton="8"] { --akzent: var(--ton-8); }
+[data-ton="9"] { --akzent: var(--ton-9); }
+/* Gelbe oder helle Akzente: dunkle Schrift */
+[data-schema="zissou"]:not([data-ton]) { --akzent-ink:#2B2400; }

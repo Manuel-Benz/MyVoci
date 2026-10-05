@@ -1,0 +1,69 @@
+/* my-tokens.css – gemeinsam für alle My-Apps. Quelle: My Designsystem */
+:root {
+  --grund:#F6F4F1; --flaeche:#FFFFFF; --karte:#FFFFFF; --linie:#E6E2DC;
+  --text:#1D1D1F; --text-2:#5A5A60; --text-3:#8A8A90; --leiste:#202022;
+  --zeile:rgba(29,29,31,.035); --zeile-linie:rgba(29,29,31,.07); --hover:rgba(29,29,31,.06);
+  --schatten:0 1px 2px rgba(0,0,0,.06), 0 12px 40px rgba(60,40,20,.14);
+  --radius-s:6px; --radius:10px; --radius-l:14px; --radius-pille:999px;
+  --schrift:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --grund:#121213; --flaeche:#19191B; --karte:#1F1F22; --linie:#2E2E32;
+    --text:#F2F2F4; --text-2:#B4B4BA; --text-3:#85858C;
+    --zeile:rgba(242,242,244,.035); --zeile-linie:rgba(242,242,244,.07); --hover:rgba(242,242,244,.08);
+    --schatten:0 1px 2px rgba(0,0,0,.4), 0 12px 40px rgba(0,0,0,.5);
+  }
+}
+/* Abgeleitete Akzent-Rollen. --akzent setzt my-schemen.css (bzw. data-ton). */
+:root {
+  --akzent-weich: color-mix(in srgb, var(--akzent) 14%, #FFFFFF);
+  --akzent-ink: #FFFFFF;
+  /* Akzent als Text: Helligkeit gedeckelt, Farbton bleibt → ≥ 4.5:1 auf Karte und --akzent-weich
+     (gelbe Akzente wären sonst unlesbar). Rückfall für Browser ohne Relative Color
+     (Safari < 18, Chrome < 119): fest abgedunkelt bzw. aufgehellt. */
+  --akzent-text: color-mix(in srgb, var(--akzent) 50%, #000000);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --akzent-weich: color-mix(in srgb, var(--akzent) 22%, #1F1F22);
+    --akzent-text: color-mix(in srgb, var(--akzent) 55%, #FFFFFF);
+  }
+}
+@supports (color: oklch(from red l c h)) {
+  :root { --akzent-text: oklch(from var(--akzent) min(l, 0.5) c h); }
+  @media (prefers-color-scheme: dark) {
+    :root { --akzent-text: oklch(from var(--akzent) max(l, 0.74) c h); }
+  }
+}
+/* Dunkel erzwingen, unabhängig vom OS-Modus: data-modus="dunkel" an <html> oder einem
+   Container (z. B. für einen eigenen Umschalter der App). Dieselben Werte wie oben im
+   Dunkel-Block; die Akzent-Rollen werden hier neu abgeleitet, damit sie auch auf einem
+   Container mit eigenem --akzent stimmen. */
+[data-modus="dunkel"] {
+  --grund:#121213; --flaeche:#19191B; --karte:#1F1F22; --linie:#2E2E32;
+  --text:#F2F2F4; --text-2:#B4B4BA; --text-3:#85858C;
+  --zeile:rgba(242,242,244,.035); --zeile-linie:rgba(242,242,244,.07); --hover:rgba(242,242,244,.08);
+  --schatten:0 1px 2px rgba(0,0,0,.4), 0 12px 40px rgba(0,0,0,.5);
+  --akzent-weich: color-mix(in srgb, var(--akzent) 22%, #1F1F22);
+  --akzent-text: color-mix(in srgb, var(--akzent) 55%, #FFFFFF);
+  color-scheme: dark;
+}
+@supports (color: oklch(from red l c h)) {
+  [data-modus="dunkel"] { --akzent-text: oklch(from var(--akzent) max(l, 0.74) c h); }
+}
+/* Hell erzwingen (Gegenstück für den Umschalter Hell/Dunkel/System). Hinweis: der
+   Schema-Akzent aus my-schemen.css folgt weiter dem OS-Modus; --akzent-text deckelt
+   ihn hier wieder auf Hell-Lesbarkeit. */
+[data-modus="hell"] {
+  --grund:#F6F4F1; --flaeche:#FFFFFF; --karte:#FFFFFF; --linie:#E6E2DC;
+  --text:#1D1D1F; --text-2:#5A5A60; --text-3:#8A8A90;
+  --zeile:rgba(29,29,31,.035); --zeile-linie:rgba(29,29,31,.07); --hover:rgba(29,29,31,.06);
+  --schatten:0 1px 2px rgba(0,0,0,.06), 0 12px 40px rgba(60,40,20,.14);
+  --akzent-weich: color-mix(in srgb, var(--akzent) 14%, #FFFFFF);
+  --akzent-text: color-mix(in srgb, var(--akzent) 50%, #000000);
+  color-scheme: light;
+}
+@supports (color: oklch(from red l c h)) {
+  [data-modus="hell"] { --akzent-text: oklch(from var(--akzent) min(l, 0.5) c h); }
+}

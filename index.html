@@ -4,96 +4,243 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>MyVoci</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=3" />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3" />
+  <link rel="icon" type="image/svg+xml" href="design/icons/voci.svg?v=4" />
+  <link rel="manifest" href="manifest.webmanifest?v=4" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=4" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="MyVoci" />
-  <meta name="theme-color" content="#fff7ed" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="theme-color" content="#F6F4F1" />
+  <!-- My-Designsystem: Kopie aus ~/MySuite (design/HERKUNFT.txt), hier nie ändern -->
+  <link rel="stylesheet" href="design/css/my-tokens.css" />
+  <link rel="stylesheet" href="design/css/my-schemen.css" />
   <script>
-    // ---------- Farben: Sonne (hell) / Nacht (dunkel) ----------
-    // Die Klassen im Code heissen weiter `gray-…`, `acc-…` (Akzent),
-    // `acc2-…` (zweiter Akzent), `red-…` usw. — Tailwind liest sie aber aus
-    // CSS-Variablen, die hier pro Modus gesetzt werden. Hell (Sonne): Akzente
-    // Orange → Rose auf warmem Stein-Grau. Dunkel (Nacht): Akzente Himmelblau
-    // → Smaragd auf Schiefer. Dunkel kehrt jede Farbskala um (50 ↔ 950,
-    // 100 ↔ 900 …): ein heller Hinweiskasten wird dunkel getönt, dunkle
-    // Schrift hell. Grau hat eine eigene dunkle Skala, weil die reine Umkehr
-    // zu wenig Kontrast für blasse Schrift liesse.
-    // Muss vor dem ersten Zeichnen laufen, sonst blitzt die helle Seite auf.
+    // ---------- Farbschema und Hell/Dunkel (My-Designsystem) ----------
+    // Schema, Ton und Hell/Dunkel stehen als data-schema/data-ton/data-modus am
+    // <html>, bevor irgendetwas gezeichnet wird — sonst blitzt das
+    // Standardschema bzw. die helle Seite auf. Gespeichert und angewendet wird
+    // nur hier; die Einstellungen rufen `myLook`/`setLook`/`myModus`/`setModus`.
     (() => {
-      const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
-      const P = {
-        gray: ['#fafaf9', '#f5f5f4', '#e7e5e4', '#d6d3d1', '#a8a29e', '#78716c', '#57534e', '#44403c', '#292524', '#1c1917', '#0c0a09'],
-        acc: ['#fff7ed', '#ffedd5', '#fed7aa', '#fdba74', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12', '#431407'],
-        acc2: ['#fff1f2', '#ffe4e6', '#fecdd3', '#fda4af', '#fb7185', '#f43f5e', '#e11d48', '#be123c', '#9f1239', '#881337', '#4c0519'],
-        red: ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d', '#450a0a'],
-        green: ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d', '#166534', '#14532d', '#052e16'],
-        amber: ['#fffbeb', '#fef3c7', '#fde68a', '#fcd34d', '#fbbf24', '#f59e0b', '#d97706', '#b45309', '#92400e', '#78350f', '#451a03'],
-        yellow: ['#fefce8', '#fef9c3', '#fef08a', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#854d0e', '#713f12', '#422006'],
-        lime: ['#f7fee7', '#ecfccb', '#d9f99d', '#bef264', '#a3e635', '#84cc16', '#65a30d', '#4d7c0f', '#3f6212', '#365314', '#1a2e05'],
-      };
-      P.orange = P.acc; // Signalfarbe «orange» = Akzent von Sonne
-      // Nacht: eigene Akzente (Umkehr unten gilt auch für sie) und Schiefer-Grau
-      const DARK = {
-        acc: ['#f0f9ff', '#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8', '#0ea5e9', '#0284c7', '#0369a1', '#075985', '#0c4a6e', '#082f49'],
-        acc2: ['#ecfdf5', '#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669', '#047857', '#065f46', '#064e3b', '#022c22'],
-      };
-      const DARK_GRAY = ['#243044', '#273449', '#334155', '#475569', '#7c8ba1', '#94a3b8', '#b4c0cf', '#cbd5e1', '#e2e8f0', '#f1f5f9', '#f8fafc'];
-      const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(' ');
-      const vars = (dark) => Object.entries(P).map(([name, scale]) => {
-        const s = dark ? (name === 'gray' ? DARK_GRAY : [...(DARK[name] || scale)].reverse()) : scale;
-        return STEPS.map((n, i) => `--c-${name}-${n}:${rgb(s[i])};`).join('');
-      }).join('');
-      const PAGE = { light: '#fff7ed', dark: '#0f172a' }; // auch Farbe der Statusleiste
-      const style = document.createElement('style');
-      style.textContent = `
-        :root{${vars(false)}--c-card:255 255 255;--page:linear-gradient(135deg,${PAGE.light},#fdf2f8);color-scheme:light}
-        :root[data-theme="dark"]{${vars(true)}--c-card:30 41 59;--page:${PAGE.dark};color-scheme:dark}`;
-      document.head.appendChild(style);
-      const shades = (name) => Object.fromEntries(STEPS.map((n) => [n, `rgb(var(--c-${name}-${n}) / <alpha-value>)`]));
-      // Ohne Tailwind (CDN nicht erreichbar) trotzdem weiter: hell/dunkel
-      // unten muss stehen, sonst werfen die Knöpfe in den Einstellungen
-      if (window.tailwind) tailwind.config = { theme: { extend: {
-        colors: { ...Object.fromEntries(Object.keys(P).map((k) => [k, shades(k)])), card: 'rgb(var(--c-card) / <alpha-value>)' },
-      } } };
-      // Wahl: 'auto' folgt dem Gerät, 'light'/'dark' fest. Gespeichert und
-      // gelesen wird nur hier — die Einstellungen rufen `themePick`/`setTheme`.
-      const KEY = 'myvoci_theme';
+      const LOOK_KEY = 'myvoci_look';
+      const MODUS_KEY = 'myvoci_modus';
+      const DEFAULT_LOOK = { schema: 'moonrise', ton: 7 }; // Navy
+      const SCHEMES = ['fox', 'budapest', 'moonrise', 'zissou', 'isle'];
+      const read = (key) => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } };
+      const write = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch {} };
+      const html = document.documentElement;
       const dark = matchMedia('(prefers-color-scheme: dark)');
-      window.themePick = () => { try { return JSON.parse(localStorage.getItem(KEY)) || 'auto'; } catch { return 'auto'; } };
-      const apply = (pick = window.themePick()) => {
-        const mode = pick === 'auto' ? (dark.matches ? 'dark' : 'light') : pick;
-        document.documentElement.dataset.theme = mode;
+      // Grundfarbe aus my-tokens.css, auch für die Statusleiste
+      const GRUND = { hell: '#F6F4F1', dunkel: '#121213' };
+      const bar = () => {
+        const mode = html.dataset.modus || (dark.matches ? 'dunkel' : 'hell');
         const meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.content = PAGE[mode];
+        if (meta) meta.content = GRUND[mode];
         // Home-Screen-Webapp auf iOS: dort gilt nicht theme-color, sondern
         // dieser Wert, gelesen beim Start — sonst bleibt die Statusleiste
         // über der dunklen Seite weiss
-        const bar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-        if (bar) bar.content = mode === 'dark' ? 'black' : 'default';
+        const ios = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+        if (ios) ios.content = mode === 'dunkel' ? 'black' : 'default';
       };
-      // Die Wahl gilt sofort, auch wenn der Speicher nein sagt (privates Fenster)
-      window.setTheme = (pick) => { try { localStorage.setItem(KEY, JSON.stringify(pick)); } catch {} apply(pick); };
-      apply();
-      // Safari vor 14 kennt nur das alte `addListener`
-      if (dark.addEventListener) dark.addEventListener('change', () => apply());
-      else dark.addListener(() => apply());
+      // Die Wahrheit steht am <html>: so zeigen die Einstellungen immer, was
+      // gilt — auch wenn der Browser das Speichern verweigert (privates Fenster).
+      window.myLook = () => ({ schema: html.dataset.schema, ton: Number(html.dataset.ton) || null });
+      const applyLook = (look) => {
+        html.dataset.schema = look.schema;
+        if (look.ton) html.dataset.ton = look.ton; else delete html.dataset.ton;
+      };
+      window.setLook = (look) => { write(LOOK_KEY, look); applyLook(look); };
+      window.myModus = () => html.dataset.modus || 'system';
+      const applyModus = (modus) => {
+        if (modus === 'hell' || modus === 'dunkel') html.dataset.modus = modus; else delete html.dataset.modus;
+        bar();
+      };
+      window.setModus = (modus) => { write(MODUS_KEY, modus); applyModus(modus); };
+      window.DEFAULT_LOOK = DEFAULT_LOOK;
+      window.SCHEME_IDS = SCHEMES;
+
+      const look = read(LOOK_KEY);
+      applyLook(look && SCHEMES.includes(look.schema) ? look : DEFAULT_LOOK);
+      // Alte Wahl aus der Zeit von Sonne/Nacht (`myvoci_theme`) übernehmen
+      let modus = read(MODUS_KEY);
+      if (modus == null) modus = { light: 'hell', dark: 'dunkel' }[read('myvoci_theme')] || 'system';
+      applyModus(modus);
+      // Safari vor 14 kennt am matchMedia-Objekt nur das alte `addListener`
+      if (dark.addEventListener) dark.addEventListener('change', bar); else dark.addListener(bar);
     })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind kennt nur die Farben des Designsystems (wie MyMemory): eine
+    // vergessene Klasse wie `text-red-600` erzeugt gar keinen Stil statt
+    // einer festen Farbe. Signalfarben je dreifach: Schrift (`text-rot`),
+    // getönte Fläche (`bg-rot-weich`), Rand (`border-rot-linie`), deckend
+    // (`bg-rot-voll`). Ohne Tailwind (CDN nicht erreichbar) trotzdem weiter.
+    const signal = (n) => ({ DEFAULT: `var(--${n}-text)`, voll: `var(--${n})`, weich: `var(--${n}-weich)`, linie: `var(--${n}-linie)` });
+    if (window.tailwind) tailwind.config = {
+      theme: {
+        colors: {
+          transparent: 'transparent',
+          current: 'currentColor',
+          // Echtes Weiss nur, wo es weiss bleiben soll: Schreibfläche, Schalter-Knopf
+          white: '#FFFFFF',
+          black: '#000000',
+          grund: 'var(--grund)',
+          karte: 'var(--karte)',
+          linie: 'var(--linie)',
+          hover: 'var(--hover)',
+          zeile: 'var(--zeile)',
+          text: { DEFAULT: 'var(--text)', 2: 'var(--text-2)', 3: 'var(--text-3)' },
+          akzent: { DEFAULT: 'var(--akzent)', weich: 'var(--akzent-weich)', text: 'var(--akzent-text)', ink: 'var(--akzent-ink)' },
+          rot: signal('rot'),
+          gruen: signal('gruen'),
+          orange: signal('orange'),
+          // Leitner-Fächer 0–5: von «neu» über rot nach grün (Werte unten in :root)
+          fach: Object.fromEntries([0, 1, 2, 3, 4, 5].map((i) => [i, `var(--fach-${i})`])),
+        },
+        borderRadius: {
+          none: '0',
+          s: 'var(--radius-s)',
+          DEFAULT: 'var(--radius)',
+          md: 'var(--radius)',
+          lg: 'var(--radius)',
+          xl: 'var(--radius-l)',
+          full: 'var(--radius-pille)',
+        },
+      },
+    };
   </script>
   <script defer src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
-  <style>
+  <style type="text/tailwindcss">
+    /* Über Tailwind verarbeitet, sonst läge dessen Preflight (button { background:
+       transparent }) hinter diesen Regeln und gewönne. Komponenten in @layer
+       components, damit Tailwind-Klassen sie im Einzelfall noch übersteuern.
+       Bausteine wie in MyMemory (dieselben Namen). */
+    @layer base {
+    /* Eigene Werte heissen bewusst anders als die Tokens (--akzent, --karte, --radius …):
+       gleichnamig neu definiert, würden sie das Schema still überschreiben.
+       Abgeleitete Flächen mischen mit var(--karte) — so machen sie Hell/Dunkel mit. */
+    :root:not([data-modus]) { color-scheme: light dark; }
+    :root {
+      /* Signalfarben als Schrift: Orange/Grün erreichen auf Weiss nur ~3:1 */
+      --rot-text: color-mix(in oklab, var(--rot) 80%, var(--text));
+      --gruen-text: color-mix(in oklab, var(--gruen) 70%, var(--text));
+      --orange-text: color-mix(in oklab, var(--orange) 60%, var(--text));
+      --rot-weich: color-mix(in oklab, var(--rot) 14%, var(--karte));
+      --gruen-weich: color-mix(in oklab, var(--gruen) 16%, var(--karte));
+      --orange-weich: color-mix(in oklab, var(--orange) 16%, var(--karte));
+      --rot-linie: color-mix(in oklab, var(--rot) 45%, var(--karte));
+      --gruen-linie: color-mix(in oklab, var(--gruen) 45%, var(--karte));
+      --orange-linie: color-mix(in oklab, var(--orange) 50%, var(--karte));
+      --fach-0: var(--linie);
+      --fach-1: var(--rot);
+      --fach-2: var(--orange);
+      --fach-3: color-mix(in oklab, var(--orange) 50%, var(--gruen));
+      --fach-4: color-mix(in oklab, var(--orange) 20%, var(--gruen));
+      --fach-5: var(--gruen);
+      --schleier: color-mix(in srgb, var(--leiste) 55%, transparent);
+    }
+    /* Ohne color-mix (Safari < 16.2, Chrome < 111) wären die Flächen sonst
+       ungültig und durchsichtig: dann deckende Ersatzwerte. */
+    @supports not (color: color-mix(in oklab, red, blue)) {
+      :root {
+        --rot-text: var(--rot); --gruen-text: var(--gruen); --orange-text: var(--orange);
+        --rot-weich: var(--zeile); --gruen-weich: var(--zeile); --orange-weich: var(--zeile);
+        --rot-linie: var(--rot); --gruen-linie: var(--gruen); --orange-linie: var(--orange);
+        --fach-3: var(--orange); --fach-4: var(--gruen);
+        --schleier: rgba(32, 32, 34, .55);
+      }
+    }
+    body {
+      background: var(--grund); color: var(--text);
+      font-family: var(--schrift); font-size: 16px; line-height: 1.55;
+    }
+    h1, h2 { letter-spacing: -0.02em; }
     /* iOS zoomt in Eingabefelder unter 16 px hinein — hier nie */
     input, textarea, select { font-size: max(16px, 1em); }
-    body { background: var(--page); color: rgb(var(--c-gray-800)); }
-    .diff-del { background: rgb(var(--c-red-200)); text-decoration: line-through; border-radius: 2px; }
-    .diff-ins { background: rgb(var(--c-green-200)); border-radius: 2px; }
+    code { background: var(--hover); padding: 0 4px; border-radius: var(--radius-s); }
+    }
+    @layer components {
+    .kopf { font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); }
+    .kachel { background: var(--karte); border: 1px solid var(--linie); border-radius: var(--radius-l); }
+
+    /* Knöpfe (DESIGN.md): primär, sekundär, neutral */
+    .knopf { border-radius: var(--radius); font-weight: 600; transition: background .15s, border-color .15s, opacity .15s; }
+    .knopf-1 { background: var(--akzent); color: var(--akzent-ink); }
+    .knopf-1:hover { background: color-mix(in oklab, var(--akzent) 88%, var(--text)); }
+    .knopf-2 { background: var(--akzent-weich); color: var(--akzent-text); }
+    .knopf-2:hover { background: color-mix(in oklab, var(--akzent) 24%, var(--karte)); }
+    .knopf-n { background: transparent; color: var(--text); border: 1px solid var(--linie); }
+    .knopf-n:hover { background: var(--hover); }
+    .knopf:disabled { opacity: .45; cursor: not-allowed; }
+    /* Markenzug wie in MyMemory/MyKahoot: Papagei rechts vom Titel, ohne Kachel, als
+       Maske in currentColor — dunkel auf Hell, hell auf Dunkel. Datei aus tools/make-logo.py */
+    .logo {
+      display: inline-block; height: 1.15em;
+      aspect-ratio: 682 / 642; /* logo-seiten (tools/make-logo.py) */
+      background: currentColor;
+      -webkit-mask: url("logo-papagei.svg?v=1") center / contain no-repeat;
+      mask: url("logo-papagei.svg?v=1") center / contain no-repeat;
+    }
+    /* Quadratische Symbolknöpfe, ruhig bis zum Darüberfahren */
+    .symbol { flex: none; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+      border-radius: var(--radius); color: var(--text-2); background: transparent; transition: background .15s, color .15s; }
+    .symbol:hover { background: var(--hover); color: var(--text); }
+    .symbol.gefahr:hover { color: var(--rot-text); }
+    /* Knöpfe, die auf dem Rand stehen: deckende Fläche, sonst scheint er durch. Das
+       durchsichtige --hover legt sich beim Darüberfahren als Schleier darüber. */
+    .auf-rand { background-color: var(--karte); }
+    .auf-rand:hover { background-color: var(--karte); background-image: linear-gradient(var(--hover), var(--hover)); }
+    /* Umschalter (Sprache, Darstellung, kleine Wahlen) */
+    .umschalter { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--linie); border-radius: var(--radius); }
+    .umschalter button { padding: 4px 12px; border-radius: 7px; color: var(--text-2); font-size: 15px; }
+    .umschalter button:hover:not(:disabled) { background: var(--hover); }
+    .umschalter button[aria-pressed="true"] { background: var(--akzent-weich); color: var(--akzent-text); font-weight: 600; }
+    .umschalter button:disabled { opacity: .4; cursor: not-allowed; }
+    .farbtupfer { width: 26px; height: 26px; border-radius: var(--radius-pille); background: var(--tupfer);
+      outline-offset: 2px; transition: transform .1s; }
+    .farbtupfer:hover { transform: scale(1.12); }
+    .farbtupfer[aria-pressed="true"] { outline: 2px solid var(--text); }
+    .punkt { display: inline-block; width: 10px; height: 10px; border-radius: var(--radius-pille); flex: none; }
+    .feld { padding: 8px 12px; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--karte); color: var(--text); }
+    .feld:focus { outline: none; border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-weich); }
+    .feld::placeholder { color: var(--text-3); }
+    .kuerzel { padding: 0 6px; border-radius: var(--radius-s); background: var(--hover); color: var(--text-2);
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    /* Pille (DESIGN.md): Akzent als Text auf --akzent-weich */
+    .pille { display: inline-block; padding: 2px 9px; border-radius: var(--radius-pille); background: var(--akzent-weich);
+      color: var(--akzent-text); font-size: 12px; font-weight: 600; }
+    /* Kompakte Liste (DESIGN.md, Listen): keine Fläche, nur Hover */
+    .liste-zeile { display: flex; align-items: center; gap: 2px; padding: 5px 6px 5px 10px; margin-bottom: 2px;
+      border-radius: var(--radius); transition: background .15s; }
+    .liste-zeile:hover { background: var(--hover); }
+    .liste-name { flex: 0 1 19rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-weight: 600; text-align: left; }
+    /* Die Zahl kürzt nie, der Name gibt nach — nur auf dem Handy dreht es sich um (s. unten) */
+    .liste-zahl { flex: 1 0 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 0 8px; color: var(--text-3); white-space: nowrap; }
+    .liste-ordner { margin-left: 14px; padding-left: 10px; border-left: 2px solid var(--linie); }
+    /* Handy: der Name behält eine Mindestbreite, dafür gibt die Zahl nach, das Sprachkürzel
+       entfällt und die Ordner rücken weniger ein — sonst verschwindet der Titel ab Ebene 2 */
+    @media (max-width: 640px) {
+      .symbol { width: 30px; height: 30px; }
+      .liste-name { min-width: 4.5rem; }
+      .liste-zahl { flex-shrink: 1; padding: 0 4px; font-size: 14px; }
+      .liste-zahl .kuerzel { display: none; }
+      .liste-ordner { margin-left: 6px; padding-left: 6px; }
+    }
+    .ablage { border-radius: var(--radius); outline: 2px dashed transparent; outline-offset: -2px; transition: background .15s, outline-color .15s; }
+    .ablage.ziel { background: var(--akzent-weich); outline-color: var(--akzent); }
+    /* Was frei auf dem Rand steht (Titel, Untertitel), bekommt einen Hof in der Grundfarbe */
+    .frei { text-shadow: 0 0 12px var(--grund), 0 0 5px var(--grund), 0 0 2px var(--grund); }
+    /* QR-Code: schwarz auf weiss, sonst liest ihn kein Handy — auch im Dunkelmodus */
+    .qr { background: #FFFFFF; padding: 8px; border-radius: var(--radius); }
+    }
+
+    .diff-del { background: var(--rot-linie); text-decoration: line-through; border-radius: 2px; }
+    .diff-ins { background: var(--gruen-linie); border-radius: 2px; }
     @keyframes shrink { from { width: 100%; } to { width: 0; } }
     /* Handschrift: iPadOS deutet Striche neben Text sonst als Auswahl-Geste
        (Wort wird markiert, Lupe erscheint, Strich reisst ab) */
@@ -137,17 +284,26 @@
     document.documentElement.lang = currentLang;
     let redrawLang = () => {};
 
-    const code = (x) => <code className="bg-gray-100 px-1 rounded">{x}</code>;
+    const code = (x) => <code className="bg-hover px-1 rounded">{x}</code>;
 
     const I18N = {
       de: {
         subtitle: 'Voci üben — Tastatur oder Stift, in beide Richtungen.',
+        logoLabel: 'MyVoci-Papagei',
         settings: 'Einstellungen',
         language: 'Sprache',
         theme: 'Darstellung',
-        themeAuto: 'wie das Gerät',
-        themeLight: 'hell',
-        themeDark: 'dunkel',
+        modi: { system: 'Wie das Gerät', hell: 'Hell', dunkel: 'Dunkel' },
+        scheme: 'Farbschema',
+        tone: 'Akzentfarbe',
+        toneDefault: 'Akzent des Schemas',
+        tones: {
+          fox: ['Azid-Himmelblau', 'Dunkles Petrol', 'Moos-Oliv', 'Kürbis', 'Rost-Karmin', 'Schokolade', 'Pflaume', 'Altrosa', 'Bronze-Senf'],
+          budapest: ['Indigoblau', 'Lobby-Violett', 'Aubergine', 'Orchidee', 'Magenta', 'Mauve-Taupe', "Mendl's Zuckerrosa", 'Himbeere', 'Messing-Gold'],
+          moonrise: ['Oliv-Khaki', 'Limette', 'Gras', 'Tanne', 'Seegrün', 'Petrol', 'Navy', 'Schieferblau', 'Suzy-Rot'],
+          zissou: ['Zissou-Rot', 'Orange', 'Gold', 'Oliv', 'Meerblau', 'Tiefsee', 'Rost', 'Mützenrosa', 'Petrol'],
+          isle: ['Sand', 'Kaffee', 'Rost', 'Taupe', 'Lavendel', 'Stroh', 'Moos', 'Schiefer', 'Altrosa'],
+        },
         createTitle: 'Voci-Set erstellen',
         steps: (
           <>
@@ -547,12 +703,21 @@
       },
       en: {
         subtitle: 'Practise vocabulary — keyboard or pen, in both directions.',
+        logoLabel: 'MyVoci parrot',
         settings: 'Settings',
         language: 'Language',
         theme: 'Appearance',
-        themeAuto: 'like the device',
-        themeLight: 'light',
-        themeDark: 'dark',
+        modi: { system: 'Like the device', hell: 'Light', dunkel: 'Dark' },
+        scheme: 'Colour scheme',
+        tone: 'Accent colour',
+        toneDefault: 'Accent of the scheme',
+        tones: {
+          fox: ['Acid sky blue', 'Dark teal', 'Moss olive', 'Pumpkin', 'Rust crimson', 'Chocolate', 'Plum', 'Dusty rose', 'Bronze mustard'],
+          budapest: ['Indigo blue', 'Lobby violet', 'Aubergine', 'Orchid', 'Magenta', 'Mauve taupe', "Mendl's sugar pink", 'Raspberry', 'Brass gold'],
+          moonrise: ['Olive khaki', 'Lime', 'Grass', 'Fir', 'Sea green', 'Teal', 'Navy', 'Slate blue', 'Suzy red'],
+          zissou: ['Zissou red', 'Orange', 'Gold', 'Olive', 'Sea blue', 'Deep sea', 'Rust', 'Cap pink', 'Teal'],
+          isle: ['Sand', 'Coffee', 'Rust', 'Taupe', 'Lavender', 'Straw', 'Moss', 'Slate', 'Dusty rose'],
+        },
         createTitle: 'Create a vocabulary set',
         steps: (
           <>
@@ -2275,12 +2440,15 @@
     };
 
     // ---------- Gemeinsame Bausteine ----------
-    const SCREEN = 'min-h-screen'; // Hintergrund: `body` (var(--page))
-    const BTN_PRIMARY = 'bg-gradient-to-r from-acc-500 to-acc2-500 text-white rounded-lg font-semibold hover:from-acc-600 hover:to-acc2-600 transition-all shadow-lg';
-    const BTN_SECONDARY = 'bg-gray-100 text-gray-600 rounded-lg font-semibold hover:bg-gray-200 transition-all';
-    const CARD = 'bg-card rounded-lg shadow-lg';
-    const LABEL = 'text-xs uppercase tracking-wide text-gray-400';
-    const INPUT = 'px-3 py-2 border border-gray-300 rounded-lg bg-card focus:outline-none focus:border-acc-400';
+    const SCREEN = 'min-h-screen'; // Hintergrund: `body` (var(--grund))
+    const PAGE = `${SCREEN} p-4 sm:p-8 pt-14 sm:pt-20`; // Startseite mit Rand oben: der Titel beginnt darunter
+    // Bausteine des Designsystems, Klassen im <head> (wie MyMemory)
+    const BTN_PRIMARY = 'knopf knopf-1';
+    const BTN_SECONDARY = 'knopf knopf-2';
+    const BTN_NEUTRAL = 'knopf knopf-n';
+    const CARD = 'kachel';
+    const LABEL = 'kopf';
+    const INPUT = 'feld';
 
     // Safari lässt `writeText` nur in derselben Aufgabe wie der Tap zu — nach
     // einem `await` (der Link wird ja erst komprimiert) lehnt es jedes Mal ab.
@@ -2301,8 +2469,8 @@
     // `max-h`/`overflow` für alle: die Anleitung ist länger als ein iPhone hoch,
     // und auch der Scanner passte auf kleinen Schirmen knapp nicht.
     const Modal = ({ children, onClose, wide }) => (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div className={`bg-card rounded-2xl p-6 sm:p-8 ${wide ? 'max-w-2xl' : 'max-w-md'} w-full max-h-[85vh] overflow-y-auto shadow-2xl`} onClick={(e) => e.stopPropagation()}>
+      <div data-modal className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: 'var(--schleier)' }} onClick={onClose}>
+        <div className={`kachel p-6 sm:p-8 ${wide ? 'max-w-2xl' : 'max-w-md'} w-full max-h-[85vh] overflow-y-auto shadow-[var(--schatten)]`} onClick={(e) => e.stopPropagation()}>
           {children}
         </div>
       </div>
@@ -2318,7 +2486,7 @@
       };
       return (
         <Modal onClose={onClose}>
-          <p className="text-gray-700 mb-4">{isPrompt ? dialog.label : dialog.text}</p>
+          <p className="text-text mb-4">{isPrompt ? dialog.label : dialog.text}</p>
           {isPrompt && (
             <input
               autoFocus type="text" value={value}
@@ -2328,26 +2496,29 @@
             />
           )}
           <div className="flex gap-3">
-            <button onClick={onClose} className={`flex-1 px-4 py-2 ${BTN_SECONDARY}`}>{t('cancel')}</button>
+            <button onClick={onClose} className={`flex-1 px-4 py-2 ${BTN_NEUTRAL}`}>{t('cancel')}</button>
             <button onClick={submit} className={`flex-1 ${BTN_PRIMARY} px-4 py-2`}>{dialog.ok || 'OK'}</button>
           </div>
         </Modal>
       );
     };
 
-    const IconButton = ({ onClick, title, hover = 'hover:bg-acc-50', extra = '', children }) => (
-      <button onClick={onClick} title={title}
-        className={`px-3 py-3 bg-card rounded-lg shadow hover:shadow-md transition-all text-gray-500 ${hover} ${extra}`}>
+    // Symbolknopf (DESIGN.md): quadratisch, ruhig bis zum Darüberfahren;
+    // deckend (`auf-rand`), weil er oben auf dem Rand stehen kann
+    const IconButton = ({ onClick, title, hover = '', extra = '', children }) => (
+      <button onClick={onClick} title={title} aria-label={title}
+        className={`symbol auf-rand ${hover} ${extra}`}>
         {children}
       </button>
     );
 
     // Schlanke Symbolknöpfe der Listenzeilen (wie .row-tool in MyKahoot):
     // transparent, nur Hover getönt — eine Zeile bleibt eine Zeile, keine
-    // Reihe weisser Kacheln pro Set.
-    const RowTool = ({ onClick, title, hover = 'hover:bg-card hover:text-gray-800', extra = '', children }) => (
-      <button onClick={onClick} title={title}
-        className={`shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 transition-colors ${hover} ${extra}`}>
+    // Reihe weisser Kacheln pro Set. Fängt den Klick selbst ab: die ganze
+    // Zeile öffnet das Set bzw. klappt den Ordner.
+    const RowTool = ({ onClick, title, hover = '', extra = '', children }) => (
+      <button onClick={(e) => { e.stopPropagation(); onClick(e); }} title={title} aria-label={title}
+        className={`symbol ${hover} ${extra}`}>
         {children}
       </button>
     );
@@ -2385,6 +2556,7 @@
     const HelpIcon = () => (
       <Icon><circle cx="12" cy="12" r="9" /><path d="M9.6 9.4a2.5 2.5 0 1 1 2.9 2.9v1.2" /><path d="M12.5 16.6h.01" /></Icon>
     );
+    const ChevronIcon = () => <Icon><path d="M9 6l6 6-6 6" /></Icon>;
     const SettingsIcon = () => (
       <Icon><path d="M4 8h10M18 8h2M4 16h4M12 16h8" /><circle cx="16" cy="8" r="2" /><circle cx="10" cy="16" r="2" /></Icon>
     );
@@ -2418,15 +2590,15 @@
       }, [url]);
       return (
         <Modal onClose={onClose}>
-          <h2 className="text-xl font-bold text-center mb-4 text-gray-800">{title}</h2>
-          {hint && <p className="text-sm text-gray-500 text-center mb-4">{hint}</p>}
+          <h2 className="text-xl font-bold text-center mb-4 text-text">{title}</h2>
+          {hint && <p className="text-sm text-text-2 text-center mb-4">{hint}</p>}
           {svg ? (
             <div className="flex justify-center mb-4 [&>svg]:w-56 [&>svg]:h-56" dangerouslySetInnerHTML={{ __html: svg }} />
-          ) : <div className="text-center text-red-600 mb-4">{t('qrTooBig')}</div>}
-          <div className="text-xs text-gray-400 break-all max-h-16 overflow-y-auto mb-4">{url}</div>
+          ) : <div className="text-center text-rot mb-4">{t('qrTooBig')}</div>}
+          <div className="text-xs text-text-3 break-all max-h-16 overflow-y-auto mb-4">{url}</div>
           <div className="flex gap-2">
             <button onClick={onCopy} className={`flex-1 ${BTN_PRIMARY} px-4 py-2`}>{t('copyLinkBtn')}</button>
-            <button onClick={onClose} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('close')}</button>
+            <button onClick={onClose} className={`px-4 py-2 ${BTN_NEUTRAL}`}>{t('close')}</button>
           </div>
         </Modal>
       );
@@ -2502,22 +2674,22 @@
       }, []);
       return (
         <Modal onClose={onClose}>
-          <h2 className="text-xl font-bold text-center mb-4 text-gray-800">{t('scan')}</h2>
-          <p className="text-sm text-gray-500 text-center mb-4">{t('scanHint')}</p>
+          <h2 className="text-xl font-bold text-center mb-4 text-text">{t('scan')}</h2>
+          <p className="text-sm text-text-2 text-center mb-4">{t('scanHint')}</p>
           {scanSupported && (
             <div className="rounded-lg overflow-hidden bg-black aspect-square mb-4">
               <video ref={videoRef} playsInline muted autoPlay className="w-full h-full object-cover" />
             </div>
           )}
-          {note && <p className="text-sm text-orange-600 text-center mb-4">{note}</p>}
-          <p className="text-sm text-gray-500 mb-2">{t('scanPaste')}</p>
+          {note && <p className="text-sm text-orange text-center mb-4">{note}</p>}
+          <p className="text-sm text-text-2 mb-2">{t('scanPaste')}</p>
           <div className="flex gap-2 mb-4">
             <input type="text" value={pasted} placeholder={t('scanPastePh')} autoCapitalize="none" autoCorrect="off" spellCheck={false}
               onChange={(e) => setPasted(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') openPasted(); }}
               className={`flex-1 min-w-0 ${INPUT}`} />
             <button onClick={openPasted} disabled={!pasted.trim()} className={`px-4 py-2 ${BTN_PRIMARY} ${pasted.trim() ? '' : 'opacity-50'}`}>{t('scanOpen')}</button>
           </div>
-          <button onClick={onClose} className={`w-full px-4 py-2 ${BTN_SECONDARY}`}>{t('close')}</button>
+          <button onClick={onClose} className={`w-full px-4 py-2 ${BTN_NEUTRAL}`}>{t('close')}</button>
         </Modal>
       );
     };
@@ -2535,14 +2707,14 @@
     const HELP_STEPS = { ipad: 'ipadSteps', ink: 'helpInkSteps', dir: 'helpDirSteps', names: 'helpNamesSteps', forms: 'helpFormsSteps', move: 'helpMoveSteps', scan: 'helpScanSteps' };
     const Help = ({ only, onClose }) => (
       <Modal wide onClose={onClose}>
-        <h2 className="text-xl font-bold text-gray-800 mb-4">{only ? t(HELP_TITLE[only]) : t('helpTitle')}</h2>
+        <h2 className="text-xl font-bold text-text mb-4">{only ? t(HELP_TITLE[only]) : t('helpTitle')}</h2>
         {(only ? [only] : HELP_SECTIONS).map((id) => (
           <div key={id} className="mb-6">
-            {!only && <h3 className="font-semibold text-gray-700 mb-2">{t(HELP_TITLE[id])}</h3>}
-            <ol className="list-decimal list-outside pl-5 text-sm text-gray-600 space-y-2">{t(HELP_STEPS[id])}</ol>
+            {!only && <h3 className="font-semibold text-text mb-2">{t(HELP_TITLE[id])}</h3>}
+            <ol className="list-decimal list-outside pl-5 text-sm text-text-2 space-y-2">{t(HELP_STEPS[id])}</ol>
           </div>
         ))}
-        <button onClick={onClose} className={`w-full px-4 py-2 ${BTN_SECONDARY}`}>{t('close')}</button>
+        <button onClick={onClose} className={`w-full px-4 py-2 ${BTN_NEUTRAL}`}>{t('close')}</button>
       </Modal>
     );
     // Ohne Anmeldung als «dauerhaft» darf iOS die Daten einer Home-Bildschirm-
@@ -2565,45 +2737,109 @@
       const [persisted, setPersisted] = useState(null);
       useEffect(() => { persistStorage().then(setPersisted); }, []);
       const risk = persisted === true ? ` · ${t('storageKept')}` : persisted === false ? ` · ${t(folder ? 'storageVolatileDir' : 'storageVolatile')}` : '';
-      return <p className="text-sm text-gray-500 mb-3">{folder ? t('storageHereDir', folder) : t('storageHere', standalone(), count)}{risk}</p>;
+      return <p className="text-sm text-text-2 mb-3">{folder ? t('storageHereDir', folder) : t('storageHere', standalone(), count)}{risk}</p>;
     };
 
     // Verweis von einem Einstellungs-Kasten in den passenden Abschnitt
     const HelpLink = ({ onClick }) => (
-      <button onClick={onClick} className="underline font-semibold hover:text-gray-700">{t('guide')} →</button>
+      <button onClick={onClick} className="underline font-semibold hover:text-text">{t('guide')} →</button>
     );
 
-    // Hell/dunkel: Speichern und Anwenden besorgt das Skript im <head>
-    // (`setTheme`), das auch dem Gerät folgt, solange 'auto' gilt.
-    const ThemeChoice = () => {
-      const [pick, setPick] = useState(window.themePick);
-      return (
-        <Choice value={pick} onChange={(v) => { window.setTheme(v); setPick(v); }}
-          options={[['auto', t('themeAuto')], ['light', t('themeLight')], ['dark', t('themeDark')]]} />
-      );
-    };
+    // ---------- Einstellungen (My-Designsystem) ----------
+    // Was zur Wahl steht; gespeichert und angewendet wird im <head>
+    // (`setLook`/`setModus`), damit beim Laden nichts aufblitzt.
+    const SCHEMES = [
+      { id: 'fox', name: 'Fantastic Mr. Fox' },
+      { id: 'budapest', name: 'Grand Budapest Hotel' },
+      { id: 'moonrise', name: 'Moonrise Kingdom' },
+      { id: 'zissou', name: 'The Life Aquatic' },
+      { id: 'isle', name: 'Isle of Dogs' },
+    ];
+    const MODI = ['system', 'hell', 'dunkel'];
 
+    // Kästchen oben rechts (DESIGN.md «Einstellungen ohne Leiste», wie MyMemory):
+    // ab 1360 px sitzen Knopf und Kästchen fest am rechten Fensterrand neben der
+    // Spalte, die dafür schmaler wird (COLUMN: höchstens Fenster − 2 × 22.5rem,
+    // damit sie mittig bleibt — bei 1360 px also 640 px, darunter wäre die
+    // Übungskarte zu eng). Sonst bleibt der Knopf in der Kopfzeile und das
+    // Kästchen klappt über den Inhalt. Nie schiebt es die Spalte nach unten.
+    // Zu per Knopf, Klick daneben oder Esc. Die Klassen stehen ausgeschrieben
+    // da, sonst erzeugt Tailwind (CDN) sie nicht.
+    const SETTINGS_DOCK = 'min-[1360px]:fixed min-[1360px]:top-3 min-[1360px]:right-3.5 z-30';
+    const COLUMN = 'max-w-2xl min-[1360px]:max-w-[min(42rem,calc(100vw-45rem))] mx-auto';
+
+    // `extra`: was die Seite zusätzlich einstellen lässt (Schlüssel, Ordner …)
     const useSettings = (extra) => {
       const [open, setOpen] = useState(false);
-      const button = <IconButton onClick={() => setOpen((v) => !v)} title={t('settings')}><SettingsIcon /></IconButton>;
+      const box = useRef(null);
+      useEffect(() => {
+        if (!open) return;
+        // Ein Fenster (Anleitung, QR-Code) aus dem Kästchen heraus hängt im
+        // DOM darunter und zählt so als «drinnen»
+        const away = (e) => { if (!box.current?.contains(e.target)) setOpen(false); };
+        const esc = (e) => { if (e.key === 'Escape' && !document.querySelector('[data-modal]')) setOpen(false); };
+        document.addEventListener('pointerdown', away);
+        document.addEventListener('keydown', esc);
+        return () => { document.removeEventListener('pointerdown', away); document.removeEventListener('keydown', esc); };
+      }, [open]);
+      const [look, setLook] = useState(window.myLook);
+      const [modus, setModus] = useState(window.myModus);
+      const pickLook = (next) => { setLook(next); window.setLook(next); };
+      const pickModus = (next) => { setModus(next); window.setModus(next); };
+      const toggle = (items, active, pick) => (
+        <div className="umschalter">
+          {items.map(([id, label]) => (
+            <button key={id} onClick={() => pick(id)} aria-pressed={id === active}>{label}</button>
+          ))}
+        </div>
+      );
+      // Ein Tupfer zeigt seine Farbe über `--tupfer`: der Ton liest das Schema
+      // am <html>, der Tupfer «Akzent des Schemas» trägt dessen data-schema.
+      const swatch = (key, title, color, active, onClick, schema) => (
+        <button key={key} title={title} aria-label={title} aria-pressed={active} onClick={onClick}
+          className="farbtupfer" data-schema={schema} style={{ '--tupfer': color }} />
+      );
+      const scheme = SCHEMES.find((x) => x.id === look.schema) || SCHEMES[2];
+      const button = (
+        <IconButton onClick={() => setOpen((v) => !v)} title={t('settings')}><SettingsIcon /></IconButton>
+      );
       const panel = open && (
-        <div className={`${CARD} p-6 mb-8`}>
-          <h2 className="text-lg font-semibold text-gray-700 mb-3">{t('settings')}</h2>
-          <div className="rounded-lg border border-gray-200 p-4">
+        <div className={`${CARD} absolute right-0 top-full mt-2 z-30 w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto p-5 space-y-5 text-left shadow-[var(--schatten)]`}>
+          <div>
             <div className={`${LABEL} mb-2`}>{t('language')}</div>
-            <div className="flex gap-2">
-              {LANGS.map((entry) => (
-                <button key={entry.id} onClick={() => changeLang(entry.id)}
-                  className={`px-4 py-2 ${entry.id === currentLang ? BTN_PRIMARY : BTN_SECONDARY}`}>{entry.name}</button>
+            {toggle(LANGS.map((l) => [l.id, l.name]), currentLang, changeLang)}
+          </div>
+          <div>
+            <div className={`${LABEL} mb-2`}>{t('theme')}</div>
+            {toggle(MODI.map((m) => [m, t('modi')[m]]), modus, pickModus)}
+          </div>
+          <div>
+            <div className={`${LABEL} mb-2`}>{t('scheme')}</div>
+            <div className="flex flex-wrap gap-2">
+              {SCHEMES.map((x) => (
+                <button key={x.id} aria-pressed={x.id === look.schema}
+                  onClick={() => pickLook({ schema: x.id, ton: window.DEFAULT_LOOK.schema === x.id ? window.DEFAULT_LOOK.ton : null })}
+                  className={`flex items-center gap-2 ${x.id === look.schema ? BTN_SECONDARY : BTN_NEUTRAL} px-3 py-1.5 text-sm`}>
+                  <span className="punkt" data-schema={x.id} style={{ background: 'var(--akzent)' }} />
+                  {x.name}
+                </button>
               ))}
             </div>
-            <div className={`${LABEL} mt-4 mb-2`}>{t('theme')}</div>
-            <ThemeChoice />
+          </div>
+          <div>
+            <div className={`${LABEL} mb-2`}>{t('tone')}</div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              {swatch('0', t('toneDefault'), 'var(--akzent)', !look.ton, () => pickLook({ ...look, ton: null }), look.schema)}
+              <span className="w-px h-5 bg-linie" />
+              {t('tones')[scheme.id].map((name, i) => swatch(i + 1, name, `var(--ton-${i + 1})`, look.ton === i + 1,
+                () => pickLook({ ...look, ton: i + 1 })))}
+            </div>
           </div>
           {extra}
         </div>
       );
-      return [button, panel];
+      const node = <div ref={box} className={`relative shrink-0 ${SETTINGS_DOCK}`}>{button}{panel}</div>;
+      return [node, null];
     };
 
     // Kurzmeldung unten am Rand. Zwei Seiten brauchen sie (Übersicht und
@@ -2618,7 +2854,7 @@
       };
       useEffect(() => () => clearTimeout(timer.current), []);
       const node = toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-gray-50 px-6 py-3 rounded-lg shadow-lg z-50">{toast}</div>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-text text-grund px-6 py-3 rounded-lg shadow-[var(--schatten)] z-50">{toast}</div>
       );
       return [showToast, node];
     };
@@ -2645,17 +2881,17 @@
         </label>
       );
       return (
-        <div className="rounded-lg border border-gray-200 p-4 mt-4">
+        <div>
           <div className={`${LABEL} mb-2`}>{t('myscriptTitle')}</div>
-          <p className="text-sm text-gray-500 mb-3">{t('myscriptShort')} <HelpLink onClick={() => setHelp(true)} /></p>
+          <p className="text-sm text-text-2 mb-3">{t('myscriptShort')} <HelpLink onClick={() => setHelp(true)} /></p>
           <div className="grid sm:grid-cols-2 gap-3">
             {field('app', t('myscriptApp'))}
             {field('hmac', t('myscriptHmac'))}
           </div>
           {filled && (
             <div className="flex flex-wrap items-center gap-3 mt-3">
-              <p className="text-sm text-acc2-700">{t('myscriptOn')}</p>
-              <button onClick={() => setQr(true)} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('myscriptShare')}</button>
+              <p className="text-sm text-akzent-text">{t('myscriptOn')}</p>
+              <button onClick={() => setQr(true)} className={`px-4 py-2 ${BTN_NEUTRAL}`}>{t('myscriptShare')}</button>
             </div>
           )}
           {qr && <QrModal title={t('myscriptShareTitle')} hint={t('myscriptShareHint')} url={link} onClose={() => setQr(false)} onCopy={copy} />}
@@ -2667,16 +2903,16 @@
 
     // Sichtbarer Hinweis statt stiller Datenverlust (s. writeLocal).
     const StorageWarning = () => storageBroken && (
-      <div className="mb-6 rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900">{t('storageBroken')}</div>
+      <div className="mb-6 rounded-lg border-2 border-orange-linie bg-orange-weich px-4 py-3 text-sm text-orange">{t('storageBroken')}</div>
     );
 
     const Collapsible = ({ id, title, open, onToggle, children }) => (
-      <div id={id} className={`${CARD} mb-8 scroll-mt-4`}>
-        <button onClick={onToggle} className="w-full flex items-center justify-between gap-2 px-6 py-4 text-left">
-          <h2 className="text-lg font-semibold text-gray-700">{title}</h2>
-          <span className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}>▶</span>
+      <div id={id} className={`${CARD} mb-6 scroll-mt-4`}>
+        <button onClick={onToggle} className="w-full flex items-center justify-between gap-2 px-5 py-4 text-left">
+          <h2 className="text-lg font-bold">{title}</h2>
+          <span className={`text-text-3 transition-transform ${open ? 'rotate-90' : ''}`}><ChevronIcon /></span>
         </button>
-        {open && <div className="px-6 pb-6">{children}</div>}
+        {open && <div className="px-5 pb-5">{children}</div>}
       </div>
     );
 
@@ -2689,7 +2925,7 @@
     );
     const OrDivider = ({ children }) => (
       <div className={`flex items-center gap-3 my-4 ${LABEL}`}>
-        <span className="flex-1 h-px bg-gray-200" /> {children} <span className="flex-1 h-px bg-gray-200" />
+        <span className="flex-1 h-px bg-linie" /> {children} <span className="flex-1 h-px bg-linie" />
       </div>
     );
 
@@ -2698,7 +2934,7 @@
     // Reihenfolge bleibt sichtbar, denn sie sagt, welche Seite `a` ist
     // (Vorlesen, Tastatur, Artikel-Toleranz hängen daran).
     const langBadge = (set) => set.langs && (
-      <span className="ml-2 px-1.5 rounded bg-gray-100 text-xs font-semibold text-gray-500 uppercase align-middle">
+      <span className="kuerzel ml-2 align-[1px]">
         {set.langs[0]}↔{set.langs[1]}
       </span>
     );
@@ -2740,10 +2976,10 @@
       };
       const dirButtons = (
         <div className="flex flex-wrap gap-2">
-          {dir.status === 'none' && <button onClick={dir.connect} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('dirChoose')}</button>}
+          {dir.status === 'none' && <button onClick={dir.connect} className={`px-4 py-2 ${BTN_NEUTRAL}`}>{t('dirChoose')}</button>}
           {dir.status === 'prompt' && <button onClick={dir.reconnect} className={`px-4 py-2 ${BTN_PRIMARY}`}>{t('dirReconnect')}</button>}
-          {(dir.status === 'ok' || dir.status === 'error') && <button onClick={dir.refresh} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('dirReload')}</button>}
-          {dir.status !== 'none' && dir.status !== 'unsupported' && <button onClick={dir.disconnect} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('dirDisconnect')}</button>}
+          {(dir.status === 'ok' || dir.status === 'error') && <button onClick={dir.refresh} className={`px-4 py-2 ${BTN_NEUTRAL}`}>{t('dirReload')}</button>}
+          {dir.status !== 'none' && dir.status !== 'unsupported' && <button onClick={dir.disconnect} className={`px-4 py-2 ${BTN_NEUTRAL}`}>{t('dirDisconnect')}</button>}
         </div>
       );
       // Muss VOR `useSettings` stehen: das Panel ist ein Argument, sein JSX wird
@@ -2757,33 +2993,33 @@
       const [settingsButton, settingsPanel] = useSettings(
         <>
         <MyScriptKeys />
-        <div className="rounded-lg border border-gray-200 p-4 mt-4">
+        <div>
           <label className="flex items-start gap-3 cursor-pointer">
-            <input type="checkbox" checked={showDemos} className="mt-1 h-4 w-4 accent-acc-500"
+            <input type="checkbox" checked={showDemos} className="mt-1 h-4 w-4 accent-akzent"
               onChange={(e) => { setShowDemos(e.target.checked); writeLocal(DEMOS_KEY, e.target.checked); }} />
             <span>
-              <span className="font-semibold text-gray-700">{t('showExamples')}</span>
-              <span className="block text-sm text-gray-500">{t('showExamplesHint')}</span>
+              <span className="font-semibold text-text">{t('showExamples')}</span>
+              <span className="block text-sm text-text-2">{t('showExamplesHint')}</span>
             </span>
           </label>
         </div>
-        <div className="rounded-lg border border-gray-200 p-4 mt-4">
+        <div>
           <div className={`${LABEL} mb-2`}>{t('dirTitle')}</div>
-          <p className="text-sm text-gray-500 mb-3">
+          <p className="text-sm text-text-2 mb-3">
             {dir.status === 'unsupported' ? t('dirUnsupported') : t('dirShort')} <HelpLink onClick={() => setHelp('dir')} />
           </p>
-          {dir.status === 'ok' && <p className="text-sm text-acc2-700 mb-3">{t('dirConnected', dir.name, own.length)}</p>}
+          {dir.status === 'ok' && <p className="text-sm text-akzent-text mb-3">{t('dirConnected', dir.name, own.length)}</p>}
           {/* «Freigeben» und «nicht erreichbar» stehen schon als Streifen über
               der Liste — hier nur die Knöpfe, sonst liest man beides doppelt. */}
           {dirButtons}
         </div>
-        <div className="rounded-lg border border-gray-200 p-4 mt-4">
+        <div>
           <div className={`${LABEL} mb-2`}>{t('backupTitle')}</div>
-          <p className="text-sm text-gray-500 mb-3">{t('backupHint')} <HelpLink onClick={() => setHelp('move')} /></p>
+          <p className="text-sm text-text-2 mb-3">{t('backupHint')} <HelpLink onClick={() => setHelp('move')} /></p>
           <StorageState count={own.length} folder={dir.status === 'ok' ? dir.name : null} />
           <div className="flex flex-wrap gap-2">
-            <button onClick={backup.save} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('backupExport')}</button>
-            <button onClick={() => backupInput.current.click()} className={`px-4 py-2 ${BTN_SECONDARY}`}>{t('backupImport')}</button>
+            <button onClick={backup.save} className={`px-4 py-2 ${BTN_NEUTRAL}`}>{t('backupExport')}</button>
+            <button onClick={() => backupInput.current.click()} className={`px-4 py-2 ${BTN_NEUTRAL}`}>{t('backupImport')}</button>
             <input ref={backupInput} type="file" accept=".json,application/json" className="hidden"
               onChange={(e) => { for (const f of e.target.files) f.text().then(importBackupText); e.target.value = ''; }} />
           </div>
@@ -2961,25 +3197,21 @@
         });
       };
 
-      // Zeile wie in der Quiz-Auswahl von MyKahoot: schlanker Namens-Knopf,
-      // Titel in fester Spalte (kürzt bei Bedarf), Wortzahl dahinter in einer
-      // Flucht, rechts die Symbolknöpfe spaltenweise untereinander.
+      // Kompakte Liste (DESIGN.md, wie MyMemory): Titel in fester Spalte
+      // (kürzt bei Bedarf), Wortzahl dahinter in einer Flucht, rechts die
+      // Symbolknöpfe spaltenweise untereinander. Die ganze Zeile öffnet das Set.
       const row = (set, deletable) => (
-        <div key={set.id} className="flex items-center gap-0.5"
+        <div key={set.id} onClick={() => onOpen(set)} className="liste-zeile cursor-pointer"
           {...(deletable ? dragProps({ kind: 'set', id: set.id, dir: set.dir || '' }) : {})}>
-          <button onClick={() => onOpen(set)}
-            className="flex-1 min-w-0 flex items-baseline text-left px-2.5 py-1.5 rounded-lg hover:bg-card transition-colors font-semibold text-gray-800">
-            <span className="min-w-0 truncate" style={{ flex: '0 1 17rem' }}>{set.title}</span>
-            <span className="ml-3 shrink-0 text-sm font-normal text-gray-400">{t('nWords', set.words.length)}</span>
-            {langBadge(set)}
-          </button>
+          <button className="liste-name">{set.title}</button>
+          <span className="liste-zahl">{t('nWords', set.words.length)}{langBadge(set)}</span>
           <RowTool onClick={() => exportOne(set)} title={t('exportOne')} extra="hidden sm:inline-flex"><DownloadIcon /></RowTool>
           <RowTool onClick={() => copyLink(set)} title={t('copyLink')}><LinkIcon /></RowTool>
           <RowTool onClick={() => showQr(set)} title={t('showQr')}><QrIcon /></RowTool>
           {deletable && (
             <>
               <RowTool onClick={() => onEdit(set)} title={t('edit')}><PenIcon /></RowTool>
-              <RowTool title={t('del')} hover="hover:bg-red-50 hover:text-red-600"
+              <RowTool title={t('del')} hover="gefahr"
                 onClick={() => setDialog({ kind: 'confirm', ok: t('del'), text: t('confirmDeleteSet', set.title), onYes: () => onDelete(set.id) })}>
                 <TrashIcon />
               </RowTool>
@@ -2991,20 +3223,19 @@
       const folderBox = (dir) => {
         const isOpen = openDirs.includes(dir);
         return (
-          <div key={dir} {...dropProps(dir)}
-            className={`rounded-lg transition-colors ${dropDir === dir ? 'outline outline-2 outline-dashed outline-acc-400' : ''}`}>
+          <div key={dir} {...dropProps(dir)} className={`ablage ${dropDir === dir ? 'ziel' : ''}`}>
             <div {...dragProps({ kind: 'dir', id: dir })} onClick={() => toggleDir(dir)}
-              className="flex items-center gap-0.5 pl-2.5 py-1.5 rounded-lg hover:bg-card transition-colors cursor-pointer select-none">
-              <span className="w-3 text-xs text-gray-400">{isOpen ? '▾' : '▸'}</span>
-              <span className="shrink-0 text-gray-400 mr-1.5"><FolderIcon /></span>
-              <span className="flex-1 min-w-0 truncate font-semibold text-gray-700">{dirName(dir)}</span>
-              <RowTool onClick={(e) => { e.stopPropagation(); create(dir); }} title={t('newSetHere')}><PlusIcon /></RowTool>
-              <RowTool onClick={(e) => { e.stopPropagation(); newFolder(dir); }} title={t('newSubfolder')}><FolderIcon /></RowTool>
-              <RowTool onClick={(e) => { e.stopPropagation(); renameFolder(dir); }} title={t('renameFolder')}><PenIcon /></RowTool>
-              <RowTool onClick={(e) => { e.stopPropagation(); dropFolder(dir); }} title={t('deleteFolder')} hover="hover:bg-red-50 hover:text-red-600"><TrashIcon /></RowTool>
+              className="liste-zeile cursor-pointer select-none">
+              <span className={`shrink-0 text-text-3 transition-transform ${isOpen ? 'rotate-90' : ''}`}><ChevronIcon /></span>
+              <span className="shrink-0 text-text-3 mx-1.5"><FolderIcon /></span>
+              <span className="flex-1 min-w-0 truncate font-semibold">{dirName(dir)}</span>
+              <RowTool onClick={() => create(dir)} title={t('newSetHere')}><PlusIcon /></RowTool>
+              <RowTool onClick={() => newFolder(dir)} title={t('newSubfolder')}><FolderIcon /></RowTool>
+              <RowTool onClick={() => renameFolder(dir)} title={t('renameFolder')}><PenIcon /></RowTool>
+              <RowTool onClick={() => dropFolder(dir)} title={t('deleteFolder')} hover="gefahr"><TrashIcon /></RowTool>
             </div>
             {/* Inhalt an einer Linie eingerückt — man sieht, was wohin gehört */}
-            {isOpen && <div className="ml-3.5 pl-2.5 my-0.5 border-l-2 border-gray-200 space-y-0.5">{treeOf(dir)}</div>}
+            {isOpen && <div className="liste-ordner">{treeOf(dir)}</div>}
           </div>
         );
       };
@@ -3016,20 +3247,22 @@
       );
 
       return (
-        <div className={`${SCREEN} p-4 sm:p-8`}>
-          <div className="max-w-2xl mx-auto">
-            <div className="relative mb-2">
-              <h1 className="text-4xl font-bold text-center text-gray-800">MyVoci</h1>
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 flex gap-2">
-                <IconButton onClick={() => setScan(true)} title={t('scan')}><ScanIcon /></IconButton>
-                <IconButton onClick={() => setHelp('all')} title={t('helpTitle')}><HelpIcon /></IconButton>
-                {settingsButton}
+        <div className={PAGE}>
+          <div className={COLUMN}>
+            {/* Keine Kopfleiste (wie MyMemory/MyKahoot): die Startseite trägt den Markenzug */}
+            <div className="flex items-center gap-1 mb-1">
+              <div className="flex-1 flex items-center gap-3 text-3xl sm:text-4xl">
+                <h1 className="font-bold frei">MyVoci</h1>
+                <span className="logo" role="img" aria-label={t('logoLabel')} />
               </div>
+              <IconButton onClick={() => setScan(true)} title={t('scan')}><ScanIcon /></IconButton>
+              <IconButton onClick={() => setHelp('all')} title={t('helpTitle')}><HelpIcon /></IconButton>
+              {settingsButton}
             </div>
-            <p className="text-center text-gray-500 mb-8">{t('subtitle')}</p>
+            <p className="text-text-2 mb-6 frei">{t('subtitle')}</p>
             <StorageWarning />
             {(dir.status === 'prompt' || dir.status === 'error') && (
-              <div className={`mb-6 rounded-lg border-2 px-4 py-3 text-sm ${dir.status === 'prompt' ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-red-400 bg-red-50 text-red-900'}`}>
+              <div className={`mb-6 rounded-lg border-2 px-4 py-3 text-sm ${dir.status === 'prompt' ? 'border-orange-linie bg-orange-weich text-orange' : 'border-rot-linie bg-rot-weich text-rot'}`}>
                 <p className="mb-2">{dir.status === 'prompt' ? t('dirPrompt', dir.name) : t('dirError', dir.name)}</p>
                 {dirButtons}
               </div>
@@ -3044,14 +3277,14 @@
                   <FolderSelect value={into} onChange={setTarget} folders={folders} className="text-sm" rootLabel={t('autoFolder')} />
                 </label>
               )}
-              <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1 mb-4">{t('steps')}</ol>
+              <ol className="list-decimal list-inside text-sm text-text-2 space-y-1 mb-4">{t('steps')}</ol>
               <button onClick={() => copyText(kiPrompt(), t('promptCopied'))} className={`w-full ${BTN_PRIMARY} px-4 py-2 mb-6`}>
                 {t('copyPrompt')}
               </button>
               <div onClick={() => fileInput.current.click()} {...hereDrop}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center text-gray-500 cursor-pointer hover:border-acc-400 hover:text-gray-700 hover:bg-acc-50 transition-all">
+                className="border-2 border-dashed border-linie rounded-lg p-6 text-center text-text-2 cursor-pointer hover:border-akzent hover:text-text hover:bg-akzent-weich transition-all">
                 <span className="flex items-center justify-center gap-2 font-bold"><InboxIcon /> {t('dropTitle')}</span>
-                <span className="block text-sm text-gray-400">{t('dropHint')}</span>
+                <span className="block text-sm text-text-3">{t('dropHint')}</span>
               </div>
               <input ref={fileInput} type="file" accept=".txt,.md" multiple className="hidden"
                 onChange={(e) => { importHere(e.target.files); e.target.value = ''; }} />
@@ -3061,31 +3294,36 @@
               <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={6} placeholder={t('pastePh')}
                 className={`w-full ${INPUT} text-sm font-mono`} />
               <button onClick={importPasted} disabled={!pasted.trim()}
-                className={`w-full mt-2 px-4 py-2 rounded-lg font-semibold transition-all ${pasted.trim() ? 'bg-gray-800 text-gray-50 hover:bg-gray-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                className={`w-full mt-2 px-4 py-2 rounded-lg font-semibold transition-all ${pasted.trim() ? 'bg-akzent text-akzent-ink hover:opacity-90' : 'bg-linie text-text-3 cursor-not-allowed'}`}>
                 {t('importText')}
               </button>
               <OrDivider>{t('orByHand')}</OrDivider>
-              <button onClick={() => onNew(into)} className={`w-full ${BTN_SECONDARY} px-4 py-2 flex items-center justify-center gap-2`}>
+              <button onClick={() => onNew(into)} className={`w-full ${BTN_NEUTRAL} px-4 py-2 flex items-center justify-center gap-2`}>
                 <PenIcon /> {t('byHand')}
               </button>
-              <p className="text-xs text-gray-400 mt-3">{dir.status === 'ok' ? t('importHintDir', dir.name) : t('importHint')}</p>
+              <p className="text-xs text-text-3 mt-3">{dir.status === 'ok' ? t('importHintDir', dir.name) : t('importHint')}</p>
             </Collapsible>
 
-            <div className="mb-8">
-              <div className="flex items-center gap-0.5 mb-1 pl-2.5">
-                <h2 className="text-lg font-semibold text-gray-600 flex-1">{t('mySets')}</h2>
+            <div className={`${CARD} p-3 sm:p-4 mb-6`}>
+              <div className="flex items-center gap-0.5 mb-2 pl-2.5">
+                <h2 className={`${LABEL} flex-1`}>{t('mySets')}</h2>
                 <RowTool onClick={() => create('')} title={t('newSet')}><PlusIcon /></RowTool>
                 <RowTool onClick={() => newFolder('')} title={t('newFolder')}><FolderIcon /></RowTool>
                 <RowTool onClick={exportAll} title={t('exportAll')}><DownloadIcon /></RowTool>
               </div>
-              <div {...dropProps('')}
-                className={`min-h-[2.5rem] rounded-lg space-y-0.5 transition-colors ${dropDir === '' ? 'outline outline-2 outline-dashed outline-acc-400 outline-offset-4' : ''}`}>
-                {own.length || folders.length ? treeOf('') : <p className="text-sm text-gray-400 px-2.5 py-2">{t('emptyList')}</p>}
+              {/* Die Liste selbst ist die Hauptebene: was hierher gezogen wird, liegt in keinem Ordner */}
+              <div {...dropProps('')} className={`ablage min-h-[3rem] ${dropDir === '' ? 'ziel' : ''}`}>
+                {own.length || folders.length ? treeOf('') : (
+                  <div className="flex flex-col items-center text-center gap-3 px-4 py-6 text-text-3">
+                    <img src="design/icons/creme/voci.svg?v=4" alt="" className="w-[52px] h-[52px] rounded-xl" />
+                    <p className="text-sm max-w-xs">{t('emptyList')}</p>
+                  </div>
+                )}
               </div>
               {/* Bei verbundenem Ordner stimmt «in diesem Browser» nicht mehr:
                   dort liegen die Sets als Dateien, im Browser nur der Lernstand. */}
               {own.length > 0 && (
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-sm text-text-3 mt-2 px-2.5">
                   {dir.status === 'ok' ? t('storedHintDir', dir.name) : t('storedHint')}
                 </p>
               )}
@@ -3094,17 +3332,17 @@
                   (Chrome/Edge am Computer) und noch keiner hängt; die anderen
                   Zustände melden sich oben von selbst. */}
               {dir.status === 'none' && (
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-sm text-text-3 mt-2 px-2.5">
                   {t('dirOffer')}{' '}
-                  <button onClick={dir.connect} className="underline font-semibold hover:text-gray-600">{t('dirChoose')}</button>
+                  <button onClick={dir.connect} className="underline font-semibold hover:text-text-2">{t('dirChoose')}</button>
                 </p>
               )}
             </div>
 
             {showDemos && (
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold text-gray-600 mb-1 pl-2.5">{t('examples')}</h2>
-                <div className="space-y-0.5">{DEMOS.map((s) => row(s, false))}</div>
+              <div className={`${CARD} p-3 sm:p-4 mb-8`}>
+                <h2 className={`${LABEL} mb-2 pl-2.5 leading-[34px]`}>{t('examples')}</h2>
+                {DEMOS.map((s) => row(s, false))}
               </div>
             )}
           </div>
@@ -3220,8 +3458,8 @@
 
       return (
         <div className={`${SCREEN} p-4 sm:p-8`}>
-          <div className="max-w-2xl mx-auto">
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">{set.id ? t('editSet') : t('newSet')}</h1>
+          <div className={COLUMN}>
+            <h1 className="text-2xl font-bold text-text mb-6">{set.id ? t('editSet') : t('newSet')}</h1>
             <div className={`${CARD} p-6 mb-6`}>
               <label className="block mb-4">
                 <span className={LABEL}>{t('titleLabel')}</span>
@@ -3243,24 +3481,24 @@
                 </label>
                 <datalist id="langlist">{Object.keys(LANG_NAMES).map((c) => <option key={c} value={c}>{langName(c)}</option>)}</datalist>
               </div>
-              <span className="block mt-1 text-sm text-gray-500">{t('langsHint')}</span>
+              <span className="block mt-1 text-sm text-text-2">{t('langsHint')}</span>
               <label className="block mt-4">
                 <span className={LABEL}>{t('uiLangLabel')}</span>
                 <select value={lang} onChange={(e) => editLang(e.target.value)} className={`w-full mt-1 ${INPUT}`}>
                   <option value="">{t('uiLangDefault')}</option>
                   {LANGS.map((entry) => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
                 </select>
-                <span className="block mt-1 text-sm text-gray-500">{t('uiLangHint')}</span>
+                <span className="block mt-1 text-sm text-text-2">{t('uiLangHint')}</span>
               </label>
             </div>
 
             {words.map((w, i) => (
-              <div key={i} className="bg-card rounded-lg shadow p-4 mb-3">
+              <div key={i} className="kachel p-4 mb-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="flex-1 text-sm font-semibold text-gray-400">{t('wordN', i + 1)}</span>
+                  <span className="flex-1 text-sm font-semibold text-text-3">{t('wordN', i + 1)}</span>
                   <IconButton onClick={() => moveWord(i, -1)} title={t('moveUp')}>↑</IconButton>
                   <IconButton onClick={() => moveWord(i, 1)} title={t('moveDown')}>↓</IconButton>
-                  <IconButton onClick={() => removeWord(i)} title={t('deleteWord')} hover="hover:bg-red-50"><TrashIcon /></IconButton>
+                  <IconButton onClick={() => removeWord(i)} title={t('deleteWord')} hover="hover:bg-rot-weich"><TrashIcon /></IconButton>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3 mb-3">
                   {side(i, 'a', nameA, t('sideAPh'))}
@@ -3268,7 +3506,7 @@
                 </div>
                 {/* Dieselbe Prüfung wie beim Speichern (cleanWord), sonst ginge ein Haken verloren */}
                 {[w.a, w.b].some((x) => isList(joinAnswer(x.split('\n')))) && (
-                  <label className="flex items-center gap-2 -mt-1 mb-3 text-sm text-gray-600">
+                  <label className="flex items-center gap-2 -mt-1 mb-3 text-sm text-text-2">
                     <input type="checkbox" checked={w.all} onChange={(e) => setWord(i, 'all', e.target.checked)} /> {t('allNeeded')}
                   </label>
                 )}
@@ -3290,24 +3528,24 @@
                     <textarea rows={Math.max(4, w.ft.split('\n').length)} value={w.ft} placeholder={t('formsPh')}
                       onChange={(e) => setWord(i, 'ft', e.target.value)} spellCheck={false}
                       className={`w-full mt-1 ${INPUT} text-sm font-mono`} />
-                    {formIssues(w.ft).map((x, k) => <span key={k} className="block text-xs text-amber-700 mt-1">{x}</span>)}
+                    {formIssues(w.ft).map((x, k) => <span key={k} className="block text-xs text-orange mt-1">{x}</span>)}
                   </label>
                 ) : (
                   <button type="button" onClick={() => setWords((ws) => ws.map((x, j) => (j === i ? { ...x, fOpen: true } : x)))}
-                    className="mt-3 text-sm font-semibold text-acc-700 hover:underline">+ {t('formsAdd')}</button>
+                    className="mt-3 text-sm font-semibold text-akzent-text hover:underline">+ {t('formsAdd')}</button>
                 )}
               </div>
             ))}
 
-            <button onClick={addWord} className="w-full px-4 py-2 mb-4 bg-card rounded-lg shadow hover:shadow-md font-semibold text-gray-600 flex items-center justify-center gap-2">
+            <button onClick={addWord} className={`w-full px-4 py-2 mb-4 ${BTN_NEUTRAL} bg-karte flex items-center justify-center gap-2`}>
               <PlusIcon /> {t('addWord')}
             </button>
-            {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
+            {error && <p className="text-sm text-rot mb-2">{error}</p>}
             <div className="flex gap-3">
-              <button onClick={cancel} className="flex-1 px-4 py-3 bg-card rounded-lg shadow hover:shadow-md font-semibold text-gray-600">{t('cancel')}</button>
+              <button onClick={cancel} className={`flex-1 px-4 py-3 ${BTN_NEUTRAL} bg-karte`}>{t('cancel')}</button>
               <button onClick={save} className={`flex-1 ${BTN_PRIMARY} px-4 py-3`}>{t('save')}</button>
             </div>
-            <p className="text-xs text-gray-400 mt-3">{t('editorHint')}</p>
+            <p className="text-xs text-text-3 mt-3">{t('editorHint')}</p>
           </div>
           {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
         </div>
@@ -3325,11 +3563,11 @@
     // `even`: gleich breite (und damit gleich hohe) Felder, auch wenn eines
     // auf dem Handy umbricht — für Wahlen mit Icon wie die Eingabe.
     const Seg = ({ options, value, onChange, even }) => (
-      <div className={`${even ? 'inline-grid' : 'inline-flex flex-wrap'} gap-0.5 p-0.5 rounded-lg bg-gray-100`}
+      <div className={`${even ? 'inline-grid' : 'inline-flex flex-wrap'} gap-0.5 p-[3px] rounded-lg border border-linie`}
         style={even ? { gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` } : undefined}>
         {options.map(([id, label, disabled, title]) => (
           <button key={id} disabled={disabled} onClick={() => onChange(id)} title={title} aria-pressed={value === id}
-            className={`px-3 py-1.5 rounded-md text-sm font-semibold flex items-center justify-center gap-1.5 text-center leading-tight transition-colors ${value === id ? 'bg-card text-acc-700 shadow' : 'text-gray-600 hover:text-gray-800'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+            className={`px-3 py-1.5 rounded-md text-sm font-semibold flex items-center justify-center gap-1.5 text-center leading-tight transition-colors ${value === id ? 'bg-akzent-weich text-akzent-text' : `text-text-2 ${disabled ? '' : 'hover:bg-hover'}`} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
             {label}
           </button>
         ))}
@@ -3338,19 +3576,19 @@
     const Switch = ({ checked, onChange, hint, children }) => (
       <label className="flex items-start gap-3 cursor-pointer">
         <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
-          className={`mt-0.5 relative w-10 h-6 shrink-0 rounded-full transition-colors ${checked ? 'bg-acc-500' : 'bg-gray-300'}`}>
+          className={`mt-0.5 relative w-10 h-6 shrink-0 rounded-full transition-colors ${checked ? 'bg-akzent' : 'bg-linie'}`}>
           <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-4' : ''}`} />
         </button>
-        <span className="text-sm text-gray-700">{children}{hint && <span className="block text-xs text-gray-400">{hint}</span>}</span>
+        <span className="text-sm text-text">{children}{hint && <span className="block text-xs text-text-3">{hint}</span>}</span>
       </label>
     );
     const OptRow = ({ label, children }) => (
       <div className="sm:flex sm:items-start sm:gap-4">
-        <div className="sm:w-28 shrink-0 text-sm text-gray-500 mb-1.5 sm:mb-0 sm:pt-1.5">{label}</div>
+        <div className="sm:w-28 shrink-0 text-sm text-text-2 mb-1.5 sm:mb-0 sm:pt-1.5">{label}</div>
         <div className="flex-1 min-w-0">{children}</div>
       </div>
     );
-    const NOTE = 'text-xs text-gray-400 mt-1.5';
+    const NOTE = 'text-xs text-text-3 mt-1.5';
     const TOL_LABEL = { strict: 'tolStrict', normal: 'tolNormal', loose: 'tolLoose' }; // dazu je `…Hint`
     // Linien-Icons der Modi und Eingaben, eine Farbe (currentColor)
     const MODE_ICON = {
@@ -3375,7 +3613,7 @@
       <div className="flex flex-wrap gap-2">
         {options.map(([id, label, disabled, title]) => (
           <button key={id} disabled={disabled} onClick={() => onChange(id)} title={title} aria-label={title} aria-pressed={value === id}
-            className={`px-3 py-2 text-sm ${value === id ? BTN_PRIMARY : BTN_SECONDARY} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+            className={`px-3 py-2 text-sm ${value === id ? BTN_SECONDARY : BTN_NEUTRAL} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
             {label}
           </button>
         ))}
@@ -3524,16 +3762,16 @@
       // statt Lückentext nicht: das wäre eine andere Übung.
       useEffect(() => { if (go && (mode === wanted.mode || MODE_FALLBACK[wanted.mode]) && chosen.length) onStart(opts, chosen); }, []);
       const A = sideName(set, 0), B = sideName(set, 1);
-      const BOX_COLORS = ['bg-gray-300', 'bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-lime-400', 'bg-green-500'];
+      const BOX_COLORS = ['bg-fach-0', 'bg-fach-1', 'bg-fach-2', 'bg-fach-3', 'bg-fach-4', 'bg-fach-5'];
 
       return (
         <div className={`${SCREEN} p-4 sm:p-8`}>
-          <div className="max-w-2xl mx-auto">
+          <div className={COLUMN}>
             <div className="flex items-center gap-2 mb-6">
-              <button onClick={onBack} title={t('toOverview')} className="shrink-0 bg-card px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">
+              <button onClick={onBack} title={t('toOverview')} className={`shrink-0 px-4 py-2 ${BTN_NEUTRAL} auf-rand`}>
                 ← {t('overview')}
               </button>
-              <h1 className="flex-1 min-w-0 text-xl sm:text-3xl font-bold text-center text-gray-800 break-words">{set.title}</h1>
+              <h1 className="flex-1 min-w-0 text-xl sm:text-3xl font-bold text-center text-text break-words">{set.title}</h1>
               {settingsButton}
             </div>
             {settingsPanel}
@@ -3544,13 +3782,13 @@
                   Modi darunter laufen dann auf den einzelnen Formen. */}
               {formsOk && (
                 <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-700 mb-3">{t('whatHow')}</h2>
+                  <h2 className="text-lg font-semibold text-text mb-3">{t('whatHow')}</h2>
                   <Seg even value={forms ? 'forms' : 'words'} onChange={(v) => set_({ forms: v === 'forms' })}
                     options={[['words', t('whatWords', set.words.length)], ['forms', t('whatForms', formSet(set).words.length)]]} />
                   <p className={NOTE}>{t(forms ? 'formsHint' : 'wordsHint')} <HelpLink onClick={() => setHelp('forms')} /></p>
                 </div>
               )}
-              <h2 className="text-lg font-semibold text-gray-700 mb-3">{t('modeHow')}</h2>
+              <h2 className="text-lg font-semibold text-text mb-3">{t('modeHow')}</h2>
               {/* Der Modus ist die eigentliche Wahl: Kacheln mit Icon und einer
                   Zeile. Geht ein Modus bei diesem Set nicht, steht der Grund
                   statt der Beschreibung auf der Kachel — ein Tooltip käme auf
@@ -3562,10 +3800,10 @@
                   return (
                     <button key={m} disabled={!!off} aria-pressed={on}
                       onClick={() => { if (m !== 'write') set_({ mode: m }); else if (!writing) set_({ mode: opts.input }); }}
-                      className={`flex flex-col items-start text-left p-3 rounded-xl transition-all ${on ? 'bg-acc-500/10 ring-2 ring-acc-500' : 'bg-gray-100 hover:bg-gray-200'} ${off ? 'opacity-40 cursor-not-allowed' : ''}`}>
-                      <span className={on ? 'text-acc-500' : 'text-gray-400'}><Icon size={24}>{MODE_ICON[m]}</Icon></span>
-                      <span className="mt-2 text-sm font-semibold text-gray-800 break-words hyphens-auto" lang={currentLang}>{t(MODE_LABEL[m])}</span>
-                      <span className="text-xs text-gray-500 leading-snug">{t(off || MODE_LABEL[m] + 'Short')}</span>
+                      className={`flex flex-col items-start text-left p-3 rounded-xl transition-all ${on ? 'bg-akzent-weich ring-2 ring-akzent' : 'bg-hover hover:bg-linie'} ${off ? 'opacity-40 cursor-not-allowed' : ''}`}>
+                      <span className={on ? 'text-akzent-text' : 'text-text-3'}><Icon size={24}>{MODE_ICON[m]}</Icon></span>
+                      <span className="mt-2 text-sm font-semibold text-text break-words hyphens-auto" lang={currentLang}>{t(MODE_LABEL[m])}</span>
+                      <span className="text-xs text-text-2 leading-snug">{t(off || MODE_LABEL[m] + 'Short')}</span>
                     </button>
                   );
                 })}
@@ -3601,12 +3839,12 @@
                   <Seg value={opts.sel} onChange={(sel) => set_({ sel })}
                     options={[['all', t('selAllN', n)], ['wrong', t('selWrongN', wrongN), !wrongN], ['due', t('selDueN', dueN)], ['range', t('selRange')]]} />
                   {opts.sel === 'range' && (
-                    <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 mt-2 text-sm text-text-2">
                       {t('rangeFrom')}
                       <input type="number" min={1} max={n} value={opts.from} onChange={(e) => set_({ from: +e.target.value || 1 })} className={`w-20 ${INPUT}`} />
                       {t('rangeTo')}
                       <input type="number" min={1} max={n} value={opts.to} onChange={(e) => set_({ to: +e.target.value || n })} className={`w-20 ${INPUT}`} />
-                      <span className="text-gray-400">/ {n}</span>
+                      <span className="text-text-3">/ {n}</span>
                     </div>
                   )}
                   {opts.mode === 'table' && <p className={NOTE}>{t('tableSelHint')}</p>}
@@ -3638,22 +3876,22 @@
                     {AUTO_MODES.includes(opts.mode) && (
                       <Switch checked={opts.exam} onChange={(exam) => set_({ exam })} hint={opts.exam ? t('examHint') : t('examShort')}>
                         <b>{t('exam')}</b>
-                        {opts.exam && !canFullscreen() && <span className="block text-xs text-amber-700">{t('examNoFs')}</span>}
+                        {opts.exam && !canFullscreen() && <span className="block text-xs text-orange">{t('examNoFs')}</span>}
                       </Switch>
                     )}
                   </div>
                 </OptRow>
               </div>
               <button onClick={() => onStart(opts, chosen)} disabled={!chosen.length}
-                className={`w-full mt-6 px-6 py-3 text-lg ${chosen.length ? BTN_PRIMARY : 'bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed'}`}>
+                className={`w-full mt-6 px-6 py-3 text-lg ${chosen.length ? BTN_PRIMARY : 'bg-linie text-text-3 rounded-lg font-semibold cursor-not-allowed'}`}>
                 {t('start')} · {t(forms ? 'nForms' : 'nWords', chosen.length)}
               </button>
-              {!chosen.length && <p className="text-sm text-red-600 mt-2">{t('nothingSelected')}</p>}
+              {!chosen.length && <p className="text-sm text-rot mt-2">{t('nothingSelected')}</p>}
             </div>
 
             <div className={`${CARD} p-6 mb-6`}>
-              <h2 className="text-lg font-semibold text-gray-700 mb-1">{t('shareTitle')}</h2>
-              <p className="text-sm text-gray-500 mb-3">{t('shareHint')}</p>
+              <h2 className="text-lg font-semibold text-text mb-1">{t('shareTitle')}</h2>
+              <p className="text-sm text-text-2 mb-3">{t('shareHint')}</p>
               <div className="mb-3"><Switch checked={shareGo} onChange={setShareGo}>{t('shareGo')}</Switch></div>
               <div className="flex gap-2">
                 <button onClick={copyShare} className={`flex-1 ${BTN_PRIMARY} px-4 py-2 flex items-center justify-center gap-2`}><LinkIcon /> {t('shareCopy')}</button>
@@ -3663,33 +3901,33 @@
 
             <div className={`${CARD} p-6 mb-6`}>
               <div className="flex items-center gap-2 mb-3">
-                <h2 className="text-lg font-semibold text-gray-700 flex-1">{t('progress')}</h2>
-                <span className="text-sm text-gray-500">{t('wrongCount', wrongN)} · {t('dueCount', dueN)}</span>
+                <h2 className="text-lg font-semibold text-text flex-1">{t('progress')}</h2>
+                <span className="text-sm text-text-2">{t('wrongCount', wrongN)} · {t('dueCount', dueN)}</span>
               </div>
-              <div className="flex h-4 rounded-full overflow-hidden bg-gray-200 mb-2">
+              <div className="flex h-4 rounded-full overflow-hidden bg-linie mb-2">
                 {boxes.map((c, i) => c > 0 && <div key={i} className={`${BOX_COLORS[i]}`} style={{ width: `${(c / n) * 100}%` }} title={`${t('boxLabel', i)}: ${c}`} />)}
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-3">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-2 mb-3">
                 {boxes.map((c, i) => (
                   <span key={i} className="flex items-center gap-1"><span className={`inline-block w-3 h-3 rounded-sm ${BOX_COLORS[i]}`} />{t('boxLabel', i)}: {c}</span>
                 ))}
               </div>
-              <p className="text-xs text-gray-400 mb-3">{t('progressHint')}</p>
+              <p className="text-xs text-text-3 mb-3">{t('progressHint')}</p>
               {seen > 0 && (
                 <button onClick={() => setDialog({ kind: 'confirm', ok: t('resetProgress'), text: t('confirmReset'), onYes: onReset })}
-                  className={`px-4 py-2 text-sm ${BTN_SECONDARY}`}>{t('resetProgress')}</button>
+                  className={`px-4 py-2 text-sm ${BTN_NEUTRAL}`}>{t('resetProgress')}</button>
               )}
             </div>
 
             <Collapsible title={`${t(forms ? 'formList' : 'wordList')} (${n})`} open={listOpen} onToggle={() => setListOpen((v) => !v)}>
-              <ol className="text-sm text-gray-700 space-y-1">
+              <ol className="text-sm text-text space-y-1">
                 {pool.words.map((w, i) => {
                   const r = recs[i];
                   return (
                     <li key={i} className="flex items-start gap-2">
                       <span className={`mt-1.5 inline-block w-2.5 h-2.5 rounded-full shrink-0 ${BOX_COLORS[r ? Math.min(r.box, 5) : 0]}`} />
-                      <span className="text-gray-400 w-6 shrink-0 text-right">{i + 1}.</span>
-                      <span className="flex-1"><b>{inline(w.a)}</b> — {inline(w.b)}{(w.h || w.ha || w.hb) && <span className="text-gray-400"> ({[w.h, w.ha, w.hb].filter(Boolean).join(' · ')})</span>}</span>
+                      <span className="text-text-3 w-6 shrink-0 text-right">{i + 1}.</span>
+                      <span className="flex-1"><b>{inline(w.a)}</b> — {inline(w.b)}{(w.h || w.ha || w.hb) && <span className="text-text-3"> ({[w.h, w.ha, w.hb].filter(Boolean).join(' · ')})</span>}</span>
                     </li>
                   );
                 })}
@@ -3758,23 +3996,23 @@
         return () => { document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs); };
       }, []);
       return (
-        <div className="max-w-2xl mx-auto">
+        <div className={COLUMN}>
           <div className="flex items-center gap-2 mb-4">
-            <button onClick={onQuit} className="shrink-0 bg-card px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">← {t('quit')}</button>
-            <div className="flex-1 min-w-0 text-center text-gray-500 truncate">{set.title}</div>
+            <button onClick={onQuit} className={`shrink-0 px-4 py-2 ${BTN_NEUTRAL} auf-rand`}>← {t('quit')}</button>
+            <div className="flex-1 min-w-0 text-center text-text-2 truncate">{set.title}</div>
             {canFullscreen() && (
               <IconButton onClick={toggleFullscreen} title={fsElement() ? t('exitFullscreen') : t('fullscreen')}><ExpandIcon /></IconButton>
             )}
             {settingsButton}
           </div>
           {settingsPanel}
-          <div className="flex items-center gap-3 mb-4 text-sm text-gray-500">
-            <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-acc-500 to-acc2-500 transition-all" style={{ width: `${(pos / queue) * 100}%` }} />
+          <div className="flex items-center gap-3 mb-4 text-sm text-text-2">
+            <div className="flex-1 h-2 rounded-full bg-linie overflow-hidden">
+              <div className="h-full bg-akzent transition-all" style={{ width: `${(pos / queue) * 100}%` }} />
             </div>
             <span>
               {Math.min(done, total)} / {total}
-              {item && item.retry && <span className="ml-2 px-1.5 rounded bg-orange-100 text-orange-700 text-xs font-semibold">{t('retryTag')}</span>}
+              {item && item.retry && <span className="ml-2 px-1.5 rounded bg-orange-weich text-orange text-xs font-semibold">{t('retryTag')}</span>}
               {extra}
             </span>
           </div>
@@ -3787,21 +4025,21 @@
     // Antwort — geprüft wird Buchstabe für Buchstabe (Practice und Tabelle)
     const answerProps = (lang) => ({ autoCapitalize: 'none', autoCorrect: 'off', autoComplete: 'off', spellCheck: false, lang: TTS_LOCALE[lang] || undefined });
     const STATUS_CLASS = {
-      right: 'bg-green-50 border-green-300 text-green-800',
-      almost: 'bg-yellow-50 border-yellow-300 text-yellow-800',
-      wrong: 'bg-red-50 border-red-300 text-red-800',
+      right: 'bg-gruen-weich border-gruen-linie text-gruen',
+      almost: 'bg-orange-weich border-orange-linie text-orange',
+      wrong: 'bg-rot-weich border-rot-linie text-rot',
     };
     const SpeakButton = ({ text, lang, big }) => canSpeak(lang) && (
       <button onClick={() => speak(text, lang)} title={t('speak')}
-        className={big ? `${BTN_PRIMARY} px-8 py-6 flex items-center justify-center gap-3 text-xl` : 'text-gray-400 hover:text-acc-500 align-middle'}>
+        className={big ? `${BTN_PRIMARY} px-8 py-6 flex items-center justify-center gap-3 text-xl` : 'text-text-3 hover:text-akzent-text align-middle'}>
         <SpeakerIcon />{big && t('hear')}
       </button>
     );
     // Beide Schreibflächen sehen gleich aus — eine Stelle, sonst laufen sie
     // beim ersten Nachjustieren der Höhe auseinander. Die Fläche bleibt auch
-    // im dunklen Modus weiss (echtes `bg-white`, nicht `bg-card`): ein Blatt
+    // im dunklen Modus weiss (echtes `bg-white`, nicht `bg-karte`): ein Blatt
     // Papier, und die Tinte von iink ist dunkel.
-    const PAD_FRAME = 'w-full h-48 sm:h-56 bg-white rounded-lg border-2 border-dashed border-gray-300 overflow-hidden relative';
+    const PAD_FRAME = 'w-full h-48 sm:h-56 bg-white rounded-lg border-2 border-dashed border-linie overflow-hidden relative';
     const PAD_LINE = { backgroundImage: 'linear-gradient(to top, transparent 34%, #e5e7eb 34%, #e5e7eb calc(34% + 1px), transparent calc(34% + 1px))' };
     const POINTER_EVENTS = ['pointerdown', 'pointermove', 'pointerup'];
     // Strichbreiten beider Flächen — der Radierer breit genug für den Finger.
@@ -3973,7 +4211,7 @@
     };
 
     const Sentences = ({ word, solution }) => (word.s || []).length > 0 && (
-      <ul className="mt-3 text-gray-700 space-y-1">{word.s.map((s, i) => <li key={i}>{markWord(s, solution)}</li>)}</ul>
+      <ul className="mt-3 text-text space-y-1">{word.s.map((s, i) => <li key={i}>{markWord(s, solution)}</li>)}</ul>
     );
 
     const Practice = ({ set, opts, words, onDone, onBack, onResult }) => {
@@ -4270,9 +4508,9 @@
       const sideHint = (side) => (side === 'a' ? item.word.ha : item.word.hb);
       const hint = showHints && [item.word.h, sideHint(item.dir === 'ab' ? 'a' : 'b')].filter(Boolean).join(' · ');
       const answerHint = showHints && sideHint(item.dir === 'ab' ? 'b' : 'a');
-      const answerHintLine = answerHint && <div className="text-sm text-gray-500 mt-1">{answerHint}</div>;
+      const answerHintLine = answerHint && <div className="text-sm text-text-2 mt-1">{answerHint}</div>;
       const needNote = task.need && (
-        <div className="text-sm font-semibold text-acc-700 mb-2">{t(HAND_MODES.includes(mode) ? 'needAllPen' : 'needAll', task.need.length)}</div>
+        <div className="text-sm font-semibold text-akzent-text mb-2">{t(HAND_MODES.includes(mode) ? 'needAllPen' : 'needAll', task.need.length)}</div>
       );
       const promptLabel = sideName(set, item.dir === 'ab' ? 0 : 1);
 
@@ -4292,9 +4530,9 @@
                 const [A, B] = charDiff(baseNorm(row.input), row.r.solution);
                 return (
                   <div key={i} className="flex gap-2 items-baseline">
-                    <span className="text-gray-400 w-7 shrink-0 text-right">{task.need[i].mark}</span>
+                    <span className="text-text-3 w-7 shrink-0 text-right">{task.need[i].mark}</span>
                     {row.r.status === 'right' ? <b>{row.item}</b>
-                      : !row.input ? <span><b>{row.item}</b> <span className="text-sm text-gray-500">· {t('noAnswer')}</span></span>
+                      : !row.input ? <span><b>{row.item}</b> <span className="text-sm text-text-2">· {t('noAnswer')}</span></span>
                       : <span><DiffText parts={A} cls="diff-del" /> → <b><DiffText parts={B} cls="diff-ins" /></b></span>}
                   </div>
                 );
@@ -4306,14 +4544,14 @@
               <div className="space-y-1 text-lg">
                 <div><span className={`${LABEL} mr-2`}>{t('yourInput')}</span><DiffText parts={A} cls="diff-del" /></div>
                 <div><span className={`${LABEL} mr-2`}>{t('solution')}</span><b><DiffText parts={B} cls="diff-ins" /></b> <SpeakButton text={task.solution} lang={answerLang} /></div>
-                {isList(task.solution) && <div className="whitespace-pre-line text-base text-gray-700 mt-1">{task.solution}</div>}
+                {isList(task.solution) && <div className="whitespace-pre-line text-base text-text mt-1">{task.solution}</div>}
               </div>
             );
           })() : (
             <div className="text-lg whitespace-pre-line"><b>{task.solution}</b> {mode !== 'parse' && <SpeakButton text={task.solution} lang={answerLang} />}</div>
           )}
           {answerHintLine}
-          {mode === 'listen' && <div className="text-gray-700 mt-1">{promptLabel}: <b>{inline(task.prompt)}</b></div>}
+          {mode === 'listen' && <div className="text-text mt-1">{promptLabel}: <b>{inline(task.prompt)}</b></div>}
           {mode !== 'gap' && <Sentences word={item.word} solution={solutionOf(item)} />}
         </div>
       );
@@ -4323,14 +4561,14 @@
         <>
           <div className={`${LABEL} mb-1`}>{t('solution')}</div>
           <div className="flex items-start gap-3">
-            <div className="flex-1 text-3xl font-bold text-acc-700 break-words whitespace-pre-line">{task.solution}</div>
+            <div className="flex-1 text-3xl font-bold text-akzent-text break-words whitespace-pre-line">{task.solution}</div>
             <SpeakButton text={task.solution} lang={answerLang} />
           </div>
           {answerHintLine}
           <Sentences word={item.word} solution={task.solution} />
           <div className="flex gap-3 mt-4">
-            <button onClick={() => rate(false)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 text-lg">{t('knewNot')}</button>
-            <button onClick={() => rate(true)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-green-100 text-green-700 hover:bg-green-200 text-lg">{t('knew')}</button>
+            <button onClick={() => rate(false)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-rot-weich text-rot hover:bg-rot-linie text-lg">{t('knewNot')}</button>
+            <button onClick={() => rate(true)} className="flex-1 px-4 py-4 rounded-lg font-semibold bg-gruen-weich text-gruen hover:bg-gruen-linie text-lg">{t('knew')}</button>
           </div>
         </>
       );
@@ -4340,12 +4578,12 @@
       );
       const copyBlock = phase === 'copy' && (
         <div className="mt-4">
-          <div className="text-sm text-gray-600 mb-1">{t('copyPrompt2')}</div>
+          <div className="text-sm text-text-2 mb-1">{t('copyPrompt2')}</div>
           <div className="flex gap-2">
-            {inputField(inputRef, copyInput, (e) => { setCopyInput(e.target.value); setCopyMiss(false); }, copyMiss ? 'border-red-400' : '')}
+            {inputField(inputRef, copyInput, (e) => { setCopyInput(e.target.value); setCopyMiss(false); }, copyMiss ? 'border-rot-linie' : '')}
             <button onClick={checkCopy} className={`${BTN_PRIMARY} px-5`}>{t('check')}</button>
           </div>
-          {copyMiss && <p className="text-sm text-red-600 mt-1">{t('copyNotYet')}</p>}
+          {copyMiss && <p className="text-sm text-rot mt-1">{t('copyNotYet')}</p>}
         </div>
       );
 
@@ -4362,7 +4600,7 @@
         const note = inkNote || (inkFail && t('inkFail'));
         body = (
           <>
-            {note && <p className="text-sm text-orange-600 mb-2">{note}</p>}
+            {note && <p className="text-sm text-orange mb-2">{note}</p>}
             {inkOn
               ? <InkPad lang={IINK_LANG[answerLang]} keys={myscript} penOnly={opts.penOnly}
                   clearKey={sketchKey} tool={padTool} padRef={padRef} onFail={() => setInkFail(true)} />
@@ -4371,7 +4609,7 @@
               <div className="flex flex-wrap gap-3 mt-3">
                 <Choice value={padTool} onChange={setPadTool}
                   options={[['write', <PenIcon />, false, t('padPen')], ['erase', <EraserIcon />, false, t('padErase')]]} />
-                <button onClick={clearPad} className={`px-4 py-3 ${BTN_SECONDARY}`}>{t('penClear')}</button>
+                <button onClick={clearPad} className={`px-4 py-3 ${BTN_NEUTRAL}`}>{t('penClear')}</button>
                 <button onClick={() => setPhase('back')} className={`flex-1 px-4 py-3 ${inkOn ? BTN_SECONDARY : `${BTN_PRIMARY} text-lg`}`}>{t('reveal')}</button>
                 {inkOn && (
                   <button onClick={checkInk} disabled={inkBusy}
@@ -4399,14 +4637,14 @@
                   className={`${BTN_PRIMARY} px-10 py-6 text-xl flex items-center gap-3 ${mic === 'listening' ? 'animate-pulse' : ''}`}>
                   <MicIcon /> {mic === 'listening' ? t('micListening') : t('micStart')}
                 </button>
-                <div className="text-sm text-gray-400">{langName(answerLang)}</div>
-                {mic === 'nothing' && <p className="text-sm text-orange-600">{t('micNothing')}</p>}
-                {mic === 'denied' && <p className="text-sm text-red-600">{t('micDenied')}</p>}
+                <div className="text-sm text-text-3">{langName(answerLang)}</div>
+                {mic === 'nothing' && <p className="text-sm text-orange">{t('micNothing')}</p>}
+                {mic === 'denied' && <p className="text-sm text-rot">{t('micDenied')}</p>}
               </div>
             )}
             {phase === 'feedback' && (
               <>
-                <p className="text-sm text-gray-500 mb-2">{t('micHeard')}: <b className="text-gray-800">{heard}</b></p>
+                <p className="text-sm text-text-2 mb-2">{t('micHeard')}: <b className="text-text">{heard}</b></p>
                 {feedbackBox(heard)}
               </>
             )}
@@ -4422,11 +4660,11 @@
           <>
             <div className="grid sm:grid-cols-2 gap-3">
               {task.options.map((o) => {
-                const state = phase === 'ask' ? '' : o === task.solution ? 'bg-green-100 border-green-400 text-green-800'
-                  : o === picked ? 'bg-red-100 border-red-400 text-red-800' : 'opacity-50';
+                const state = phase === 'ask' ? '' : o === task.solution ? 'bg-gruen-weich border-gruen-linie text-gruen'
+                  : o === picked ? 'bg-rot-weich border-rot-linie text-rot' : 'opacity-50';
                 return (
                   <button key={o} onClick={() => pick(o)} disabled={phase !== 'ask'}
-                    className={`px-4 py-4 rounded-lg border-2 border-gray-200 bg-card text-lg font-semibold text-gray-800 text-left break-words whitespace-pre-line hover:border-acc-400 hover:bg-acc-50 transition-all ${state}`}>
+                    className={`px-4 py-4 rounded-lg border-2 border-linie bg-karte text-lg font-semibold text-text text-left break-words whitespace-pre-line hover:border-akzent hover:bg-akzent-weich transition-all ${state}`}>
                     {o}
                   </button>
                 );
@@ -4446,9 +4684,9 @@
             {labels.map((l, i) => {
               const on = parsed[axis] === i;
               const state = phase === 'ask'
-                ? (on ? 'bg-acc-100 border-acc-500 text-acc-900' : 'bg-card border-gray-200 text-gray-800 hover:border-acc-400')
-                : on ? (result && result.status === 'right' ? 'bg-green-100 border-green-400 text-green-800' : 'bg-red-100 border-red-400 text-red-800')
-                : 'bg-card border-gray-200 text-gray-400';
+                ? (on ? 'bg-akzent-weich border-akzent text-akzent-text' : 'bg-karte border-linie text-text hover:border-akzent')
+                : on ? (result && result.status === 'right' ? 'bg-gruen-weich border-gruen-linie text-gruen' : 'bg-rot-weich border-rot-linie text-rot')
+                : 'bg-karte border-linie text-text-3';
               return (
                 <button key={i} disabled={phase !== 'ask'} onClick={() => setParsed((p) => ({ ...p, [axis]: i }))} aria-pressed={on} data-axis={axis} data-i={i}
                   className={`px-4 py-2.5 rounded-lg border-2 font-semibold transition-all ${state}`}>{l}</button>
@@ -4465,7 +4703,7 @@
             </div>
             {phase === 'ask' && (
               <button onClick={checkParse} disabled={!ready}
-                className={`w-full mt-4 px-6 py-3 text-lg ${ready ? BTN_PRIMARY : 'bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed'}`}>{t('check')}</button>
+                className={`w-full mt-4 px-6 py-3 text-lg ${ready ? BTN_PRIMARY : 'bg-linie text-text-3 rounded-lg font-semibold cursor-not-allowed'}`}>{t('check')}</button>
             )}
             {phase === 'feedback' && <div className="mt-4">{feedbackBox(null)}</div>}
             {nextButton}
@@ -4474,21 +4712,21 @@
       } else if (mode === 'scramble') {
         body = (
           <>
-            <div className="min-h-[3.5rem] flex flex-wrap gap-1 items-center p-2 rounded-lg border-2 border-dashed border-gray-300 mb-3">
+            <div className="min-h-[3.5rem] flex flex-wrap gap-1 items-center p-2 rounded-lg border-2 border-dashed border-linie mb-3">
               {built.map((j, k) => (
                 <button key={k} onClick={() => phase === 'ask' && setBuilt(built.slice(0, k))}
-                  className="w-11 h-11 rounded-lg bg-acc-100 text-acc-800 text-xl font-bold">{task.letters[j]}</button>
+                  className="w-11 h-11 rounded-lg bg-akzent-weich text-akzent-text text-xl font-bold">{task.letters[j]}</button>
               ))}
             </div>
             <div className="flex flex-wrap gap-1">
               {task.letters.map((ch, j) => (
                 <button key={j} onClick={() => addTile(j)} disabled={built.includes(j) || phase !== 'ask'}
-                  className={`w-11 h-11 rounded-lg text-xl font-bold shadow transition-all ${built.includes(j) ? 'bg-gray-100 text-gray-300' : 'bg-card text-gray-800 hover:bg-acc-50'}`}>
+                  className={`w-11 h-11 rounded-lg text-xl font-bold border border-linie transition-all ${built.includes(j) ? 'bg-hover text-text-3' : 'bg-karte text-text hover:bg-akzent-weich'}`}>
                   {ch}
                 </button>
               ))}
               {phase === 'ask' && built.length > 0 && (
-                <button onClick={() => setBuilt([])} className={`px-3 text-sm ${BTN_SECONDARY}`}>{t('clearTiles')}</button>
+                <button onClick={() => setBuilt([])} className={`px-3 text-sm ${BTN_NEUTRAL}`}>{t('clearTiles')}</button>
               )}
             </div>
             {phase === 'feedback' && <div className="mt-4">{feedbackBox(built.map((j) => task.letters[j]).join(''))}</div>}
@@ -4503,7 +4741,7 @@
               <div className="space-y-2">
                 {task.need.map((e, i) => (
                   <div key={i} className="flex gap-2 items-center">
-                    <span className="text-gray-400 w-7 shrink-0 text-right">{e.mark}</span>
+                    <span className="text-text-3 w-7 shrink-0 text-right">{e.mark}</span>
                     {inputField(i === 0 ? inputRef : null, fieldValue(i), (ev) => setField(i, ev.target.value), '', i)}
                   </div>
                 ))}
@@ -4528,20 +4766,20 @@
         head = (
           <>
             <div className={`${LABEL} mb-2`}>{t('sentence')}</div>
-            <div className="text-2xl sm:text-3xl font-semibold text-gray-800 leading-relaxed mb-3">
-              {task.before}<span className="inline-block min-w-[5rem] border-b-4 border-acc-400 text-acc-700 px-1 text-center">
+            <div className="text-2xl sm:text-3xl font-semibold text-text leading-relaxed mb-3">
+              {task.before}<span className="inline-block min-w-[5rem] border-b-4 border-akzent text-akzent-text px-1 text-center">
                 {phase === 'ask' ? ' ' : task.solution}</span>{task.after}
             </div>
-            <div className="text-gray-600"><span className={`${LABEL} mr-2`}>{promptLabel}</span><b className="text-xl">{inline(task.prompt)}</b>{hint && <span className="text-sm text-gray-500 ml-2">{hint}</span>}</div>
+            <div className="text-text-2"><span className={`${LABEL} mr-2`}>{promptLabel}</span><b className="text-xl">{inline(task.prompt)}</b>{hint && <span className="text-sm text-text-2 ml-2">{hint}</span>}</div>
           </>
         );
       } else if (mode === 'listen') {
         head = (
           <div className="flex flex-col items-center gap-3 py-2">
             <SpeakButton text={task.spoken} lang={answerLang} big />
-            {item.word.tab && <div className="text-2xl font-bold text-gray-800 text-center break-words">{task.prompt}</div>}
-            <div className="text-sm text-gray-400">{t('hearAgain')}: {langName(answerLang)}</div>
-            {hint && <div className="text-sm text-gray-500">{hint}</div>}
+            {item.word.tab && <div className="text-2xl font-bold text-text text-center break-words">{task.prompt}</div>}
+            <div className="text-sm text-text-3">{t('hearAgain')}: {langName(answerLang)}</div>
+            {hint && <div className="text-sm text-text-2">{hint}</div>}
           </div>
         );
       } else {
@@ -4549,11 +4787,11 @@
           <>
             <div className={`${LABEL} mb-2`}>{promptLabel}</div>
             <div className="flex items-start gap-3 mb-1">
-              <div className="flex-1 text-3xl sm:text-4xl font-bold text-gray-800 break-words whitespace-pre-line">{task.prompt}</div>
+              <div className="flex-1 text-3xl sm:text-4xl font-bold text-text break-words whitespace-pre-line">{task.prompt}</div>
               <SpeakButton text={task.prompt} lang={promptLang} />
             </div>
-            {mode === 'parse' && <div className="text-gray-600 mb-1">{t('parseOf', item.word.tab.lemma, item.word.tab.meaning)}</div>}
-            {hint && <div className="text-sm text-gray-500 mb-2">{hint}</div>}
+            {mode === 'parse' && <div className="text-text-2 mb-1">{t('parseOf', item.word.tab.lemma, item.word.tab.meaning)}</div>}
+            {hint && <div className="text-sm text-text-2 mb-2">{hint}</div>}
             {needNote}
           </>
         );
@@ -4562,10 +4800,10 @@
       return (
         <div className={`${SCREEN} p-4 sm:p-8`}>
           <PracticeFrame set={set} pos={pos} queue={queue.length} done={pos + 1} total={total} item={item} onQuit={quit}
-            extra={exam && <span className="ml-2 px-1.5 rounded bg-red-100 text-red-700 text-xs font-semibold">{t('examTag')}</span>}>
+            extra={exam && <span className="ml-2 px-1.5 rounded bg-rot-weich text-rot text-xs font-semibold">{t('examTag')}</span>}>
             <div onKeyDown={onKey} className={`${CARD} p-6 sm:p-8 mb-4 relative overflow-hidden ${HAND_MODES.includes(mode) ? 'sketch' : ''}`}>
               {timed && phase === 'ask' && (
-                <div key={pos} className="absolute left-0 top-0 h-1.5 bg-orange-400" style={{ animation: `shrink ${opts.timer}s linear forwards` }} />
+                <div key={pos} className="absolute left-0 top-0 h-1.5 bg-orange-voll" style={{ animation: `shrink ${opts.timer}s linear forwards` }} />
               )}
               {head}
               <div className="mt-6">{body}</div>
@@ -4642,10 +4880,10 @@
         return (
           <button key={side + i} onClick={onClick} disabled={isMatched}
             className={`w-full px-3 py-3 rounded-lg border-2 text-left font-semibold break-words whitespace-pre-line transition-all ${
-              isMatched ? 'bg-green-100 border-green-300 text-green-800 opacity-60'
-              : isFlash ? 'bg-red-100 border-red-400 text-red-800'
-              : active ? 'bg-acc-100 border-acc-500 text-acc-900'
-              : 'bg-card border-gray-200 text-gray-800 hover:border-acc-400'}`}>
+              isMatched ? 'bg-gruen-weich border-gruen-linie text-gruen opacity-60'
+              : isFlash ? 'bg-rot-weich border-rot-linie text-rot'
+              : active ? 'bg-akzent-weich border-akzent text-akzent-text'
+              : 'bg-karte border-linie text-text hover:border-akzent'}`}>
             {side === 'l' ? w.a : w.b}
           </button>
         );
@@ -4654,7 +4892,7 @@
       return (
         <div className={`${SCREEN} p-4 sm:p-8`}>
           <PracticeFrame set={set} pos={doneBefore + matched.length} queue={words.length} done={doneBefore + matched.length} total={words.length} item={null} onQuit={quit}
-            extra={groups.length > 1 && <span className="ml-2 text-xs text-gray-400">{t('groupN', g + 1, groups.length)}</span>}>
+            extra={groups.length > 1 && <span className="ml-2 text-xs text-text-3">{t('groupN', g + 1, groups.length)}</span>}>
             <div className={`${CARD} p-4 sm:p-6 mb-4`}>
               <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 mb-2">
                 <div className={LABEL}>{sideName(set, 0)}</div>
@@ -4664,7 +4902,7 @@
                 <div className="space-y-2">{group.map((w, i) => tile(w, 'l', i, () => !flash && !matched.includes(w) && setLeft(left === w ? null : w), left === w))}</div>
                 <div className="space-y-2">{right.map((w, i) => tile(w, 'r', i, () => pickRight(w), false))}</div>
               </div>
-              {flash && <p className="text-center text-red-600 font-semibold mt-3">{t('wrongPair')}</p>}
+              {flash && <p className="text-center text-rot font-semibold mt-3">{t('wrongPair')}</p>}
             </div>
           </PracticeFrame>
           {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
@@ -4743,7 +4981,7 @@
       const cell = (form, i, j) => {
         const k = key(i, j);
         if (!asked.has(k)) {
-          return <td key={j} className="px-2 py-1.5 text-gray-500">{form ? inline(form, ' / ') : <span className="text-gray-300">–</span>}</td>;
+          return <td key={j} className="px-2 py-1.5 text-text-2">{form ? inline(form, ' / ') : <span className="text-text-3">–</span>}</td>;
         }
         const r = results && results[k];
         return (
@@ -4754,8 +4992,8 @@
             {r && r.status !== 'right' && (
               <div className="text-sm mt-0.5 px-1">
                 {r.typed ? <b><DiffText parts={charDiff(baseNorm(r.typed), r.solution)[1]} cls="diff-ins" /></b>
-                  : <><b>{r.solution}</b> <span className="text-gray-500">· {t('noAnswer')}</span></>}
-                {r.note && <span className="text-gray-500"> · {t(r.note)}</span>}
+                  : <><b>{r.solution}</b> <span className="text-text-2">· {t('noAnswer')}</span></>}
+                {r.note && <span className="text-text-2"> · {t(r.note)}</span>}
               </div>
             )}
           </td>
@@ -4765,14 +5003,14 @@
       return (
         <div className={`${SCREEN} p-4 sm:p-8`} onKeyDown={onKey}>
           <PracticeFrame set={set} pos={g + (results ? 1 : 0)} queue={tables.length} done={g + 1} total={tables.length} item={null} onQuit={quit}
-            extra={<span className="ml-2 text-xs text-gray-400">· {t('tableN', order.length)}</span>}>
+            extra={<span className="ml-2 text-xs text-text-3">· {t('tableN', order.length)}</span>}>
             <div className={`${CARD} p-4 sm:p-6 mb-4`} ref={rootRef}>
               <div className="flex items-baseline gap-3 flex-wrap mb-1">
-                <div className="text-3xl font-bold text-gray-800 break-words">{tab.lemma}</div>
-                <div className="text-gray-500">{tab.meaning}</div>
+                <div className="text-3xl font-bold text-text break-words">{tab.lemma}</div>
+                <div className="text-text-2">{tab.meaning}</div>
                 <SpeakButton text={tab.lemma} lang={lang} />
               </div>
-              {opts.hints && tab.h && <div className="text-sm text-gray-500 mb-2">{tab.h}</div>}
+              {opts.hints && tab.h && <div className="text-sm text-text-2 mb-2">{tab.h}</div>}
               <div className="overflow-x-auto mt-4 -mx-1">
                 <table className="text-left border-separate border-spacing-0">
                   {(tab.cols.length > 0 || tab.one) && (
@@ -4786,7 +5024,7 @@
                   <tbody>
                     {tab.t.map((row, i) => (
                       <tr key={i}>
-                        <th className="pr-3 pt-3 text-sm font-semibold text-gray-500 whitespace-nowrap align-top">{tab.rows[i]}</th>
+                        <th className="pr-3 pt-3 text-sm font-semibold text-text-2 whitespace-nowrap align-top">{tab.rows[i]}</th>
                         {row.map((form, j) => cell(form, i, j))}
                       </tr>
                     ))}
@@ -4797,7 +5035,7 @@
                 <button onClick={check} className={`w-full mt-5 ${BTN_PRIMARY} px-6 py-3 text-lg`}>{t('check')}</button>
               ) : (
                 <>
-                  <p className={`mt-5 font-semibold ${right === order.length ? 'text-green-700' : 'text-gray-700'}`}>{t('tableScore', right, order.length)}</p>
+                  <p className={`mt-5 font-semibold ${right === order.length ? 'text-gruen' : 'text-text'}`}>{t('tableScore', right, order.length)}</p>
                   <button autoFocus onClick={next} className={`w-full mt-3 ${BTN_PRIMARY} px-6 py-3 text-lg`}>{t('next')} →</button>
                 </>
               )}
@@ -4815,37 +5053,37 @@
       const [settingsButton, settingsPanel] = useSettings();
       return (
         <div className={`${SCREEN} p-4 sm:p-8`}>
-          <div className="max-w-2xl mx-auto">
+          <div className={COLUMN}>
             <div className="flex items-center gap-2 mb-6">
-              <button onClick={onBack} className="shrink-0 bg-card px-4 py-2 rounded-lg shadow hover:shadow-md transition-all font-semibold text-gray-700">← {t('toSet')}</button>
-              <div className="flex-1 min-w-0 text-center text-gray-500 truncate">{set.title}</div>
+              <button onClick={onBack} className={`shrink-0 px-4 py-2 ${BTN_NEUTRAL} auf-rand`}>← {t('toSet')}</button>
+              <div className="flex-1 min-w-0 text-center text-text-2 truncate">{set.title}</div>
               {settingsButton}
             </div>
             {settingsPanel}
             <div className={`${CARD} p-6 sm:p-8 text-center mb-4`}>
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">{t('done')}</h2>
-              <div className="text-5xl font-bold my-4 bg-gradient-to-r from-acc-500 to-acc2-500 bg-clip-text text-transparent">
+              <h2 className="text-3xl font-bold text-text mb-2">{t('done')}</h2>
+              <div className="text-5xl font-bold my-4 text-akzent-text">
                 {log.length ? Math.round((ok / log.length) * 100) : 0}%
               </div>
-              <p className="text-gray-600">{t('result', ok, log.length)}</p>
-              <p className="text-gray-400 text-sm">{t('timeUsed', Math.floor(seconds / 60), seconds % 60)}</p>
+              <p className="text-text-2">{t('result', ok, log.length)}</p>
+              <p className="text-text-3 text-sm">{t('timeUsed', Math.floor(seconds / 60), seconds % 60)}</p>
               {exam && (
-                <p className={`mt-2 font-semibold ${!watched ? 'text-amber-700' : leaves ? 'text-red-600' : 'text-green-700'}`}>
+                <p className={`mt-2 font-semibold ${!watched ? 'text-orange' : leaves ? 'text-rot' : 'text-gruen'}`}>
                   {!watched ? t('examUnwatched') : leaves ? t('examLeaves', leaves) : t('examNoLeaves')}
                 </p>
               )}
             </div>
             {exam && (
               <div className={`${CARD} p-4 sm:p-6 mb-4 overflow-x-auto`}>
-                <h3 className="font-semibold text-gray-700 mb-2">{t('examResults')}</h3>
+                <h3 className="font-semibold text-text mb-2">{t('examResults')}</h3>
                 <table className="w-full text-sm text-left">
                   <thead><tr className={LABEL}><th className="pr-2 py-1">#</th><th className="pr-2">{t('colQuestion')}</th><th className="pr-2">{t('colAnswer')}</th><th className="pr-2">{t('colSolution')}</th><th></th></tr></thead>
                   <tbody>
                     {log.map((e, i) => (
-                      <tr key={i} className={`border-t border-gray-100 ${e.ok ? '' : 'bg-red-50'}`}>
-                        <td className="pr-2 py-1 text-gray-400">{i + 1}</td>
+                      <tr key={i} className={`border-t border-linie ${e.ok ? '' : 'bg-rot-weich'}`}>
+                        <td className="pr-2 py-1 text-text-3">{i + 1}</td>
                         <td className="pr-2 py-1 font-semibold">{inline(promptOf(e.item))}</td>
-                        <td className={`pr-2 py-1 ${e.ok ? 'text-green-700' : 'text-red-700'}`}>{e.input || t('noAnswer')}</td>
+                        <td className={`pr-2 py-1 ${e.ok ? 'text-gruen' : 'text-rot'}`}>{e.input || t('noAnswer')}</td>
                         <td className="pr-2 py-1">{inline(e.solution || solutionOf(e.item))}</td>
                         <td className="py-1">{e.ok ? '✓' : '✗'}</td>
                       </tr>
@@ -4856,12 +5094,12 @@
             )}
             {wrong.length ? (
               <div className={`${CARD} p-6 mb-4`}>
-                <h3 className="font-semibold text-gray-700 mb-2">{t('wrongWords')}</h3>
-                <ul className="space-y-1 text-gray-700">
+                <h3 className="font-semibold text-text mb-2">{t('wrongWords')}</h3>
+                <ul className="space-y-1 text-text">
                   {wrong.map((e, i) => <li key={i}><b>{inline(promptOf(e.item))}</b> — {inline(solutionOf(e.item))}</li>)}
                 </ul>
               </div>
-            ) : <p className="text-center text-green-700 font-semibold mb-4">{t('allRight')}</p>}
+            ) : <p className="text-center text-gruen font-semibold mb-4">{t('allRight')}</p>}
             <div className="flex flex-col sm:flex-row gap-3">
               {wrong.length > 0 && <button onClick={() => onRetry(wrong.map((e) => e.item.word))} className={`flex-1 ${BTN_PRIMARY} px-4 py-3`}>{t('retryWrong')}</button>}
               <button onClick={onAgain} className={`flex-1 px-4 py-3 ${wrong.length ? BTN_SECONDARY : BTN_PRIMARY}`}>{t('again')}</button>
@@ -4930,12 +5168,12 @@
       if (error) {
         return (
           <div className={`${SCREEN} p-8 flex flex-col items-center justify-center gap-4`}>
-            <div className="text-xl text-red-600 font-semibold text-center">{error}</div>
+            <div className="text-xl text-rot font-semibold text-center">{error}</div>
             <button onClick={onBack} className={`${BTN_PRIMARY} px-6 py-3`}>{t('toOverview')}</button>
           </div>
         );
       }
-      if (!set) return <div className={`${SCREEN} p-8 text-center text-gray-500`}>{t('loading')}</div>;
+      if (!set) return <div className={`${SCREEN} p-8 text-center text-text-2`}>{t('loading')}</div>;
       // Der Lernstand hängt am Set: eigene über die id, Beispiele über ihren
       // Namen. Geteilte Links laufen über `keepLink` und sind hier eigene.
       const setKey = route.type === 'demo' ? `demo:${set.id}` : set.id;
@@ -5210,7 +5448,7 @@
         const target = route.type === 'new' ? { id: null, title: '', dir: route.dir, words: [] } : own.find((s) => s.id === route.id);
         if (!target) {
           return (
-            <div className={`${SCREEN} p-8 text-center text-gray-500`}>
+            <div className={`${SCREEN} p-8 text-center text-text-2`}>
               {t('errGone')}
               <button onClick={back} className="block mx-auto mt-4 underline">{t('backToList')}</button>
             </div>
