@@ -20,11 +20,13 @@ Direktlinks → Routing → **Korrektur** → Vorlesen/Spracherkennung/Vollbild 
 Bausteine (Modal, Icons, QR, Scanner, Anleitung, Einstellungen) → Seiten.
 Die Wortformen (`formSet`) stehen gleich nach den Listen, vor dem Parser.
 
-Die Übersicht ist gebaut wie die Quiz-Auswahl in MyKahoot: schlanke Zeilen
-statt Kacheln (`row`/`folderBox` in `Selection`), Titel in fester Spalte mit
-der Wortzahl dahinter in einer Flucht, rechts transparente Symbolknöpfe
-(`RowTool`, nicht `IconButton` — der bleibt für die Kacheln auf den anderen
-Seiten), Ordnerinhalt an einer Linie eingerückt.
+Die Übersicht ist gebaut wie in MyMemory (dort schon nach dem Designsystem):
+Markenzug statt Kopfleiste, die Abschnitte auf Karten mit kleinem Kopf
+(`kopf`), darin die **kompakte Liste** (`liste-zeile`/`liste-name`/
+`liste-zahl`/`liste-ordner` in `row`/`folderBox`): Titel in fester Spalte mit
+der Wortzahl dahinter in einer Flucht, rechts Symbolknöpfe (`RowTool` fängt
+seinen Klick selbst ab — die ganze Zeile öffnet das Set bzw. klappt den
+Ordner), Ordnerinhalt an einer Linie eingerückt.
 
 **Ein Weg zum neuen Set:** Das `+` bei «Meine Voci» und an jedem Ordner öffnet
 den Kasten «Voci-Set erstellen» (`create(dir)`) mit dem Ordner vorgewählt
@@ -465,59 +467,99 @@ den Speicherort nennen»). Chrome auf dem iPad hilft nicht: gleiche
 Engine (WebKit), gleiche Regeln. Verwaltete Schul-iPads können trotzdem
 zurücksetzen — dagegen hilft nur die Sicherung.
 
-## Farben: Sonne (hell) / Nacht (dunkel)
+## Design (My-Designsystem)
 
-Das Skript im `<head>` legt jede Farbskala als CSS-Variable an und sagt
-Tailwind (`tailwind.config`), die Klassen daraus zu lesen. Im Code heissen
-sie **`acc-…`** (Akzent), **`acc2-…`** (zweiter Akzent; der Verlauf
-`from-acc-500 to-acc2-500`), `gray-…` und die Signalfarben
-`red`/`green`/`amber`/`yellow`/`orange`/`lime` wie gewohnt. **Hell = Sonne**
-(Orange → Rose, Stein-Grau), **dunkel = Nacht** (Himmelblau → Smaragd,
-Schiefer; `DARK`) — bewusst zwei Stimmungen, nicht eine Farbe in zwei
-Helligkeiten: Orange wirkt auf Dunkel bräunlich. Dunkel kehrt jede Skala um
-(50 ↔ 950 …), Grau hat eine eigene dunkle Skala (`DARK_GRAY`), sonst wäre
-blasse Schrift unlesbar. Wahl in den Einstellungen
-jeder Seite (`ThemeChoice`); gespeichert (`myvoci_theme`: `auto`/`light`/`dark`)
-und angewendet wird nur im `<head>`-Skript (`themePick`/`setTheme`), `auto`
-folgt dem Gerät live; das Skript läuft vor dem ersten Zeichnen, damit nichts
-hell aufblitzt.
+- Quelle ist **`~/MySuite`**; `design/` ist eine Kopie (`design/HERKUNFT.txt`)
+  und wird **nie** hier geändert. Neu holen: `~/MySuite/sync.sh voci`. Regeln
+  in `design/DESIGN.md`. Nächste Verwandte und Vorlage für Bausteine ist
+  **MyMemory** (gleicher Aufbau, gleiche Klassennamen).
+- Standard: Schema **Moonrise Kingdom**, Ton 7 **Navy** (#1E4F7A / #418ED7),
+  Listenform kompakt, Icon Papagei.
+- `tailwind.config` kennt **nur** Token-Farben: `text-text`/`-2`/`-3`,
+  `bg-karte`, `bg-hover`, `border-linie`, `bg-akzent`/`-weich`,
+  `text-akzent-text`, Signalfarben `rot`/`gruen`/`orange` je als Schrift
+  (`text-rot`), getönte Fläche (`bg-rot-weich`), Rand (`border-rot-linie`),
+  deckend (`bg-rot-voll`), dazu `fach-0…5` für die Leitner-Fächer. Eine alte
+  Klasse wie `text-gray-500` oder `bg-red-100` erzeugt **gar nichts**.
+  `white`/`black` gibt es nur für das, was so bleiben muss: Schreibflächen
+  (`PAD_FRAME`, die Tinte von iink ist dunkel), Knopf im `Switch`, Kamerabild.
+- Bausteine im `<style type="text/tailwindcss">` (sonst gewinnt Tailwinds
+  Preflight): `knopf-1/-2/-n` (über `BTN_PRIMARY`/`BTN_SECONDARY`/
+  `BTN_NEUTRAL`, Polster am Aufruf), `kachel` (`CARD`), `kopf` (`LABEL`),
+  `feld` (`INPUT`), `symbol` (`IconButton`/`RowTool`), `umschalter`,
+  `kuerzel` (Sprach-Badge), `liste-*`, `ablage`. `Seg` wählt mit
+  `akzent-weich`, `Choice` mit sekundär/neutral — kein Verlauf mehr, das
+  System ist flach.
+- Eigene Variablen heissen **nie** wie Tokens (`--akzent`, `--karte` …), sonst
+  überschreiben sie das Schema still. Abgeleitete Flächen per
+  `color-mix(…, var(--karte))` (`--rot-weich`, `--fach-3` …), mit Ersatz in
+  `@supports not (color: color-mix…)`.
+- Schema/Ton (`myvoci_look`) und Hell/Dunkel/System (`myvoci_modus`) setzt
+  **nur** das Skript im `<head>` vor dem ersten Zeichnen als
+  `data-schema`/`data-ton`/`data-modus` am `<html>`; die Einstellungen rufen
+  `myLook`/`setLook`/`myModus`/`setModus`. Eine alte Wahl aus
+  `myvoci_theme` (Sonne/Nacht) wird einmal übernommen. **Die
+  Home-Screen-Webapp auf iOS liest nicht `theme-color`**, sondern
+  `apple-mobile-web-app-status-bar-style` beim Start — das Skript setzt
+  beide (`bar`), auch beim Wechsel des Geräts. Safari vor 14 kennt am
+  `matchMedia`-Objekt nur `addListener`.
+- Bekannte Grenze aus `my-schemen.css` (wie MyMemory): der Schema-Akzent folgt
+  dem **OS**-Modus, nicht `data-modus` — «Hell» auf einem dunklen Mac zeigt
+  den hellen Grund mit dem Dunkel-Akzent (Navy wird #418ED7).
+- QR-Code immer schwarz auf weiss (`.qr`).
+- Sichtprüfung im Browser: `python3 -m http.server` liefert ohne
+  Cache-Header — nach einer Änderung **neu laden** (`location.reload()`),
+  ein blosses Navigieren zeigte noch die alte Seite.
 
-Stolpersteine: **Flächen heissen `bg-card`, nicht `bg-white`** — Weiss bleibt
-im Dunkeln weiss. Echtes `bg-white` steht nur, wo es weiss bleiben soll: die
-Schreibflächen (`PAD_FRAME`, Papier, die Tinte von iink ist dunkel) und der
-Knopf im `Switch`. **Grau kehrt sich um**: `bg-gray-800` ist im Dunkeln hell,
-Schrift darauf also `text-gray-50`, nie `text-white` (Toast, Knopf «Einfügen»).
-Neue Farbtöne ausserhalb der Skalen (Hex im Code) nur über die Variablen
-(`rgb(var(--c-red-200))`, s. `.diff-del`). **Die Home-Screen-Webapp auf iOS
-liest nicht `theme-color`**, sondern `apple-mobile-web-app-status-bar-style`
-beim Start — das Skript setzt beide, sonst bleibt die Statusleiste über der
-dunklen Seite weiss. Safari vor 14 kennt am `matchMedia`-Objekt nur
-`addListener`.
+### Abweichungen
+
+- **Keine Kopfleiste** (wie MyMemory/MyKahoot): Die Übersicht trägt den
+  Markenzug, «MyVoci» mit dem Papagei ohne Kachel als Maske in
+  `currentColor` (`.logo`, `logo-papagei.svg` aus `tools/make-logo.py` — nach
+  neuem Icon neu laufen lassen, es schreibt auch das `aspect-ratio`). Die
+  anderen Seiten behalten ihre Kopfzeile (zurück · Titel · Einstellungen).
+- **Einstellungen** (`useSettings`, Regel «Einstellungen ohne Leiste»): ein
+  Kästchen oben rechts, das über den Inhalt klappt (zu per Knopf, Klick
+  daneben, Esc — Esc nicht, solange ein `Modal` mit `data-modal` offen ist).
+  Ab **1360 px** sitzt es fest am Fensterrand (`SETTINGS_DOCK`) und die Spalte
+  wird schmaler (`COLUMN`, so bleibt sie bei 1360 px noch 640 px breit — die
+  Übungskarte braucht das; MyMemory dockt schon ab 1200 px). Gibt
+  `[knoten, null]` zurück; das zweite Element ist ein Rest der alten Form.
+  Darin: Sprache, Darstellung, Farbschema, Ton, dann was die Seite mitgibt
+  (Schlüssel, Beispiele, Ordner, Sicherung) als Abschnitte ohne eigenen Rahmen.
+- **Rand oben, nur auf der Übersicht** (`Rand`, `PAGE` mit Platz oben): Hell =
+  **Gefieder** (drei Reihen Federn, aus denen sich nach unten einzelne lösen),
+  Dunkel = **Buchstaben** aus Latein/Griechisch/Kyrillisch und mit Akzenten
+  als Sternbild — MyVoci übt Wörter. `hintergrund/*.svg` aus
+  `tools/make-hintergrund.py`, je Farbschicht eine Maske, gefüllt mit
+  Schema-Tokens (`RAND_SCHICHTEN`); das Skript schreibt Version und Masse
+  selbst zwischen die Marken «rand-daten». Federn aus **Strichen** (Kiel +
+  Äste), nicht gefüllt — gefüllt las man sie als Blätter; der Kiel endet vor
+  der Spitze, sonst stand unten ein nackter Stiel heraus. Buchstaben nur in
+  Schriften, die jedes Gerät hat (Maske = Bild, keine Webfonts). Keine
+  SVG-Filter (bremsen). Beim Üben kein Rand: er lenkte neben der Karte ab.
+  Frei stehender Text darauf trägt `.frei`, Knöpfe `.auf-rand`.
+- **Leitner-Fächer** `fach-0…5`: neu = `--linie`, dann von `--rot` über
+  `--orange` nach `--gruen` gemischt — die Schemen haben keine eigene Skala.
 
 ## Icon
 
-Quelle ist `favicon.svg` (von Hand, 64×64): zwei Karteikarten auf dem
-Verlauf von Sonne (Orange `#f97316` → Rose `#e11d48`), die hintere Karte
-Pfirsich, die vordere weiss mit orangem **Doppelpfeil** — geübt wird in beide Richtungen, das unterscheidet
-MyVoci vom Karteikasten. Motiv statt Buchstabe, wie das Kartenpaar von
-MyMemory; die Familienähnlichkeit ist Absicht.
-
-Die **PNGs sind randlos** (kein `rx`): iOS und Android legen ihre eigene
-Maske darüber, eingebackene Ecken würden ein zweites Mal beschnitten. Nur
-das SVG rundet (`rx="14"`), es steht im Tab unmaskiert. Neu rendern (für die
-PNGs eine Kopie des SVG ohne `rx`):
+Quelle ist `design/icons/voci.svg` (Papagei auf Kachel #1E4F7A, aus MySuite),
+im Tab direkt verwendet. Die **PNGs sind randlos**: iOS und Android legen
+ihre eigene Maske darüber, eingebackene Ecken würden ein zweites Mal
+beschnitten. Neu rendern (Kachel-Pfad durch ein volles Quadrat ersetzt):
 
 ```bash
-# Chrome headless, weil ImageMagick SVG-Verläufe ohne librsvg verpfuscht
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
-  --screenshot=icon-512.png --window-size=512,512 file://…/icon.html
-sips -z 180 180 icon-512.png --out apple-touch-icon.png
+# randlos.svg = voci.svg mit <rect width="1024" height="1024" fill="#1E4F7A"/> statt des Kachel-Pfads
+qlmanage -t -s 1024 -o /tmp randlos.svg
+magick /tmp/randlos.svg.png -resize 512x512 icon-512.png
+magick /tmp/randlos.svg.png -resize 180x180 apple-touch-icon.png
 ```
 
-Bei 16 px wird das Motiv zum Farbfleck — bei MyMemorys zwei Karten genauso,
-für die Tab-Leiste reicht der Farbeindruck. Ändert sich ein Icon, wandert
-`?v=N` in `index.html` **und** `manifest.webmanifest` eins hoch: Dateinamen
-bleiben gleich, und Browser wie Home-Bildschirm halten Icons zäh fest.
+Für den leeren Zustand der Liste steht die Creme-Variante
+(`design/icons/creme/voci.svg`). Ändert sich ein Icon, wandert `?v=N` in
+`index.html` **und** `manifest.webmanifest` eins hoch: Dateinamen bleiben
+gleich, und Browser wie Home-Bildschirm halten Icons zäh fest.
 
 ## Was nicht ins Repo gehört
 

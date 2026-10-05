@@ -233,6 +233,22 @@
     }
     .ablage { border-radius: var(--radius); outline: 2px dashed transparent; outline-offset: -2px; transition: background .15s, outline-color .15s; }
     .ablage.ziel { background: var(--akzent-weich); outline-color: var(--akzent); }
+    /* Rand oben auf der Übersicht, der nach unten ausdünnt (wie Dschungel/Blut in
+       MyKahoot, Pixel/Neuronen in MyMemory): Hell = Gefieder, Dunkel = Buchstaben als
+       Sternbild. Jede Farbschicht ist eine Maske aus hintergrund/
+       (tools/make-hintergrund.py), gefüllt mit einem Token des Schemas — so macht der
+       Rand jedes Farbschema mit. Hinter allem (z-index −1), fest am Fenster. */
+    .rand { position: fixed; inset: 0 0 auto 0; height: var(--h); z-index: -1; pointer-events: none; }
+    .rand > i { position: absolute; inset: 0; background: var(--c);
+      -webkit-mask: var(--m) left top / var(--w) auto repeat-x; mask: var(--m) left top / var(--w) auto repeat-x; }
+    .rand-dunkel { display: none;
+      background: radial-gradient(ellipse 60% 70% at 50% 0%, color-mix(in srgb, var(--akzent) 16%, transparent), transparent 70%); }
+    :root[data-modus="dunkel"] .rand-dunkel { display: block; }
+    :root[data-modus="dunkel"] .rand-hell { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-modus="hell"]) .rand-dunkel { display: block; }
+      :root:not([data-modus="hell"]) .rand-hell { display: none; }
+    }
     /* Was frei auf dem Rand steht (Titel, Untertitel), bekommt einen Hof in der Grundfarbe */
     .frei { text-shadow: 0 0 12px var(--grund), 0 0 5px var(--grund), 0 0 2px var(--grund); }
     /* QR-Code: schwarz auf weiss, sonst liest ihn kein Handy — auch im Dunkelmodus */
@@ -2939,6 +2955,25 @@
       </span>
     );
 
+    // ---------- Rand oben ----------
+    // Datei i von tools/make-hintergrund.py trägt die i-te Farbe. Version (gegen
+    // alte Schichten im Browser-Cache) und Kachelmasse schreibt das Skript selbst
+    // hierher. Nur auf der Übersicht: beim Üben lenkte er neben der Karte ab.
+    // <rand-daten>
+    const RAND = { v: '6a1985b8', w: 1200, h: {'feder': 300, 'zeichen': 320} };
+    // </rand-daten>
+    const RAND_SCHICHTEN = {
+      hell: ['feder', ['--akzent', '--rad-1', '--rad-3', '--rad-5', '--rad-7']],
+      dunkel: ['zeichen', ['--akzent', '--rad-1', '--rad-3', '--rad-5', '--spiel-3']],
+    };
+    const Rand = () => Object.entries(RAND_SCHICHTEN).map(([modus, [name, farben]]) => (
+      <div key={modus} className={`rand rand-${modus}`} aria-hidden="true" style={{ '--h': `${RAND.h[name]}px`, '--w': `${RAND.w}px` }}>
+        {farben.map((farbe, i) => (
+          <i key={i} style={{ '--c': `var(${farbe})`, '--m': `url(hintergrund/${name}-${i}.svg?v=${RAND.v})` }} />
+        ))}
+      </div>
+    ));
+
     // ---------- Auswahlseite ----------
     const Selection = ({ own, folders, onOpen, onEdit, onNew, onImport, onDelete, folderApi, backup, dir }) => {
       const [showToast, toastNode] = useToast();
@@ -3248,6 +3283,7 @@
 
       return (
         <div className={PAGE}>
+          <Rand />
           <div className={COLUMN}>
             {/* Keine Kopfleiste (wie MyMemory/MyKahoot): die Startseite trägt den Markenzug */}
             <div className="flex items-center gap-1 mb-1">

@@ -4,6 +4,15 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (05.10.2026, 19):** **My-Designsystem** (Kopie aus `~/MySuite` in
+`design/`): Farben aus den Tokens, Schema Moonrise mit Akzent Navy, Sonne/Nacht
+und der Verlauf fallen weg. Bausteine und Übersicht wie in MyMemory (Markenzug
+mit Papagei, Abschnitte auf Karten, kompakte Liste), Einstellungen als
+Kästchen oben rechts mit Farbschema und Ton (ab 1360 px am Fensterrand), neues
+Icon Papagei. Eigener Rand oben auf der Übersicht: Federn (hell), Buchstaben
+als Sternbild (dunkel). Im Browser geprüft (Übersicht, Set-Seite, Runde,
+Editor, Anleitung, Handy-Breite, beide Modi); auf dem iPad noch nicht.
+
 **Stand (29.09.2026, 18):** Review über die Wortformen mit 14 behobenen
 Befunden, danach ein Vereinfachungs-Durchgang. Die wichtigsten: ein Link
 trägt die Wahl Wörter/Wortformen immer (sonst lief eine Wörter-Übung beim
