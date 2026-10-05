@@ -4,6 +4,16 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (05.10.2026, 20):** Review über den Designsystem-Umbau, 6 Befunde
+behoben: Schatten von Fenster, Einstellungs-Kästchen und Meldung fehlten
+(`shadow-[var(--schatten)]` setzt in Tailwind keinen Schatten, jetzt die
+Klasse `schatten`), das Kästchen klappte hinter einer geöffneten Anleitung
+zu, `rounded-sm` hatte keinen Radius, der `color-mix`-Ersatz fehlte für
+`--akzent-weich`/`--akzent-text`, `make-logo.py` prüft und setzt die Version.
+Danach vereinfacht: toter Code raus (`.pille`, `.qr`, zweites Element von
+`useSettings`), gesperrte Knöpfe über `.knopf:disabled` statt Klassen-Weichen.
+Im Browser geprüft; auf dem iPad noch nicht.
+
 **Stand (05.10.2026, 19):** **My-Designsystem** (Kopie aus `~/MySuite` in
 `design/`): Farben aus den Tokens, Schema Moonrise mit Akzent Navy, Sonne/Nacht
 und der Verlauf fallen weg. Bausteine und Übersicht wie in MyMemory (Markenzug

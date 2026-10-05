@@ -57,7 +57,6 @@
       };
       window.setModus = (modus) => { write(MODUS_KEY, modus); applyModus(modus); };
       window.DEFAULT_LOOK = DEFAULT_LOOK;
-      window.SCHEME_IDS = SCHEMES;
 
       const look = read(LOOK_KEY);
       applyLook(look && SCHEMES.includes(look.schema) ? look : DEFAULT_LOOK);
@@ -100,7 +99,7 @@
         },
         borderRadius: {
           none: '0',
-          s: 'var(--radius-s)',
+          sm: 'var(--radius-s)',
           DEFAULT: 'var(--radius)',
           md: 'var(--radius)',
           lg: 'var(--radius)',
@@ -152,6 +151,9 @@
         --rot-linie: var(--rot); --gruen-linie: var(--gruen); --orange-linie: var(--orange);
         --fach-3: var(--orange); --fach-4: var(--gruen);
         --schleier: rgba(32, 32, 34, .55);
+        /* dieselben Rollen aus my-tokens.css: ohne Ersatz bliebe jede gewählte Fläche
+           (Knopf, Umschalter, Moduskachel) durchsichtig und der Akzent-Text farblos */
+        --akzent-weich: var(--hover); --akzent-text: var(--text);
       }
     }
     body {
@@ -166,6 +168,9 @@
     @layer components {
     .kopf { font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); }
     .kachel { background: var(--karte); border: 1px solid var(--linie); border-radius: var(--radius-l); }
+    /* Was über dem Inhalt schwebt (Fenster, Einstellungen, Meldung). Als Klasse statt
+       `shadow-[var(--schatten)]`: Tailwind liest das als Schattenfarbe und setzt gar keinen Schatten. */
+    .schatten { box-shadow: var(--schatten); }
 
     /* Knöpfe (DESIGN.md): primär, sekundär, neutral */
     .knopf { border-radius: var(--radius); font-weight: 600; transition: background .15s, border-color .15s, opacity .15s; }
@@ -182,8 +187,8 @@
       display: inline-block; height: 1.15em;
       aspect-ratio: 682 / 642; /* logo-seiten (tools/make-logo.py) */
       background: currentColor;
-      -webkit-mask: url("logo-papagei.svg?v=1") center / contain no-repeat;
-      mask: url("logo-papagei.svg?v=1") center / contain no-repeat;
+      -webkit-mask: url("logo-papagei.svg?v=b717af37") center / contain no-repeat;
+      mask: url("logo-papagei.svg?v=b717af37") center / contain no-repeat;
     }
     /* Quadratische Symbolknöpfe, ruhig bis zum Darüberfahren */
     .symbol { flex: none; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
@@ -210,9 +215,6 @@
     .feld::placeholder { color: var(--text-3); }
     .kuerzel { padding: 0 6px; border-radius: var(--radius-s); background: var(--hover); color: var(--text-2);
       font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-    /* Pille (DESIGN.md): Akzent als Text auf --akzent-weich */
-    .pille { display: inline-block; padding: 2px 9px; border-radius: var(--radius-pille); background: var(--akzent-weich);
-      color: var(--akzent-text); font-size: 12px; font-weight: 600; }
     /* Kompakte Liste (DESIGN.md, Listen): keine Fläche, nur Hover */
     .liste-zeile { display: flex; align-items: center; gap: 2px; padding: 5px 6px 5px 10px; margin-bottom: 2px;
       border-radius: var(--radius); transition: background .15s; }
@@ -251,8 +253,6 @@
     }
     /* Was frei auf dem Rand steht (Titel, Untertitel), bekommt einen Hof in der Grundfarbe */
     .frei { text-shadow: 0 0 12px var(--grund), 0 0 5px var(--grund), 0 0 2px var(--grund); }
-    /* QR-Code: schwarz auf weiss, sonst liest ihn kein Handy — auch im Dunkelmodus */
-    .qr { background: #FFFFFF; padding: 8px; border-radius: var(--radius); }
     }
 
     .diff-del { background: var(--rot-linie); text-decoration: line-through; border-radius: 2px; }
@@ -2486,7 +2486,7 @@
     // und auch der Scanner passte auf kleinen Schirmen knapp nicht.
     const Modal = ({ children, onClose, wide }) => (
       <div data-modal className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: 'var(--schleier)' }} onClick={onClose}>
-        <div className={`kachel p-6 sm:p-8 ${wide ? 'max-w-2xl' : 'max-w-md'} w-full max-h-[85vh] overflow-y-auto shadow-[var(--schatten)]`} onClick={(e) => e.stopPropagation()}>
+        <div className={`kachel p-6 sm:p-8 ${wide ? 'max-w-2xl' : 'max-w-md'} w-full max-h-[85vh] overflow-y-auto schatten`} onClick={(e) => e.stopPropagation()}>
           {children}
         </div>
       </div>
@@ -2703,7 +2703,7 @@
             <input type="text" value={pasted} placeholder={t('scanPastePh')} autoCapitalize="none" autoCorrect="off" spellCheck={false}
               onChange={(e) => setPasted(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') openPasted(); }}
               className={`flex-1 min-w-0 ${INPUT}`} />
-            <button onClick={openPasted} disabled={!pasted.trim()} className={`px-4 py-2 ${BTN_PRIMARY} ${pasted.trim() ? '' : 'opacity-50'}`}>{t('scanOpen')}</button>
+            <button onClick={openPasted} disabled={!pasted.trim()} className={`px-4 py-2 ${BTN_PRIMARY}`}>{t('scanOpen')}</button>
           </div>
           <button onClick={onClose} className={`w-full px-4 py-2 ${BTN_NEUTRAL}`}>{t('close')}</button>
         </Modal>
@@ -2784,15 +2784,17 @@
     const SETTINGS_DOCK = 'min-[1360px]:fixed min-[1360px]:top-3 min-[1360px]:right-3.5 z-30';
     const COLUMN = 'max-w-2xl min-[1360px]:max-w-[min(42rem,calc(100vw-45rem))] mx-auto';
 
-    // `extra`: was die Seite zusätzlich einstellen lässt (Schlüssel, Ordner …)
+    // `extra`: was die Seite zusätzlich einstellen lässt (Schlüssel, Ordner …).
+    // Gibt Knopf samt Kästchen als einen Knoten zurück.
     const useSettings = (extra) => {
       const [open, setOpen] = useState(false);
       const box = useRef(null);
       useEffect(() => {
         if (!open) return;
-        // Ein Fenster (Anleitung, QR-Code) aus dem Kästchen heraus hängt im
-        // DOM darunter und zählt so als «drinnen»
-        const away = (e) => { if (!box.current?.contains(e.target)) setOpen(false); };
+        // Ein Fenster (Anleitung, QR-Code) aus dem Kästchen heraus zählt als
+        // «drinnen» — auch das der Seite, das nicht im Kästchen hängt (Anleitung
+        // aus «Ordner»/«Sicherung»), sonst klappt das Kästchen dahinter einfach zu
+        const away = (e) => { if (!box.current?.contains(e.target) && !e.target.closest('[data-modal]')) setOpen(false); };
         const esc = (e) => { if (e.key === 'Escape' && !document.querySelector('[data-modal]')) setOpen(false); };
         document.addEventListener('pointerdown', away);
         document.addEventListener('keydown', esc);
@@ -2820,7 +2822,7 @@
         <IconButton onClick={() => setOpen((v) => !v)} title={t('settings')}><SettingsIcon /></IconButton>
       );
       const panel = open && (
-        <div className={`${CARD} absolute right-0 top-full mt-2 z-30 w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto p-5 space-y-5 text-left shadow-[var(--schatten)]`}>
+        <div className={`${CARD} absolute right-0 top-full mt-2 z-30 w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)] overflow-y-auto p-5 space-y-5 text-left schatten`}>
           <div>
             <div className={`${LABEL} mb-2`}>{t('language')}</div>
             {toggle(LANGS.map((l) => [l.id, l.name]), currentLang, changeLang)}
@@ -2854,8 +2856,7 @@
           {extra}
         </div>
       );
-      const node = <div ref={box} className={`relative shrink-0 ${SETTINGS_DOCK}`}>{button}{panel}</div>;
-      return [node, null];
+      return <div ref={box} className={`relative shrink-0 ${SETTINGS_DOCK}`}>{button}{panel}</div>;
     };
 
     // Kurzmeldung unten am Rand. Zwei Seiten brauchen sie (Übersicht und
@@ -2870,7 +2871,7 @@
       };
       useEffect(() => () => clearTimeout(timer.current), []);
       const node = toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-text text-grund px-6 py-3 rounded-lg shadow-[var(--schatten)] z-50">{toast}</div>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-text text-grund px-6 py-3 rounded-lg schatten z-50">{toast}</div>
       );
       return [showToast, node];
     };
@@ -3025,7 +3026,7 @@
       // darauf. `null` | 'all' | Abschnitt.
       const [showDemos, setShowDemos] = useState(loadShowDemos);
       const [help, setHelp] = useState(null);
-      const [settingsButton, settingsPanel] = useSettings(
+      const settingsButton = useSettings(
         <>
         <MyScriptKeys />
         <div>
@@ -3303,7 +3304,6 @@
                 {dirButtons}
               </div>
             )}
-            {settingsPanel}
 
             <Collapsible id="create" title={t('createTitle')} open={createOpen}
               onToggle={() => { setTarget(''); setCreateOpen((v) => !v); }}>
@@ -3330,7 +3330,7 @@
               <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={6} placeholder={t('pastePh')}
                 className={`w-full ${INPUT} text-sm font-mono`} />
               <button onClick={importPasted} disabled={!pasted.trim()}
-                className={`w-full mt-2 px-4 py-2 rounded-lg font-semibold transition-all ${pasted.trim() ? 'bg-akzent text-akzent-ink hover:opacity-90' : 'bg-linie text-text-3 cursor-not-allowed'}`}>
+                className={`w-full mt-2 px-4 py-2 ${BTN_PRIMARY}`}>
                 {t('importText')}
               </button>
               <OrDivider>{t('orByHand')}</OrDivider>
@@ -3649,7 +3649,7 @@
       <div className="flex flex-wrap gap-2">
         {options.map(([id, label, disabled, title]) => (
           <button key={id} disabled={disabled} onClick={() => onChange(id)} title={title} aria-label={title} aria-pressed={value === id}
-            className={`px-3 py-2 text-sm ${value === id ? BTN_SECONDARY : BTN_NEUTRAL} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+            className={`px-3 py-2 text-sm ${value === id ? BTN_SECONDARY : BTN_NEUTRAL}`}>
             {label}
           </button>
         ))}
@@ -3731,7 +3731,7 @@
       // Neu eingetragene Schlüssel sollen «mit Kontrolle» sofort freigeben —
       // vor `useSettings`, das JSX des Panels wird vorher ausgewertet
       const [inkKeys, setInkKeys] = useState(() => !!myscriptKeys());
-      const [settingsButton, settingsPanel] = useSettings(<MyScriptKeys onSaved={() => setInkKeys(!!myscriptKeys())} />);
+      const settingsButton = useSettings(<MyScriptKeys onSaved={() => setInkKeys(!!myscriptKeys())} />);
       const [help, setHelp] = useState(false); // Anleitung: false oder der Abschnitt ('ink', 'forms')
       const [dialog, setDialog] = useState(null);
       const [listOpen, setListOpen] = useState(false);
@@ -3810,7 +3810,6 @@
               <h1 className="flex-1 min-w-0 text-xl sm:text-3xl font-bold text-center text-text break-words">{set.title}</h1>
               {settingsButton}
             </div>
-            {settingsPanel}
             <StorageWarning />
 
             <div className={`${CARD} p-5 sm:p-6 mb-6`}>
@@ -3919,7 +3918,7 @@
                 </OptRow>
               </div>
               <button onClick={() => onStart(opts, chosen)} disabled={!chosen.length}
-                className={`w-full mt-6 px-6 py-3 text-lg ${chosen.length ? BTN_PRIMARY : 'bg-linie text-text-3 rounded-lg font-semibold cursor-not-allowed'}`}>
+                className={`w-full mt-6 px-6 py-3 text-lg ${BTN_PRIMARY}`}>
                 {t('start')} · {t(forms ? 'nForms' : 'nWords', chosen.length)}
               </button>
               {!chosen.length && <p className="text-sm text-rot mt-2">{t('nothingSelected')}</p>}
@@ -4023,7 +4022,7 @@
     // `pos`/`queue` füllen den Balken. Die zwei Aufrufer zählen verschieden:
     // Practice arbeitet Aufgabe für Aufgabe, MatchRound Paar für Paar.
     const PracticeFrame = ({ set, pos, queue, done, total, item, onQuit, children, extra }) => {
-      const [settingsButton, settingsPanel] = useSettings(<MyScriptKeys />);
+      const settingsButton = useSettings(<MyScriptKeys />);
       const [, redrawFs] = useState(0);
       useEffect(() => {
         const onFs = () => redrawFs((x) => x + 1);
@@ -4041,7 +4040,6 @@
             )}
             {settingsButton}
           </div>
-          {settingsPanel}
           <div className="flex items-center gap-3 mb-4 text-sm text-text-2">
             <div className="flex-1 h-2 rounded-full bg-linie overflow-hidden">
               <div className="h-full bg-akzent transition-all" style={{ width: `${(pos / queue) * 100}%` }} />
@@ -4739,7 +4737,7 @@
             </div>
             {phase === 'ask' && (
               <button onClick={checkParse} disabled={!ready}
-                className={`w-full mt-4 px-6 py-3 text-lg ${ready ? BTN_PRIMARY : 'bg-linie text-text-3 rounded-lg font-semibold cursor-not-allowed'}`}>{t('check')}</button>
+                className={`w-full mt-4 px-6 py-3 text-lg ${BTN_PRIMARY}`}>{t('check')}</button>
             )}
             {phase === 'feedback' && <div className="mt-4">{feedbackBox(null)}</div>}
             {nextButton}
@@ -5086,7 +5084,7 @@
     const Summary = ({ set, log, seconds, exam, leaves, watched, onRetry, onAgain, onBack }) => {
       const ok = log.filter((e) => e.ok).length;
       const wrong = log.filter((e) => !e.ok);
-      const [settingsButton, settingsPanel] = useSettings();
+      const settingsButton = useSettings();
       return (
         <div className={`${SCREEN} p-4 sm:p-8`}>
           <div className={COLUMN}>
@@ -5095,7 +5093,6 @@
               <div className="flex-1 min-w-0 text-center text-text-2 truncate">{set.title}</div>
               {settingsButton}
             </div>
-            {settingsPanel}
             <div className={`${CARD} p-6 sm:p-8 text-center mb-4`}>
               <h2 className="text-3xl font-bold text-text mb-2">{t('done')}</h2>
               <div className="text-5xl font-bold my-4 text-akzent-text">

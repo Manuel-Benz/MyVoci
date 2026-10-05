@@ -487,13 +487,15 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   Preflight): `knopf-1/-2/-n` (über `BTN_PRIMARY`/`BTN_SECONDARY`/
   `BTN_NEUTRAL`, Polster am Aufruf), `kachel` (`CARD`), `kopf` (`LABEL`),
   `feld` (`INPUT`), `symbol` (`IconButton`/`RowTool`), `umschalter`,
-  `kuerzel` (Sprach-Badge), `liste-*`, `ablage`. `Seg` wählt mit
+  `kuerzel` (Sprach-Badge), `liste-*`, `ablage`. Gesperrte Knöpfe dimmt
+  `.knopf:disabled` — das Attribut `disabled` genügt, keine Klassen-Weiche. `Seg` wählt mit
   `akzent-weich`, `Choice` mit sekundär/neutral — kein Verlauf mehr, das
   System ist flach.
 - Eigene Variablen heissen **nie** wie Tokens (`--akzent`, `--karte` …), sonst
   überschreiben sie das Schema still. Abgeleitete Flächen per
   `color-mix(…, var(--karte))` (`--rot-weich`, `--fach-3` …), mit Ersatz in
-  `@supports not (color: color-mix…)`.
+  `@supports not (color: color-mix…)` — auch für `--akzent-weich`/`--akzent-text`
+  aus `my-tokens.css`, die ebenfalls per `color-mix` entstehen.
 - Schema/Ton (`myvoci_look`) und Hell/Dunkel/System (`myvoci_modus`) setzt
   **nur** das Skript im `<head>` vor dem ersten Zeichnen als
   `data-schema`/`data-ton`/`data-modus` am `<html>`; die Einstellungen rufen
@@ -506,7 +508,10 @@ zurücksetzen — dagegen hilft nur die Sicherung.
 - Bekannte Grenze aus `my-schemen.css` (wie MyMemory): der Schema-Akzent folgt
   dem **OS**-Modus, nicht `data-modus` — «Hell» auf einem dunklen Mac zeigt
   den hellen Grund mit dem Dunkel-Akzent (Navy wird #418ED7).
-- QR-Code immer schwarz auf weiss (`.qr`).
+- QR-Code immer schwarz auf weiss — qrcode-generator zeichnet den weissen Grund
+  selbst in den SVG-Code, auch im Dunkelmodus.
+- Schatten (`--schatten`) nur über die Klasse `schatten`: `shadow-[var(--schatten)]`
+  liest Tailwind als Schattenfarbe und setzt gar keinen Schatten.
 - Sichtprüfung im Browser: `python3 -m http.server` liefert ohne
   Cache-Header — nach einer Änderung **neu laden** (`location.reload()`),
   ein blosses Navigieren zeigte noch die alte Seite.
@@ -516,16 +521,17 @@ zurücksetzen — dagegen hilft nur die Sicherung.
 - **Keine Kopfleiste** (wie MyMemory/MyKahoot): Die Übersicht trägt den
   Markenzug, «MyVoci» mit dem Papagei ohne Kachel als Maske in
   `currentColor` (`.logo`, `logo-papagei.svg` aus `tools/make-logo.py` — nach
-  neuem Icon neu laufen lassen, es schreibt auch das `aspect-ratio`). Die
+  neuem Icon neu laufen lassen, es schreibt auch `aspect-ratio` und Version). Die
   anderen Seiten behalten ihre Kopfzeile (zurück · Titel · Einstellungen).
 - **Einstellungen** (`useSettings`, Regel «Einstellungen ohne Leiste»): ein
   Kästchen oben rechts, das über den Inhalt klappt (zu per Knopf, Klick
   daneben, Esc — Esc nicht, solange ein `Modal` mit `data-modal` offen ist).
   Ab **1360 px** sitzt es fest am Fensterrand (`SETTINGS_DOCK`) und die Spalte
   wird schmaler (`COLUMN`, so bleibt sie bei 1360 px noch 640 px breit — die
-  Übungskarte braucht das; MyMemory dockt schon ab 1200 px). Gibt
-  `[knoten, null]` zurück; das zweite Element ist ein Rest der alten Form.
-  Darin: Sprache, Darstellung, Farbschema, Ton, dann was die Seite mitgibt
+  Übungskarte braucht das; MyMemory dockt schon ab 1200 px). Gibt Knopf samt
+  Kästchen als einen Knoten zurück. Ein Fenster (Anleitung, QR-Code) zählt für
+  «Klick daneben» als drinnen (`[data-modal]`), auch wenn die Seite es ausserhalb
+  des Kästchens zeichnet. Darin: Sprache, Darstellung, Farbschema, Ton, dann was die Seite mitgibt
   (Schlüssel, Beispiele, Ordner, Sicherung) als Abschnitte ohne eigenen Rahmen.
 - **Rand oben, nur auf der Übersicht** (`Rand`, `PAGE` mit Platz oben): Hell =
   **Gefieder** (drei Reihen Federn, aus denen sich nach unten einzelne lösen),
