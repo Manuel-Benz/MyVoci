@@ -12,7 +12,7 @@ SVG-Filter: jeder Filter wird pro Element gerastert und bremst (MyMemory).
 Kachelbreite 1200 px, nahtlos in x (über die Kante ragende Teile werden um ±1200
 versetzt ein zweites Mal gezeichnet).
 
-    python3 tools/make-hintergrund.py   # schreibt Masse + Version selbst nach index.html
+    python3 tools/make-hintergrund.py   # schreibt das Markup selbst nach index.html
 """
 import hashlib
 import math
@@ -177,14 +177,30 @@ def zeichen():
 federn()
 zeichen()
 
-# Masse und Version gehen von hier direkt in index.html (zwischen den Marken «rand-daten»),
-# damit dort nichts von Hand nachzuziehen ist; V ändert sich mit dem Inhalt der Dateien.
+# Das Markup des Rands geht von hier direkt in index.html (zwischen die Marken «rand-html»),
+# fest im <body> statt in React, damit die Masken nicht erst nach Babel laden.
+# Datei i trägt die i-te Farbe; V ändert sich mit dem Inhalt der Dateien (Browser-Cache).
+SCHICHTEN = {
+    'hell': ('feder', ['--akzent', '--rad-1', '--rad-3', '--rad-5', '--rad-7']),
+    'dunkel': ('zeichen', ['--akzent', '--rad-1', '--rad-3', '--rad-5', '--spiel-3']),
+}
 V = hashlib.md5(b''.join(f.read_bytes() for f in sorted(out.glob('*.svg')))).hexdigest()[:8]
 html = out.parent / 'index.html'
-daten = f"const RAND = {{ v: '{V}', w: {W}, h: {HOEHE} }};"
-neu, n = re.subn(r'(// <rand-daten>\n\s*).*?(\n\s*// </rand-daten>)', lambda m: m[1] + daten + m[2],
+daten = ''.join(
+    f'\n  <div class="rand rand-{modus}" aria-hidden="true" style="--h: {HOEHE[name]}px; --w: {W}px">'
+    + ''.join(f'<i style="--c: var({farbe}); --m: url(hintergrund/{name}-{i}.svg?v={V})"></i>'
+              for i, farbe in enumerate(farben))
+    + '</div>'
+    for modus, (name, farben) in SCHICHTEN.items())
+neu, n = re.subn(r'(<!-- <rand-html>[^\n]*).*?(\n\s*<!-- </rand-html> -->)', lambda m: m[1] + daten + m[2],
                  html.read_text(encoding='utf-8'), flags=re.S)
-assert n == 1, 'Marken «rand-daten» in index.html nicht gefunden'
+assert n == 1, 'Marken «rand-html» in index.html nicht gefunden'
+# dieselben Dateien als Preload im Skript im <head> (Marken «rand-preload»)
+assert len({len(f) for _, f in SCHICHTEN.values()}) == 1, 'Preload rechnet mit gleich vielen Schichten'
+pre = (f"const RAND = {{ v: '{V}', n: {len(SCHICHTEN['hell'][1])}, "
+       + ', '.join(f"{m}: '{name}'" for m, (name, _) in SCHICHTEN.items()) + ' };')
+neu, n = re.subn(r'(// <rand-preload>\n\s*).*?(\n\s*// </rand-preload>)', lambda m: m[1] + pre + m[2], neu, flags=re.S)
+assert n == 1, 'Marken «rand-preload» in index.html nicht gefunden'
 html.write_text(neu, encoding='utf-8')
 for f in sorted(out.iterdir()):
     print(f'{f.name}: {f.stat().st_size // 1024} KB')

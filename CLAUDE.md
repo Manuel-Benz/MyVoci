@@ -547,6 +547,15 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   Schriften, die jedes Gerät hat (Maske = Bild, keine Webfonts). Keine
   SVG-Filter (bremsen). Beim Üben kein Rand: er lenkte neben der Karte ab.
   Frei stehender Text darauf trägt `.frei`, Knöpfe `.auf-rand`.
+  **Geladen wird er vor React:** das Markup steht fest im `<body>` (Marken
+  «rand-html»), die Masken des aktuellen Modus lädt das Skript im `<head>`
+  per Preload vor (Marken «rand-preload», mit `crossOrigin`, sonst lädt die
+  Maske ein zweites Mal) — beides schreibt `make-hintergrund.py`. Vorher hing
+  der Rand an React und kam erst nach Babel (~2,5 s); die CDN-Skripte im
+  `<head>` blockieren den Parser, darum reicht statisches Markup allein nicht.
+  Sichtbar nur mit `data-rand` am `<html>`: der `<head>` setzt es, wenn der
+  Hash keine Route trägt (zweite Kopie von `ROUTE_KEYS`), danach `useRand`
+  in `Selection`.
 - **Leitner-Fächer** `fach-0…5`: neu = `--linie`, dann von `--rot` über
   `--orange` nach `--gruen` gemischt — die Schemen haben keine eigene Skala.
 

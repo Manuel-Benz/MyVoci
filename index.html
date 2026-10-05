@@ -66,6 +66,27 @@
       applyModus(modus);
       // Safari vor 14 kennt am matchMedia-Objekt nur das alte `addListener`
       if (dark.addEventListener) dark.addEventListener('change', bar); else dark.addListener(bar);
+
+      // Rand oben nur auf der Übersicht, also ohne Route im Hash (Schlüssel wie
+      // ROUTE_KEYS im App-Skript) — sonst blitzte er bei einem geteilten Link
+      // auf, bis React die Seite kennt. Danach hält `useRand` ihn nach.
+      const ROUTE = ['v', 'demo', 'local', 'edit', 'new'];
+      if (!location.hash.slice(1).split('&').some((x) => ROUTE.includes(x.split('=')[0]))) {
+        html.dataset.rand = '';
+        // Masken vorladen: die CDN-Skripte unten blockieren den Parser, der
+        // <body> mit dem Rand käme sonst erst nach Babel dran. Nur der Satz des
+        // aktuellen Modus; Dateien und Version schreibt make-hintergrund.py.
+        // <rand-preload>
+        const RAND = { v: '6a1985b8', n: 5, hell: 'feder', dunkel: 'zeichen' };
+        // </rand-preload>
+        const modus = html.dataset.modus || (dark.matches ? 'dunkel' : 'hell');
+        for (let i = 0; i < RAND.n; i++) {
+          const link = document.createElement('link');
+          link.rel = 'preload'; link.as = 'image'; link.crossOrigin = 'anonymous';
+          link.href = `hintergrund/${RAND[modus]}-${i}.svg?v=${RAND.v}`;
+          document.head.appendChild(link);
+        }
+      }
     })();
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -239,17 +260,21 @@
        MyKahoot, Pixel/Neuronen in MyMemory): Hell = Gefieder, Dunkel = Buchstaben als
        Sternbild. Jede Farbschicht ist eine Maske aus hintergrund/
        (tools/make-hintergrund.py), gefüllt mit einem Token des Schemas — so macht der
-       Rand jedes Farbschema mit. Hinter allem (z-index −1), fest am Fenster. */
-    .rand { position: fixed; inset: 0 0 auto 0; height: var(--h); z-index: -1; pointer-events: none; }
+       Rand jedes Farbschema mit. Hinter allem (z-index −1), fest am Fenster.
+       Das Markup steht fest im <body>, nicht in React: so laden die Masken schon,
+       während Babel noch übersetzt. Sichtbar nur mit data-rand am <html> (setzt
+       das Skript im <head> nach dem Hash, danach `useRand` in der Übersicht). */
+    .rand { display: none; position: fixed; inset: 0 0 auto 0; height: var(--h); z-index: -1; pointer-events: none; }
     .rand > i { position: absolute; inset: 0; background: var(--c);
       -webkit-mask: var(--m) left top / var(--w) auto repeat-x; mask: var(--m) left top / var(--w) auto repeat-x; }
-    .rand-dunkel { display: none;
+    .rand-dunkel {
       background: radial-gradient(ellipse 60% 70% at 50% 0%, color-mix(in srgb, var(--akzent) 16%, transparent), transparent 70%); }
-    :root[data-modus="dunkel"] .rand-dunkel { display: block; }
-    :root[data-modus="dunkel"] .rand-hell { display: none; }
+    :root[data-rand] .rand-hell { display: block; }
+    :root[data-rand][data-modus="dunkel"] .rand-dunkel { display: block; }
+    :root[data-rand][data-modus="dunkel"] .rand-hell { display: none; }
     @media (prefers-color-scheme: dark) {
-      :root:not([data-modus="hell"]) .rand-dunkel { display: block; }
-      :root:not([data-modus="hell"]) .rand-hell { display: none; }
+      :root[data-rand]:not([data-modus="hell"]) .rand-dunkel { display: block; }
+      :root[data-rand]:not([data-modus="hell"]) .rand-hell { display: none; }
     }
     /* Was frei auf dem Rand steht (Titel, Untertitel), bekommt einen Hof in der Grundfarbe */
     .frei { text-shadow: 0 0 12px var(--grund), 0 0 5px var(--grund), 0 0 2px var(--grund); }
@@ -264,6 +289,10 @@
   </style>
 </head>
 <body>
+  <!-- <rand-html> (tools/make-hintergrund.py) -->
+  <div class="rand rand-hell" aria-hidden="true" style="--h: 300px; --w: 1200px"><i style="--c: var(--akzent); --m: url(hintergrund/feder-0.svg?v=6a1985b8)"></i><i style="--c: var(--rad-1); --m: url(hintergrund/feder-1.svg?v=6a1985b8)"></i><i style="--c: var(--rad-3); --m: url(hintergrund/feder-2.svg?v=6a1985b8)"></i><i style="--c: var(--rad-5); --m: url(hintergrund/feder-3.svg?v=6a1985b8)"></i><i style="--c: var(--rad-7); --m: url(hintergrund/feder-4.svg?v=6a1985b8)"></i></div>
+  <div class="rand rand-dunkel" aria-hidden="true" style="--h: 320px; --w: 1200px"><i style="--c: var(--akzent); --m: url(hintergrund/zeichen-0.svg?v=6a1985b8)"></i><i style="--c: var(--rad-1); --m: url(hintergrund/zeichen-1.svg?v=6a1985b8)"></i><i style="--c: var(--rad-3); --m: url(hintergrund/zeichen-2.svg?v=6a1985b8)"></i><i style="--c: var(--rad-5); --m: url(hintergrund/zeichen-3.svg?v=6a1985b8)"></i><i style="--c: var(--spiel-3); --m: url(hintergrund/zeichen-4.svg?v=6a1985b8)"></i></div>
+  <!-- </rand-html> -->
   <div id="root"></div>
 
   <script type="text/babel">
@@ -2153,6 +2182,7 @@
     // Welche Präfixe eine Route sind, steht an einer Stelle: `getRoute` liest
     // daraus, und der Scanner prüft daran, ob ein fremder Code (jede Adresse
     // hat ein Fragment: `#section`) überhaupt für diese App gedacht ist.
+    // Steht ein zweites Mal im Skript im <head> (Rand oben) — dort mitändern.
     const ROUTE_KEYS = ['v', 'demo', 'local', 'edit', 'new'];
     const isRoutePart = (x) => ROUTE_KEYS.includes(x.split('=')[0]);
     const getRoute = () => {
@@ -2958,26 +2988,17 @@
     );
 
     // ---------- Rand oben ----------
-    // Datei i von tools/make-hintergrund.py trägt die i-te Farbe. Version (gegen
-    // alte Schichten im Browser-Cache) und Kachelmasse schreibt das Skript selbst
-    // hierher. Nur auf der Übersicht: beim Üben lenkte er neben der Karte ab.
-    // <rand-daten>
-    const RAND = { v: '6a1985b8', w: 1200, h: {'feder': 300, 'zeichen': 320} };
-    // </rand-daten>
-    const RAND_SCHICHTEN = {
-      hell: ['feder', ['--akzent', '--rad-1', '--rad-3', '--rad-5', '--rad-7']],
-      dunkel: ['zeichen', ['--akzent', '--rad-1', '--rad-3', '--rad-5', '--spiel-3']],
-    };
-    const Rand = () => Object.entries(RAND_SCHICHTEN).map(([modus, [name, farben]]) => (
-      <div key={modus} className={`rand rand-${modus}`} aria-hidden="true" style={{ '--h': `${RAND.h[name]}px`, '--w': `${RAND.w}px` }}>
-        {farben.map((farbe, i) => (
-          <i key={i} style={{ '--c': `var(${farbe})`, '--m': `url(hintergrund/${name}-${i}.svg?v=${RAND.v})` }} />
-        ))}
-      </div>
-    ));
+    // Das Markup steht fest im <body> (tools/make-hintergrund.py), damit die
+    // Masken nicht erst nach Babel laden. Die Übersicht schaltet ihn nur ein —
+    // beim Üben lenkte er neben der Karte ab.
+    const useRand = () => useEffect(() => {
+      document.documentElement.dataset.rand = '';
+      return () => { delete document.documentElement.dataset.rand; };
+    }, []);
 
     // ---------- Auswahlseite ----------
     const Selection = ({ own, folders, onOpen, onEdit, onNew, onImport, onDelete, folderApi, backup, dir }) => {
+      useRand();
       const [showToast, toastNode] = useToast();
       const backupInput = useRef(null);
       // Der Datei-Listener am Fenster wird nur einmal angehängt (s. unten) und
@@ -3285,7 +3306,6 @@
 
       return (
         <div className={PAGE}>
-          <Rand />
           <div className={COLUMN}>
             {/* Keine Kopfleiste (wie MyMemory/MyKahoot): die Startseite trägt den Markenzug */}
             <div className="flex items-center gap-1 mb-1">

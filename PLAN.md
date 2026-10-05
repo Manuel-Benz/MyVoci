@@ -20,7 +20,8 @@ und der Verlauf fallen weg. Bausteine und Übersicht wie in MyMemory (Markenzug
 mit Papagei, Abschnitte auf Karten, kompakte Liste), Einstellungen als
 Kästchen oben rechts mit Farbschema und Ton (ab 1360 px am Fensterrand), neues
 Icon Papagei. Eigener Rand oben auf der Übersicht: Federn (hell), Buchstaben
-als Sternbild (dunkel). Im Browser geprüft (Übersicht, Set-Seite, Runde,
+als Sternbild (dunkel), statisch im HTML und per Preload im `<head>` vorgeladen
+(kommt nach 30 ms statt nach Babel, ~2,5 s). Im Browser geprüft (Übersicht, Set-Seite, Runde,
 Editor, Anleitung, Handy-Breite, beide Modi); auf dem iPad noch nicht.
 
 **Stand (29.09.2026, 18):** Review über die Wortformen mit 14 behobenen
