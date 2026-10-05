@@ -1188,7 +1188,8 @@
     const IINK_LANG = { de: 'de_DE', fr: 'fr_FR', en: 'en_US', it: 'it_IT', es: 'es_ES', pt: 'pt_PT' };
     // Version fest: `InkPad` ersetzt `eraser.end` und greift dabei auf
     // Interna zu (`currentEraser`, `deletingIds`, `continue`, `renderer`).
-    // Vor einem Wechsel dort nachsehen, sonst radiert es still nicht mehr.
+    // Beim Anheben: Radierer im Netzwerk-Tab prüfen (muss 0 Anfragen
+    // schicken). Fehlen die Interna, blendet `InkPad` den Radierer aus.
     const IINK_URL = 'https://cdn.jsdelivr.net/npm/iink-ts@4.1.0/dist/iink.min.js';
     const myscriptKeys = () => { const k = readLocal(MYSCRIPT_KEY, null); return k && k.app && k.hmac ? k : null; };
     // Weitergabe an ein zweites Gerät der Familie: ein Link, der nur die
@@ -4163,7 +4164,7 @@
     // `checkInk` sich beim Prüfen, und gewertet wird genau der.
     // `tool` schaltet das eingebaute Werkzeug von iink um: der Radierer
     // nimmt ganze Striche weg, und «Prüfen» erkennt nur, was übrig bleibt.
-    const InkPad = ({ lang, keys, penOnly, clearKey, tool, padRef, onFail }) => {
+    const InkPad = ({ lang, keys, penOnly, clearKey, tool, padRef, onFail, onNoErase }) => {
       const rootRef = useRef(null);
       const toolRef = useRef(tool);
       toolRef.current = tool;
@@ -4193,6 +4194,15 @@
             // nur aus Modell und Bild nehmen, erkannt wird beim «Prüfen».
             // Muss vor dem Umschalten stehen, `attach` bindet `end`.
             const pad = padRef.current, eraser = pad.eraser;
+            // Fehlt eine der Interna (anderes iink), bleibt der Radierer
+            // unberührt und wird ausgeblendet: lieber kein Radierer als eine
+            // Anfrage pro Strich.
+            if (!eraser || typeof eraser.continue !== 'function' || !eraser.deletingIds
+                || !eraser.renderer || typeof eraser.renderer.removeSymbol !== 'function'
+                || typeof pad.model.removeStroke !== 'function') {
+              if (!gone) onNoErase();
+              return;
+            }
             eraser.eraserWidth = ERASER_WIDTH; // Vorgabe 5 px: mit dem Finger trifft man den Strich kaum
             eraser.end = function (info) {
               if (!this.currentEraser) return;
@@ -4270,6 +4280,7 @@
       const myscript = useMemo(myscriptKeys, []); // Handschrift mit Kontrolle: Schlüssel für die Erkennung
       const [inkText, setInkText] = useState(''); // Handschrift: was gewertet wurde
       const [inkFail, setInkFail] = useState(false); // Handschrift: Fläche kam gar nicht → Papier
+      const [noErase, setNoErase] = useState(false); // iink ohne die erwarteten Interna → kein Radierer
       const [inkNote, setInkNote] = useState(''); // Handschrift: Meldung zu diesem einen Versuch
       const [inkBusy, setInkBusy] = useState(false); // Handschrift: Erkennung unterwegs (fürs Auge)
       const inkAsking = useRef(false); // dasselbe fürs Sperren — ein Zustand käme zu spät
@@ -4637,12 +4648,12 @@
             {note && <p className="text-sm text-orange mb-2">{note}</p>}
             {inkOn
               ? <InkPad lang={IINK_LANG[answerLang]} keys={myscript} penOnly={opts.penOnly}
-                  clearKey={sketchKey} tool={padTool} padRef={padRef} onFail={() => setInkFail(true)} />
+                  clearKey={sketchKey} tool={padTool} padRef={padRef} onFail={() => setInkFail(true)} onNoErase={() => setNoErase(true)} />
               : <Sketch penOnly={opts.penOnly} clearKey={sketchKey} tool={padTool} />}
             {phase === 'ask' ? (
               <div className="flex flex-wrap gap-3 mt-3">
-                <Choice value={padTool} onChange={setPadTool}
-                  options={[['write', <PenIcon />, false, t('padPen')], ['erase', <EraserIcon />, false, t('padErase')]]} />
+                {!(inkOn && noErase) && <Choice value={padTool} onChange={setPadTool}
+                  options={[['write', <PenIcon />, false, t('padPen')], ['erase', <EraserIcon />, false, t('padErase')]]} />}
                 <button onClick={clearPad} className={`px-4 py-3 ${BTN_NEUTRAL}`}>{t('penClear')}</button>
                 <button onClick={() => setPhase('back')} className={`flex-1 px-4 py-3 ${inkOn ? BTN_SECONDARY : `${BTN_PRIMARY} text-lg`}`}>{t('reveal')}</button>
                 {inkOn && (

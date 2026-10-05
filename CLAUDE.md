@@ -34,7 +34,7 @@ den Kasten «Voci-Set erstellen» (`create(dir)`) mit dem Ordner vorgewählt
 einfügen, «von Hand» (`onNew(into)` → Editor). Das `+` führte früher direkt
 in den Editor, der Kasten kannte nur die Hauptebene — je nach Einstieg fehlte
 die Hälfte. Ein Ziehen aufs Fenster landet weiterhin auf der Hauptebene, aufs
-Ordner-Feld im Ordner. — die Ablage-Fläche im Kasten hat dafür ein
+Ordner-Feld im Ordner. Die Ablage-Fläche im Kasten hat dafür ein
 eigenes `onDrop` (`importHere`), sonst fiele die Datei zum Fenster-Listener
 durch. Die Titelzeile des Kastens heisst Hauptebene (setzt `target` zurück);
 Umbenennen/Verschieben nimmt die Wahl mit (`followMove`), ein Import klappt
@@ -447,7 +447,9 @@ verzweigen, wenn es um Inhalte geht.
   `DEMAND` vorbei; davor steht `Iterator.toArray` (Safari erst ab 18.4).
   `InkPad` ersetzt darum `eraser.end` an der Instanz (vor dem ersten
   Umschalten, `attach` bindet es) und nimmt die Striche nur aus Modell und
-  Bild. Hängt an Interna von iink-ts 4.1.0 — beim Versionswechsel prüfen.
+  Bild. Hängt an Interna von iink-ts 4.1.0 — beim Versionswechsel prüfen;
+  fehlt eine davon, lässt `InkPad` den Radierer unberührt und `onNoErase`
+  blendet den Knopf aus (`noErase` in `Practice`).
   Im Browser gemessen: Schreiben und Radieren 0 Anfragen.
 - **`writeLocal` meldet Fehlschläge** (`storageBroken` → Warnstreifen): ein
   stilles `catch {}` liess die App «gespeichert» sagen, während nichts ankam.
@@ -577,8 +579,7 @@ ausgegraut, mit Verweis in die Anleitung. Nachschlagen: developer.myscript.com, 
 Cloud recognition (cloud.myscript.com) → MyFirstApp → Open → Reiter Keys
 (Reiter Filters leer, also keine Einschränkung auf Adressen); oder per «Auf ein anderes Gerät bringen» von einem Gerät, das sie hat. Eine
 lokale Kopie gehört nach `keys/` (steht in `.gitignore`, wird **nie**
-committet — wie `voci/` auch nicht proaktiv zum Committen anbieten); Stand
-23.09.2026 gibt es diesen Ordner noch nicht.
+committet — wie `voci/` auch nicht proaktiv zum Committen anbieten).
 
 Im Code stehen nur die zwei eingebauten Beispiele. Die **echten Sets liegen in
 `voci/`** — wie `quizzes/` in MyKahoot lebendes Material, das die App direkt von
