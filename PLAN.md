@@ -4,6 +4,17 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (06.10.2026, 21):** **Breit** in jeder Runde: ein Knopf in der Kopfzeile
+(`PracticeFrame`) lässt die Spalte die ganze Fensterbreite nehmen (bis 110rem)
+und macht die Schreibfläche höher (`max(14rem, 42vh)`) — fürs Schreiben von
+Hand auf dem iPad. Gemerkt pro Gerät (`myvoci_breit`), nie im Link; ab 1360 px
+lässt die Kopfzeile dem angedockten Einstellungs-Kästchen Platz. Review mit
+drei Befunden behoben: das künstliche `resize` beim Umschalten war überflüssig
+(iink und `Sketch` beobachten ihre Fläche selbst), Speicher über
+`readLocal`/`writeLocal`, Doku zum `<style>`-Block berichtigt. Im Browser
+geprüft (Stift und iink, beide Richtungen, ohne neue Anfragen); auf dem iPad
+noch nicht.
+
 **Stand (05.10.2026, 20):** Review über den Designsystem-Umbau, 6 Befunde
 behoben: Schatten von Fenster, Einstellungs-Kästchen und Meldung fehlten
 (`shadow-[var(--schatten)]` setzt in Tailwind keinen Schatten, jetzt die

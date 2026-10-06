@@ -181,6 +181,21 @@ CSS-Hintergrund und bleibt), `InkPad` schaltet das Werkzeug von iink um
 (`pad.tool`, nimmt ganze Striche weg) — auch nach dem Laden, falls vorher
 umgeschaltet wurde.
 
+**Breit** (Knopf ↔ in der Kopfzeile von `PracticeFrame`, für alle Runden):
+die Spalte nimmt die Fensterbreite (bis 110rem) statt `COLUMN`, und die
+Schreibfläche wächst auf `max(14rem, 42vh)` — über `.breit .pad` im
+`<style type="text/tailwindcss">`: zwei Klassen wiegen mehr als das einfache
+`h-56` von `PAD_FRAME`. Gemerkt pro Gerät (`myvoci_breit`, über
+`readLocal`/`writeLocal`), nie im Link. Beim Umschalten braucht es nichts
+weiter: `Sketch` und iink beobachten ihre Fläche selbst (`ResizeObserver`,
+iink mit 150 ms Verzögerung) und ziehen nach — ein künstliches
+`window`-`resize` bringt nichts, iink hört nicht darauf. (Beim Testen im
+Automations-Browser ist der Tab «hidden»: dort feuert kein
+`ResizeObserver`, die Fläche bleibt scheinbar stehen — ein Bild erzwingen.)
+Ab 1360 px hält die Kopfzeile rechts Platz fürs fest angedockte
+Einstellungs-Kästchen. Daneben bleibt «Vollbild» (Browser-Leisten weg; auf dem
+iPhone nicht verfügbar).
+
 ## Anleitung (`Help`, `?`-Knopf oben)
 
 Die langen Erklärtexte stehen **an einer Stelle**: ein Modal mit sieben

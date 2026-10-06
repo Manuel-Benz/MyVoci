@@ -286,6 +286,9 @@
     /* Handschrift: iPadOS deutet Striche neben Text sonst als Auswahl-Geste
        (Wort wird markiert, Lupe erscheint, Strich reisst ab) */
     .sketch, .sketch * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    /* Übung «breit» (PracticeFrame): die Schreibfläche wächst mit dem Fenster
+       mit. Zwei Klassen wiegen mehr als das einfache `h-56` von PAD_FRAME. */
+    .breit .pad { height: max(14rem, 42vh); }
   </style>
 </head>
 <body>
@@ -727,6 +730,8 @@
         speak: 'Vorlesen',
         fullscreen: 'Vollbild',
         exitFullscreen: 'Vollbild beenden',
+        wide: 'Breiter',
+        narrow: 'Schmaler',
         quit: 'Beenden',
         confirmQuit: 'Übung beenden? Der bisherige Lernstand bleibt.',
         // Ende
@@ -1135,6 +1140,8 @@
         speak: 'Read aloud',
         fullscreen: 'Full screen',
         exitFullscreen: 'Exit full screen',
+        wide: 'Wider',
+        narrow: 'Narrower',
         quit: 'Quit',
         confirmQuit: 'Quit this round? Your progress so far is kept.',
         done: 'Done!',
@@ -2622,6 +2629,12 @@
     const MicIcon = () => (
       <Icon><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0" /><path d="M12 18v3" /><path d="M8 21h8" /></Icon>
     );
+    const WideIcon = () => (
+      <Icon><path d="M3 12h18" /><path d="M7 8l-4 4 4 4" /><path d="M17 8l4 4-4 4" /></Icon>
+    );
+    const NarrowIcon = () => (
+      <Icon><path d="M3 12h6" /><path d="M15 12h6" /><path d="M6 9l3 3-3 3" /><path d="M18 9l-3 3 3 3" /><path d="M12 5v14" /></Icon>
+    );
     const ExpandIcon = () => (
       <Icon><path d="M4 9V4h5" /><path d="M20 9V4h-5" /><path d="M4 15v5h5" /><path d="M20 15v5h-5" /></Icon>
     );
@@ -4039,11 +4052,24 @@
       return out;
     };
 
+    // «Breit» nimmt die ganze Fensterbreite und eine höhere Schreibfläche
+    // (`.breit .pad`) — fürs Schreiben von Hand auf dem iPad. Gemerkt pro
+    // Gerät, nicht im Link: es hängt am Bildschirm, nicht an der Übung.
+    // Ab 1360 px sitzt das Einstellungs-Kästchen fest oben rechts; in der
+    // breiten Spalte hält die Kopfzeile ihm darum rechts Platz frei.
+    const WIDE_KEY = 'myvoci_breit';
+
     // `done` ist die Zahl, die im Kopf steht (erledigt bzw. laufende Aufgabe),
     // `pos`/`queue` füllen den Balken. Die zwei Aufrufer zählen verschieden:
     // Practice arbeitet Aufgabe für Aufgabe, MatchRound Paar für Paar.
     const PracticeFrame = ({ set, pos, queue, done, total, item, onQuit, children, extra }) => {
       const settingsButton = useSettings(<MyScriptKeys />);
+      const [wide, setWide] = useState(() => readLocal(WIDE_KEY, false) === true);
+      const toggleWide = () => {
+        const next = !wide;
+        setWide(next);
+        writeLocal(WIDE_KEY, next);
+      };
       const [, redrawFs] = useState(0);
       useEffect(() => {
         const onFs = () => redrawFs((x) => x + 1);
@@ -4052,10 +4078,11 @@
         return () => { document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs); };
       }, []);
       return (
-        <div className={COLUMN}>
-          <div className="flex items-center gap-2 mb-4">
+        <div className={wide ? 'breit mx-auto max-w-[110rem]' : COLUMN}>
+          <div className={`flex items-center gap-2 mb-4 ${wide ? 'min-[1360px]:pr-14' : ''}`}>
             <button onClick={onQuit} className={`shrink-0 px-4 py-2 ${BTN_NEUTRAL} auf-rand`}>← {t('quit')}</button>
             <div className="flex-1 min-w-0 text-center text-text-2 truncate">{set.title}</div>
+            <IconButton onClick={toggleWide} title={wide ? t('narrow') : t('wide')}>{wide ? <NarrowIcon /> : <WideIcon />}</IconButton>
             {canFullscreen() && (
               <IconButton onClick={toggleFullscreen} title={fsElement() ? t('exitFullscreen') : t('fullscreen')}><ExpandIcon /></IconButton>
             )}
@@ -4094,7 +4121,7 @@
     // beim ersten Nachjustieren der Höhe auseinander. Die Fläche bleibt auch
     // im dunklen Modus weiss (echtes `bg-white`, nicht `bg-karte`): ein Blatt
     // Papier, und die Tinte von iink ist dunkel.
-    const PAD_FRAME = 'w-full h-48 sm:h-56 bg-white rounded-lg border-2 border-dashed border-linie overflow-hidden relative';
+    const PAD_FRAME = 'pad w-full h-48 sm:h-56 bg-white rounded-lg border-2 border-dashed border-linie overflow-hidden relative';
     const PAD_LINE = { backgroundImage: 'linear-gradient(to top, transparent 34%, #e5e7eb 34%, #e5e7eb calc(34% + 1px), transparent calc(34% + 1px))' };
     const POINTER_EVENTS = ['pointerdown', 'pointermove', 'pointerup'];
     // Strichbreiten beider Flächen — der Radierer breit genug für den Finger.
