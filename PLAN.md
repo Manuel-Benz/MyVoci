@@ -15,6 +15,13 @@ drei Befunden behoben: das künstliche `resize` beim Umschalten war überflüssi
 geprüft (Stift und iink, beide Richtungen, ohne neue Anfragen); auf dem iPad
 noch nicht.
 
+**Stand (06.10.2026):** Ultrareview über den ganzen Code, zwei Befunde
+behoben: Das Ziehen eines Sets in einen Ordner mit gleichnamigem Set
+überschrieb still dessen Datei (jetzt Meldung, `moveSet` prüft `sameSlot`),
+und Ordnernamen, die sich nur in Gross/klein unterschieden, galten als
+verschieden (`folderTaken` vergleicht ohne Gross/klein). Die doppelte
+Routenliste im `<head>` bleibt bewusst.
+
 **Stand (05.10.2026, 20):** Review über den Designsystem-Umbau, 6 Befunde
 behoben: Schatten von Fenster, Einstellungs-Kästchen und Meldung fehlten
 (`shadow-[var(--schatten)]` setzt in Tailwind keinen Schatten, jetzt die

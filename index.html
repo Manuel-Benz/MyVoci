@@ -3236,8 +3236,9 @@
           e.preventDefault();
           dragged.current = null;
           setDropDir(null);
-          if (item.kind === 'set') folderApi.moveSet(item.id, dir);
-          else {
+          if (item.kind === 'set') {
+            if (folderApi.moveSet(item.id, dir) === false) showToast(t('errTitleTaken'));
+          } else {
             const target = folderApi.moveFolder(item.id, dir);
             if (target === false) { showToast(t('folderExists', dirName(item.id))); return; }
             followMove(item.id, target);
@@ -5499,14 +5500,19 @@
       const makeFolder = (parent, rawName) => {
         const name = cleanName(rawName);
         if (!name) return null;
-        const path = parent ? `${parent}/${name}` : name;
+        const wanted = parent ? `${parent}/${name}` : name;
+        // Schreibt sich nur die Gross-/Kleinschreibung anders, ist es derselbe Ordner.
+        const path = allFolders(store).find((f) => sameFolder(f, wanted)) || wanted;
         updateStore((prev) => (prev.folders.includes(path) ? prev : { ...prev, folders: [...prev.folders, path] }));
         return path;
       };
       // `false` heisst «am Ziel liegt schon ein Ordner dieses Namens» — ohne
       // die Prüfung verschmölzen die beiden stillschweigend zu einem, und der
       // Weg zurück fehlt (remapDir schreibt die Pfade um und dedupliziert).
-      const folderTaken = (target) => allFolders(store).includes(target);
+      // Gross/klein zählt nicht: auf macOS und Windows ist es dasselbe Verzeichnis
+      // (wie `samePath` bei den Dateien). `self` ist der Ordner, der selbst umzieht.
+      const sameFolder = (a, b) => a.toLowerCase() === b.toLowerCase();
+      const folderTaken = (target, self) => allFolders(store).some((f) => f !== self && sameFolder(f, target));
       const renameFolder = (dir, rawName) => {
         // Vorgabe unverändert bestätigt: nichts tun — sonst würde ein alter
         // Ordner «Französisch» still zu «Franzoesisch» samt allen Dateien.
@@ -5515,18 +5521,26 @@
         if (!name) return null;
         const target = parentDir(dir) ? `${parentDir(dir)}/${name}` : name;
         if (target === dir) return null;
-        if (folderTaken(target)) return false;
+        if (folderTaken(target, dir)) return false;
         updateStore((prev) => remapDir(prev, dir, target));
         return target;
       };
       const moveFolder = (dir, parent) => {
         const target = parent ? `${parent}/${dirName(dir)}` : dirName(dir);
-        if (folderTaken(target)) return false;
+        if (folderTaken(target, dir)) return false;
         updateStore((prev) => remapDir(prev, dir, target));
         return target;
       };
       const removeFolder = (dir) => updateStore((prev) => ({ ...prev, folders: prev.folders.filter((f) => f !== dir) }));
-      const moveSet = (id, dir) => updateStore((prev) => ({ ...prev, sets: prev.sets.map((s) => (s.id === id ? { ...s, dir } : s)) }));
+      // `false` heisst «am Ziel liegt schon ein Set dieses Titels (oder Dateinamens)»:
+      // zwei Sets am selben Ort teilten sich die Datei, mirrorDir überschriebe eine.
+      const moveSet = (id, dir) => {
+        const set = store.sets.find((s) => s.id === id);
+        if (!set) return null;
+        if (store.sets.some((s) => s.id !== id && sameSlot(s, { ...set, dir }))) return false;
+        updateStore((prev) => ({ ...prev, sets: prev.sets.map((s) => (s.id === id ? { ...s, dir } : s)) }));
+        return true;
+      };
       const folderApi = { makeFolder, renameFolder, moveFolder, removeFolder, moveSet };
 
       const back = () => {

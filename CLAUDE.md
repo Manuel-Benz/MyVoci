@@ -379,6 +379,11 @@ verzweigen, wenn es um Inhalte geht.
   fragen dort nach. Global geprüft liess sich ein Set gar nicht mehr
   speichern, und ein Import überschrieb das gleichnamige Set des anderen
   Kindes.
+  Auch das Ziehen eines Sets in einen Ordner prüft das (`moveSet` gibt
+  `false` zurück, die Übersicht meldet `errTitleTaken`), und Ordnernamen
+  gelten ohne Gross/klein als gleich (`folderTaken`/`sameFolder`, `self` =
+  der umziehende Ordner, damit «Verben» → «verben» geht) — sonst teilten
+  zwei Sets eine Datei, und `mirrorDir` überschriebe die eine.
 - **`disk: true` heisst «lag schon einmal im Ordner».** Daran hängt, was beim
   Nachlesen verschwindet: ein Set mit dem Merkmal, das dort fehlt, wurde im
   Finder gelöscht; eines ohne wurde bloss noch nie geschrieben und bleibt.
