@@ -4,6 +4,20 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (13.10.2026, 22):** Der **Rand oben** steht jetzt auch auf der
+Set-Seite (nicht beim Üben, nicht im Editor, nicht bei einem Link, der gleich
+die Runde startet). **QR-Codes grosser Sets** las das iPad nicht (gut 2 px pro
+Modul, nur ein Modul weisser Rand): jetzt Stufe L, vier Module Ruhezone,
+mindestens 5 px pro Modul; der Scanner liest das mittlere Quadrat schärfer
+(bis 1024 px) und passt seinen Takt an. Die Wahl **«Wörter · Wortformen»**
+steht bei jedem Set, ohne Tabellen ausgegraut mit Hinweis, wie man sie
+ergänzt. Bei **Latein** sagt die Set-Seite, dass Vorlesen, Spracherkennung
+und MyScript diese Sprache nicht können (Sprache vor den Schlüsseln geprüft);
+eine deutsche oder italienische Ersatzstimme wurde angehört und verworfen.
+Review (max, 15 Befunde) und /simplify behoben, u. a. kein Rand auf
+Fehlerseiten, `Open` ohne Ladeschritt. Im Browser geprüft; auf dem iPad noch
+nicht.
+
 **Stand (06.10.2026, 21):** **Breit** in jeder Runde: ein Knopf in der Kopfzeile
 (`PracticeFrame`) lässt die Spalte die ganze Fensterbreite nehmen (bis 110rem)
 und macht die Schreibfläche höher (`max(14rem, 42vh)`) — fürs Schreiben von

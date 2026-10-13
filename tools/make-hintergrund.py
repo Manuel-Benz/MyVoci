@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Erzeugt den Rand der Übersicht, der oben dicht beginnt und nach unten ausdünnt
+"""Erzeugt den Rand von Übersicht und Set-Seite, der oben dicht beginnt und nach unten ausdünnt
 (wie Dschungel/Blut in MyKahoot und Pixel/Neuronen in MyMemory):
 hintergrund/feder-N.svg (Hell: Gefieder des Papageis, aus dem sich nach unten
 einzelne Federn lösen) und hintergrund/zeichen-N.svg (Dunkel: Buchstaben aus

@@ -67,11 +67,11 @@
       // Safari vor 14 kennt am matchMedia-Objekt nur das alte `addListener`
       if (dark.addEventListener) dark.addEventListener('change', bar); else dark.addListener(bar);
 
-      // Rand oben nur auf der Übersicht, also ohne Route im Hash (Schlüssel wie
-      // ROUTE_KEYS im App-Skript) — sonst blitzte er bei einem geteilten Link
-      // auf, bis React die Seite kennt. Danach hält `useRand` ihn nach.
-      const ROUTE = ['v', 'demo', 'local', 'edit', 'new'];
-      if (!location.hash.slice(1).split('&').some((x) => ROUTE.includes(x.split('=')[0]))) {
+      // Rand oben auf der Übersicht und der Set-Seite, nicht im Editor und
+      // nicht, wenn ein Link gleich die Runde startet (`go=1`) — sonst blitzte
+      // er auf, bis React die Seite kennt. Danach hält `useRand` ihn nach.
+      const NO_RAND = ['edit', 'new']; // Routen ohne Rand
+      if (!location.hash.slice(1).split('&').some((x) => x === 'go=1' || NO_RAND.includes(x.split('=')[0]))) {
         html.dataset.rand = '';
         // Masken vorladen: die CDN-Skripte unten blockieren den Parser, der
         // <body> mit dem Rand käme sonst erst nach Babel dran. Nur der Satz des
@@ -256,14 +256,14 @@
     }
     .ablage { border-radius: var(--radius); outline: 2px dashed transparent; outline-offset: -2px; transition: background .15s, outline-color .15s; }
     .ablage.ziel { background: var(--akzent-weich); outline-color: var(--akzent); }
-    /* Rand oben auf der Übersicht, der nach unten ausdünnt (wie Dschungel/Blut in
+    /* Rand oben auf Übersicht und Set-Seite, der nach unten ausdünnt (wie Dschungel/Blut in
        MyKahoot, Pixel/Neuronen in MyMemory): Hell = Gefieder, Dunkel = Buchstaben als
        Sternbild. Jede Farbschicht ist eine Maske aus hintergrund/
        (tools/make-hintergrund.py), gefüllt mit einem Token des Schemas — so macht der
        Rand jedes Farbschema mit. Hinter allem (z-index −1), fest am Fenster.
        Das Markup steht fest im <body>, nicht in React: so laden die Masken schon,
        während Babel noch übersetzt. Sichtbar nur mit data-rand am <html> (setzt
-       das Skript im <head> nach dem Hash, danach `useRand` in der Übersicht). */
+       das Skript im <head> nach dem Hash, danach `useRand`). */
     .rand { display: none; position: fixed; inset: 0 0 auto 0; height: var(--h); z-index: -1; pointer-events: none; }
     .rand > i { position: absolute; inset: 0; background: var(--c);
       -webkit-mask: var(--m) left top / var(--w) auto repeat-x; mask: var(--m) left top / var(--w) auto repeat-x; }
@@ -650,10 +650,12 @@
         modeGapOff: 'keine Sätze im Set',
         modeListenOff: 'kein Vorlesen hier',
         modeSpeakOff: 'keine Spracherkennung',
-        modeSpeakLang: 'nicht für diese Sprache',
+        modeLangOff: 'nicht für diese Sprache',
         modeNoLangs: 'Sprachen im Set fehlen',
         handwriting: 'Handschrift',
         checkAuto: 'automatisch geprüft',
+        inkOffKeysShort: 'Erkennung: Schlüssel fehlen',
+        inkOffLangShort: 'keine Erkennung für diese Sprache',
         checkSelf: 'selbst bewerten',
         rowWords: 'Wörter',
         rowExtras: 'Dazu',
@@ -706,6 +708,8 @@
         whatForms: (n) => `Wortformen (${n})`,
         wordsHint: 'Grundform und Bedeutung, wie in jedem Set.',
         formsHint: 'Konjugieren und deklinieren: jede Form aus den Tabellen einzeln, zum Beispiel «manger · nous · présent».',
+        formsNone: 'Dieses Set hat noch keine Formentabellen. Ergänzen im Editor beim Wort («+ Wortformen») oder über den KI-Prompt.',
+        formsNoneDemo: 'Dieses Beispiel hat keine Formentabellen.',
         nForms: (n) => `${n} ${n === 1 ? 'Form' : 'Formen'}`,
         tolFormsHint: 'Bei Formen zählt jeder Buchstabe: kein Tippfehler, kein fehlender Artikel. Die Stufe regelt nur Gross/klein und Akzente.',
         // Üben
@@ -1061,10 +1065,12 @@
         modeGapOff: 'no sentences in the set',
         modeListenOff: 'no read-aloud here',
         modeSpeakOff: 'no speech recognition',
-        modeSpeakLang: 'not for this language',
+        modeLangOff: 'not for this language',
         modeNoLangs: 'set has no languages',
         handwriting: 'Handwriting',
         checkAuto: 'checked automatically',
+        inkOffKeysShort: 'recognition: keys missing',
+        inkOffLangShort: 'no recognition for this language',
         checkSelf: 'rate yourself',
         rowWords: 'Words',
         rowExtras: 'Extras',
@@ -1117,6 +1123,8 @@
         whatForms: (n) => `Word forms (${n})`,
         wordsHint: 'Base form and meaning, as in every set.',
         formsHint: 'Conjugate and decline: each form from the tables on its own, e.g. “manger · nous · présent”.',
+        formsNone: 'This set has no form tables yet. Add them in the editor at a word (“+ Word forms”) or via the AI prompt.',
+        formsNoneDemo: 'This example has no form tables.',
         nForms: (n) => `${n} ${n === 1 ? 'form' : 'forms'}`,
         tolFormsHint: 'With forms every letter counts: no typos, no missing article. The level only covers upper/lower case and accents.',
         check: 'Check',
@@ -2189,7 +2197,8 @@
     // Welche Präfixe eine Route sind, steht an einer Stelle: `getRoute` liest
     // daraus, und der Scanner prüft daran, ob ein fremder Code (jede Adresse
     // hat ein Fragment: `#section`) überhaupt für diese App gedacht ist.
-    // Steht ein zweites Mal im Skript im <head> (Rand oben) — dort mitändern.
+    // Über den Rand oben entscheidet vor React das Skript im <head>
+    // (`NO_RAND`): eine neue Route ohne Rand gehört auch dorthin.
     const ROUTE_KEYS = ['v', 'demo', 'local', 'edit', 'new'];
     const isRoutePart = (x) => ROUTE_KEYS.includes(x.split('=')[0]);
     const getRoute = () => {
@@ -2495,7 +2504,7 @@
 
     // ---------- Gemeinsame Bausteine ----------
     const SCREEN = 'min-h-screen'; // Hintergrund: `body` (var(--grund))
-    const PAGE = `${SCREEN} p-4 sm:p-8 pt-14 sm:pt-20`; // Startseite mit Rand oben: der Titel beginnt darunter
+    const PAGE = `${SCREEN} p-4 sm:p-8 pt-14 sm:pt-20`; // Seiten mit Rand oben (Übersicht, Set-Seite): der Titel beginnt darunter
     // Bausteine des Designsystems, Klassen im <head> (wie MyMemory)
     const BTN_PRIMARY = 'knopf knopf-1';
     const BTN_SECONDARY = 'knopf knopf-2';
@@ -2639,21 +2648,32 @@
       <Icon><path d="M4 9V4h5" /><path d="M20 9V4h-5" /><path d="M4 15v5h5" /><path d="M20 15v5h-5" /></Icon>
     );
 
+    // Ein Set mit 30 Wörtern gibt einen Code mit über 100 Modulen. Auf 14rem
+    // gezeichnet war das gut 2 px pro Modul: zu wenig für das iPad, das ihn
+    // vom Bildschirm liest. Darum Stufe L (ein Bildschirm hat keine Kratzer,
+    // der Code wird kleiner) und mindestens QR_PX pro Modul, soweit Platz ist.
+    // `margin` zählt in Einheiten von `cellSize`: mit 1 sind es Module. Vier
+    // bleiben weiss rundum, wie es die Norm will — im Dunkelmodus liegt
+    // gleich daneben die dunkle Karte.
+    const QR_PX = 5;
+    const QR_QUIET = 4;
+    const QR_NARROW = 384; // Inhaltsbreite von `Modal` ohne `wide`
     const QrModal = ({ title, hint, url, onClose, onCopy }) => {
-      const svg = useMemo(() => {
+      const qr = useMemo(() => {
         try {
-          const qr = window.qrcode(0, 'M');
-          qr.addData(url);
-          qr.make();
-          return qr.createSvgTag({ cellSize: 4, margin: 4, scalable: true });
+          const code = window.qrcode(0, 'L');
+          code.addData(url);
+          code.make();
+          return { svg: code.createSvgTag({ cellSize: 1, margin: QR_QUIET, scalable: true }), px: (code.getModuleCount() + 2 * QR_QUIET) * QR_PX };
         } catch { return null; }
       }, [url]);
       return (
-        <Modal onClose={onClose}>
+        <Modal onClose={onClose} wide={qr && qr.px > QR_NARROW}>
           <h2 className="text-xl font-bold text-center mb-4 text-text">{title}</h2>
           {hint && <p className="text-sm text-text-2 text-center mb-4">{hint}</p>}
-          {svg ? (
-            <div className="flex justify-center mb-4 [&>svg]:w-56 [&>svg]:h-56" dangerouslySetInnerHTML={{ __html: svg }} />
+          {qr ? (
+            <div className="mx-auto mb-4 aspect-square [&>svg]:w-full [&>svg]:h-full"
+              style={{ width: `min(100%, max(14rem, min(${qr.px}px, calc(85vh - 16rem))))` }} dangerouslySetInnerHTML={{ __html: qr.svg }} />
           ) : <div className="text-center text-rot mb-4">{t('qrTooBig')}</div>}
           <div className="text-xs text-text-3 break-all max-h-16 overflow-y-auto mb-4">{url}</div>
           <div className="flex gap-2">
@@ -2706,27 +2726,34 @@
           // Die Bibliothek ist 257 KB; wer in der Zeit schliesst, soll nicht
           // hinterher noch nach der Kamera gefragt werden.
           if (stop) return;
-          try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }); }
+          // Ohne Wunschgrösse liefert das iPad 640×480 — zu grob für den
+          // dichten Code eines grossen Sets
+          try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); }
           catch { setError(t('scanNoCam')); return; }
           if (stop) { stopCam(); return; }
           const video = videoRef.current;
           video.srcObject = stream;
           try { await video.play(); } catch {}
-          // Auf 640 px verkleinert reicht für einen QR-Code und schont das iPad
+          // Gelesen wird nur das mittlere Quadrat, das die Vorschau zeigt
+          // (`object-cover`), auf höchstens 1024 px: hochkant wie quer gleich
+          // viel Arbeit fürs iPad, der Code eines grossen Sets bleibt scharf.
+          // Braucht ein Bild länger, wartet der nächste Blick doppelt so lang —
+          // das Einfügefeld daneben bleibt bedienbar.
           const tick = () => {
             if (stop) return;
+            const t0 = performance.now();
             if (video.readyState >= 2 && video.videoWidth) {
+              const vw = video.videoWidth, vh = video.videoHeight;
+              const s = Math.min(vw, vh), d = Math.min(s, 1024);
               // Zuweisen an `width` verwirft den Bildspeicher — nur bei
               // echter Änderung, sonst siebenmal pro Sekunde umsonst.
-              const k = Math.min(1, 640 / video.videoWidth);
-              const w = Math.round(video.videoWidth * k), h = Math.round(video.videoHeight * k);
-              if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
-              ctx.drawImage(video, 0, 0, w, h);
-              const img = ctx.getImageData(0, 0, w, h);
+              if (canvas.width !== d || canvas.height !== d) { canvas.width = d; canvas.height = d; }
+              ctx.drawImage(video, (vw - s) / 2, (vh - s) / 2, s, s, 0, 0, d, d);
+              const img = ctx.getImageData(0, 0, d, d);
               const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
               if (code && code.data) { stop = true; stopCam(); onCode(code.data); return; }
             }
-            timer = setTimeout(tick, 150);
+            timer = setTimeout(tick, Math.max(150, 2 * (performance.now() - t0)));
           };
           tick();
         })();
@@ -3002,12 +3029,15 @@
 
     // ---------- Rand oben ----------
     // Das Markup steht fest im <body> (tools/make-hintergrund.py), damit die
-    // Masken nicht erst nach Babel laden. Die Übersicht schaltet ihn nur ein —
-    // beim Üben lenkte er neben der Karte ab.
-    const useRand = () => useEffect(() => {
-      document.documentElement.dataset.rand = '';
-      return () => { delete document.documentElement.dataset.rand; };
-    }, []);
+    // Masken nicht erst nach Babel laden. Übersicht und Set-Seite schalten ihn
+    // ein — beim Üben lenkte er neben der Karte ab. `on` aus nimmt ihn weg:
+    // der <head> setzt ihn für jede Set-Route, auch wenn daraus eine
+    // Fehlerseite wird (`OpenError`).
+    const useRand = (on = true) => useEffect(() => {
+      const d = document.documentElement.dataset;
+      if (on) d.rand = ''; else delete d.rand;
+      return () => { delete d.rand; };
+    }, [on]);
 
     // ---------- Auswahlseite ----------
     const Selection = ({ own, folders, onOpen, onEdit, onNew, onImport, onDelete, folderApi, backup, dir }) => {
@@ -3708,6 +3738,11 @@
     // Handschriften unterscheiden sich nur darin
     const INPUT_SHORT = { write: 'inputKeys', pen: 'handwriting', ink: 'handwriting' };
     const INPUT_CHECK = { write: 'checkAuto', pen: 'checkSelf', ink: 'checkAuto' };
+    // Geht eine Eingabe nicht, steht statt «wer prüft» kurz der Grund — wie
+    // auf den Kacheln, aber mit «Erkennung» darin: sonst stünde zweimal
+    // «Handschrift» da und der graue Knopf hiesse «geht nicht für Latein»,
+    // obwohl der andere geht.
+    const INPUT_OFF = { inkOffKeys: 'inkOffKeysShort', inkOffLang: 'inkOffLangShort' };
     const MODE_GROUP = { pen: 'write', ink: 'write' }; // kein eigener Knopf, eine Eingabe von
     const HAND_MODES = ['pen', 'ink']; // Schreibfläche statt Eingabefeld
     // Gleichwertiger Ersatz, wenn ein Modus bei diesem Set nicht geht (sonst «Schreiben»)
@@ -3792,6 +3827,9 @@
       // hier rechnet die Seite mit `pool` — Zähler, Auswahl, Lernstand und
       // welche Modi gehen, gelten dann für die Formen.
       const formsOk = useMemo(() => hasForms(set), [set]);
+      // Ohne Tabellen der Grund, als Zeile und beim Darüberfahren. Ein
+      // Beispiel lässt sich nicht bearbeiten — dort kein Weg in den Editor.
+      const noForms = formsOk ? null : t(demoById(set.id) ? 'formsNoneDemo' : 'formsNone');
       const forms = formsOk && !!wanted.forms;
       const pool = forms ? formSet(set) : set;
       const dir = fixedDir({ mode: wanted.mode, forms }) ? 'ab' : wanted.dir;
@@ -3812,13 +3850,19 @@
         if (!MODES.includes(m)) return 'modeUnknown';
         if (FORM_MODES.includes(m) && !forms) return 'modeFormsOnly';
         if (m === 'gap' && !gapN) return 'modeGapOff';
-        if (m === 'ink' && !inkKeys) return 'inkOffKeys';
         // Hören, Sprechen und die Erkennung hängen an den Sprachen des Sets —
-        // fehlen die, liegt es am Set, nicht am Browser
+        // fehlen die, liegt es am Set, nicht am Browser. Die Sprache vor den
+        // Schlüsseln: sonst richtete jemand MyScript ein und erführe erst
+        // danach, dass es Latein gar nicht kann.
         const langDep = { listen: canListen, speak: canSpeakMode, ink: canInk }[m];
-        if (!langDep || langDep(pool, dir)) return null;
-        if (!listenLangs(pool, dir).length) return 'modeNoLangs';
-        return { listen: 'modeListenOff', speak: SpeechRec ? 'modeSpeakLang' : 'modeSpeakOff', ink: 'inkOffLang' }[m];
+        if (langDep && !langDep(pool, dir)) {
+          if (!listenLangs(pool, dir).length) return 'modeNoLangs';
+          // «kein Vorlesen hier» nur ohne Vorlesen im Browser, sonst liegt es
+          // an der Sprache (Latein: keine Stimme, keine Erkennung)
+          return { listen: window.speechSynthesis ? 'modeLangOff' : 'modeListenOff', speak: SpeechRec ? 'modeLangOff' : 'modeSpeakOff', ink: 'inkOffLang' }[m];
+        }
+        if (m === 'ink' && !inkKeys) return 'inkOffKeys';
+        return null;
       };
       // Ein Modus, der bei diesem Set nicht geht, fällt zurück — berechnet,
       // nicht per Effekt nachgetragen: sonst sähe «Direkt starten» beim
@@ -3826,38 +3870,48 @@
       const mode = modeOff(wanted.mode) ? MODE_FALLBACK[wanted.mode] || 'write' : wanted.mode;
       const opts = useMemo(() => (mode === wanted.mode && forms === wanted.forms ? wanted : { ...wanted, mode, forms }), [wanted, mode, forms]);
       const group = MODE_GROUP[opts.mode] || opts.mode; // die Kachel dazu
+      const inkOff = modeOff('ink');
       const writing = group === 'write';
       const chosen = useMemo(() => selectWords(pool, opts, prog), [pool, opts, prog]);
       // «Direkt starten» aus dem Link — nur beim ersten Anzeigen (s. Trainer).
       // Ein gleichwertiger Ersatz (MODE_FALLBACK) startet auch, «Schreiben»
-      // statt Lückentext nicht: das wäre eine andere Übung.
-      useEffect(() => { if (go && (mode === wanted.mode || MODE_FALLBACK[wanted.mode]) && chosen.length) onStart(opts, chosen); }, []);
+      // statt Lückentext nicht: das wäre eine andere Übung. Startet die Runde
+      // nicht (nichts gewählt), bleibt die Seite stehen — dann mit Rand. Der
+      // erste Wert zählt: `go` bleibt wahr, solange der Trainer nicht neu
+      // zeichnet, und ein Tipp auf «Alle» nähme sonst den Rand weg.
+      const [autoStart] = useState(() => go && (mode === wanted.mode || !!MODE_FALLBACK[wanted.mode]) && chosen.length > 0);
+      useEffect(() => { if (autoStart) onStart(opts, chosen); }, []);
+      useRand(!autoStart);
       const A = sideName(set, 0), B = sideName(set, 1);
       const BOX_COLORS = ['bg-fach-0', 'bg-fach-1', 'bg-fach-2', 'bg-fach-3', 'bg-fach-4', 'bg-fach-5'];
 
       return (
-        <div className={`${SCREEN} p-4 sm:p-8`}>
+        <div className={PAGE}>
           <div className={COLUMN}>
             <div className="flex items-center gap-2 mb-6">
               <button onClick={onBack} title={t('toOverview')} className={`shrink-0 px-4 py-2 ${BTN_NEUTRAL} auf-rand`}>
                 ← {t('overview')}
               </button>
-              <h1 className="flex-1 min-w-0 text-xl sm:text-3xl font-bold text-center text-text break-words">{set.title}</h1>
+              <h1 className="frei flex-1 min-w-0 text-xl sm:text-3xl font-bold text-center text-text break-words">{set.title}</h1>
               {settingsButton}
             </div>
             <StorageWarning />
 
             <div className={`${CARD} p-5 sm:p-6 mb-6`}>
-              {/* Nur bei Sets mit Formentabellen: vor dem Wie das Was. Die
-                  Modi darunter laufen dann auf den einzelnen Formen. */}
-              {formsOk && (
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-text mb-3">{t('whatHow')}</h2>
-                  <Seg even value={forms ? 'forms' : 'words'} onChange={(v) => set_({ forms: v === 'forms' })}
-                    options={[['words', t('whatWords', set.words.length)], ['forms', t('whatForms', formSet(set).words.length)]]} />
-                  <p className={NOTE}>{t(forms ? 'formsHint' : 'wordsHint')} <HelpLink onClick={() => setHelp('forms')} /></p>
-                </div>
-              )}
+              {/* Vor dem Wie das Was. Die Modi darunter laufen mit
+                  «Wortformen» auf den einzelnen Formen. Ohne Tabellen bleibt
+                  die Wahl ausgegraut stehen, sonst findet niemand die
+                  Funktion — der Grund als Zeile darunter, ein Tooltip käme
+                  auf dem iPad nie an. */}
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-text mb-3">{t('whatHow')}</h2>
+                {/* Ohne Tabellen merkt ein Tipp auf «Wörter» nichts: sonst
+                    verlöre das nächste Set mit Tabellen die Wahl «Wortformen» */}
+                <Seg even value={forms ? 'forms' : 'words'} onChange={(v) => formsOk && set_({ forms: v === 'forms' })}
+                  options={[['words', t('whatWords', set.words.length)],
+                    ['forms', t('whatForms', formSet(set).words.length), !formsOk, noForms]]} />
+                <p className={NOTE}>{noForms || t(forms ? 'formsHint' : 'wordsHint')} <HelpLink onClick={() => setHelp('forms')} /></p>
+              </div>
               <h2 className="text-lg font-semibold text-text mb-3">{t('modeHow')}</h2>
               {/* Der Modus ist die eigentliche Wahl: Kacheln mit Icon und einer
                   Zeile. Geht ein Modus bei diesem Set nicht, steht der Grund
@@ -3883,18 +3937,21 @@
                 {writing && (
                   <OptRow label={t('input')}>
                     <Seg even value={opts.mode} onChange={(m) => set_({ mode: m, input: m })}
-                      options={WRITE_INPUTS.map((m) => [m, (
-                        <span className="flex flex-col items-center py-0.5">
-                          <span className="flex items-center gap-1.5"><Icon size={16}>{INPUT_ICON[m]}</Icon>{t(INPUT_SHORT[m])}</span>
-                          <span className="text-xs font-normal opacity-75">{t(INPUT_CHECK[m])}</span>
-                        </span>
-                      ), !!modeOff(m), t(INPUT_LABEL[m])])} />
+                      options={WRITE_INPUTS.map((m) => {
+                        const off = modeOff(m);
+                        return [m, (
+                          <span className="flex flex-col items-center py-0.5">
+                            <span className="flex items-center gap-1.5"><Icon size={16}>{INPUT_ICON[m]}</Icon>{t(INPUT_SHORT[m])}</span>
+                            <span className="text-xs font-normal opacity-75">{t(INPUT_OFF[off] || off || INPUT_CHECK[m])}</span>
+                          </span>
+                        ), !!off, t(INPUT_LABEL[m])];
+                      })} />
                     {/* Nur wer von Hand schreibt, bekommt den Weg zur Erkennung
                         gezeigt — wer tippt (etwa jede Klasse über einen
                         geteilten Link), braucht keine MyScript-Einrichtung */}
-                    {modeOff('ink') && HAND_MODES.includes(opts.mode) && (
+                    {inkOff && HAND_MODES.includes(opts.mode) && (
                       <p className={NOTE}>
-                        {t(modeOff('ink'))} {!inkKeys && <HelpLink onClick={() => setHelp('ink')} />}
+                        {t(inkOff)} {inkOff === 'inkOffKeys' && <HelpLink onClick={() => setHelp('ink')} />}
                       </p>
                     )}
                   </OptRow>
@@ -5236,35 +5293,35 @@
     };
 
     // ---------- Set aus der Route laden ----------
-    const Open = ({ route, own, progress, onKeep, onResult, onReset, onBack }) => {
-      const [set, setSet] = useState(null);
-      const [error, setError] = useState(null);
-      useEffect(() => {
-        setSet(null);
-        setError(null);
-        if (route.type === 'demo') {
-          const demo = demoById(route.id);
-          demo ? setSet(demo) : setError(t('errNoSuchSet'));
-        } else if (route.type === 'local') {
-          const s = own.find((m) => m.id === route.id);
-          s ? setSet(s) : setError(t('errNotStored'));
-        } else {
-          // Ein geteiltes Set wird nicht nur angezeigt, sondern übernommen
-          // (s. keepLink): die Route wechselt auf `local=`, dieses Open geht.
-          decodeSet(route.data)
-            .then((s) => (s.words.length ? onKeep(s) : setError(t('errLinkEmpty'))))
-            .catch(() => setError(t('errLinkBroken')));
-        }
-      }, [route.type, route.id, route.data]);
+    // Fehlerseite einer Route: ohne Rand, den der <head> für jede Set-Route
+    // schon gesetzt hat
+    const OpenError = ({ error, onBack }) => {
+      useRand(false);
+      return (
+        <div className={`${SCREEN} p-8 flex flex-col items-center justify-center gap-4`}>
+          <div className="text-xl text-rot font-semibold text-center">{error}</div>
+          <button onClick={onBack} className={`${BTN_PRIMARY} px-6 py-3`}>{t('toOverview')}</button>
+        </div>
+      );
+    };
 
-      if (error) {
-        return (
-          <div className={`${SCREEN} p-8 flex flex-col items-center justify-center gap-4`}>
-            <div className="text-xl text-rot font-semibold text-center">{error}</div>
-            <button onClick={onBack} className={`${BTN_PRIMARY} px-6 py-3`}>{t('toOverview')}</button>
-          </div>
-        );
-      }
+    const Open = ({ route, own, progress, onKeep, onResult, onReset, onBack }) => {
+      // Eigene Sets und Beispiele sind sofort da, ohne Ladeschritt: dazwischen
+      // nahm die Übersicht beim Gehen den Rand weg und die Set-Seite setzte
+      // ihn erst einen Schritt später wieder. Open hängt per `key` an der
+      // Route, gesucht wird also einmal pro Route.
+      const [set] = useState(() => (route.type === 'demo' ? demoById(route.id) : route.type === 'local' ? own.find((m) => m.id === route.id) : null));
+      const [error, setError] = useState(() => (set || route.type === 'data' ? null : t(route.type === 'demo' ? 'errNoSuchSet' : 'errNotStored')));
+      useEffect(() => {
+        if (route.type !== 'data') return;
+        // Ein geteiltes Set wird nicht nur angezeigt, sondern übernommen
+        // (s. keepLink): die Route wechselt auf `local=`, dieses Open geht.
+        decodeSet(route.data)
+          .then((s) => (s.words.length ? onKeep(s) : setError(t('errLinkEmpty'))))
+          .catch(() => setError(t('errLinkBroken')));
+      }, []);
+
+      if (error) return <OpenError error={error} onBack={onBack} />;
       if (!set) return <div className={`${SCREEN} p-8 text-center text-text-2`}>{t('loading')}</div>;
       // Der Lernstand hängt am Set: eigene über die id, Beispiele über ihren
       // Namen. Geteilte Links laufen über `keepLink` und sind hier eigene.

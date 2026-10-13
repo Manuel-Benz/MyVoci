@@ -80,7 +80,11 @@ wird ein eigenes Wort («manger · nous · présent» → «mangeons», `src` = 
 des Worts), beide Sprachen sind die Fremdsprache. Darum laufen **alle Modi**
 auf Formen, ohne dass `Practice` davon weiss — die Set-Seite rechnet mit
 `pool`, der Trainer mit `roundSet`, `opts.forms` (Link `&forms=1`) schaltet
-um. Die Wahl «Wörter · Formen» steht nur bei Sets mit Tabellen. Bei Formen
+um. Die Wahl «Wörter · Wortformen» steht bei jedem Set; ohne Tabellen ist
+«Wortformen (0)» ausgegraut, darunter steht, wie man Tabellen ergänzt
+(`formsNone`, bei Beispielen ohne Editor `formsNoneDemo`) — sonst fand
+niemand die Funktion. Ein Tipp auf «Wörter» merkt dort nichts, sonst
+verlöre das nächste Set mit Tabellen die Wahl «Wortformen». Bei Formen
 prüft `checkAnswer` mit `forms`: keine Tippfehler- und keine
 Artikel-Toleranz («amat»/«amant», «dem»/«des» sind Grammatik, kein
 Vertipper). In der Oberfläche heisst es **«Wortformen»** («Formen» allein
@@ -226,8 +230,11 @@ einen Code auf — gescannt *oder* eingefügt, und eine Kamera verspräche ein F
 Ein mit der Kamera-App gescannter Code öffnet auf dem iPad **immer Safari**;
 die Home-Screen-Webapp hat einen eigenen Speicher und bekäme so weder Set noch
 Schlüssel. Darum liest die App den Code selbst: Kamera-Knopf in der Übersicht
-(immer da), `getUserMedia` mit Rückkamera, Bild für Bild auf 640 px durch
-**jsQR** (jsdelivr, bei Bedarf über `loadScript`; die cdnjs-URL gibt es nicht).
+(immer da), `getUserMedia` mit Rückkamera und Wunschgrösse 1280×720 (sonst
+liefert das iPad 640×480), Bild für Bild nur das mittlere Quadrat, das die
+Vorschau zeigt (`object-cover`), auf höchstens 1024 px — hochkant wie quer
+gleich viel Arbeit; braucht ein Bild länger, wartet der nächste Blick doppelt
+so lang — durch **jsQR** (jsdelivr, bei Bedarf über `loadScript`; die cdnjs-URL gibt es nicht).
 `scanned` deutet den Text: nur das Fragment zählt (die Adresse davor darf
 localhost oder Pages sein), zerlegt wird es mit `hashParts`, das dafür auch
 einen fremden Hash annimmt. Zurück kommen `keyPart` (`k=`) und die Route samt
@@ -267,7 +274,15 @@ Grund — ein Tooltip käme auf dem iPad nie an). Den Grund liefert `modeOff`
 selbst (I18N-Schlüssel oder `null`), damit Sperre und Begründung nicht an zwei
 Stellen entschieden werden. Fehlen dem Set die Sprachen, sagt es das
 (`modeNoLangs`) statt «keine Spracherkennung» — sonst sucht man den Fehler im
-Browser statt im Editor. Darunter eine Liste ohne Trennlinien: `OptRow` (Beschriftung
+Browser statt im Editor. Fehlt nur die Sprache (Latein: keine Stimme, keine
+Erkennung, kein MyScript-Paket), steht «nicht für diese Sprache»
+(`modeLangOff`); die Sprache wird vor den MyScript-Schlüsseln geprüft,
+sonst richtete jemand MyScript ein und erführe erst danach, dass es Latein
+nicht kann. Die ausgegraute Eingabe sagt den Grund statt «automatisch
+geprüft» (`INPUT_OFF`), mit «Erkennung» darin — sonst stünde zweimal
+«Handschrift» da und der graue Knopf läse sich, als ginge Handschrift gar
+nicht. Für Latein eine deutsche oder italienische Stimme einzusetzen wurde
+angehört und verworfen. Darunter eine Liste ohne Trennlinien: `OptRow` (Beschriftung
 links, auf dem Handy darüber), `Seg` für kleine Wahlen, `Switch` für Ja/Nein,
 kurze Erklärung nur zur aktuellen Wahl (`NOTE`). Die Eingabe trägt pro Feld
 eine zweite Zeile, wer prüft (`INPUT_CHECK`) — auch die Tastatur
@@ -531,7 +546,14 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   dem **OS**-Modus, nicht `data-modus` — «Hell» auf einem dunklen Mac zeigt
   den hellen Grund mit dem Dunkel-Akzent (Navy wird #418ED7).
 - QR-Code immer schwarz auf weiss — qrcode-generator zeichnet den weissen Grund
-  selbst in den SVG-Code, auch im Dunkelmodus.
+  selbst in den SVG-Code, auch im Dunkelmodus. `margin` zählt dort in
+  Einheiten von `cellSize`: `cellSize: 1, margin: QR_QUIET` gibt die vier weissen
+  Module rundum, die die Norm verlangt (mit 4/4 war es eines und gleich
+  daneben lag die dunkle Karte). Fehlerkorrektur **L** und mindestens
+  `QR_PX` (5 px) pro Modul, soweit Platz ist, aber nie unter 14rem
+  (`QrModal`, über `QR_NARROW` `wide`): ein Set mit 30 Wörtern gibt über
+  100 Module, auf 14rem gezeichnet las das iPad das nicht mehr vom
+  Bildschirm.
 - Schatten (`--schatten`) nur über die Klasse `schatten`: `shadow-[var(--schatten)]`
   liest Tailwind als Schattenfarbe und setzt gar keinen Schatten.
 - Sichtprüfung im Browser: `python3 -m http.server` liefert ohne
@@ -555,7 +577,7 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   «Klick daneben» als drinnen (`[data-modal]`), auch wenn die Seite es ausserhalb
   des Kästchens zeichnet. Darin: Sprache, Darstellung, Farbschema, Ton, dann was die Seite mitgibt
   (Schlüssel, Beispiele, Ordner, Sicherung) als Abschnitte ohne eigenen Rahmen.
-- **Rand oben, nur auf der Übersicht** (`Rand`, `PAGE` mit Platz oben): Hell =
+- **Rand oben, auf Übersicht und Set-Seite** (`useRand`, `PAGE` mit Platz oben): Hell =
   **Gefieder** (drei Reihen Federn, aus denen sich nach unten einzelne lösen),
   Dunkel = **Buchstaben** aus Latein/Griechisch/Kyrillisch und mit Akzenten
   als Sternbild — MyVoci übt Wörter. `hintergrund/*.svg` aus
@@ -565,17 +587,25 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   Äste), nicht gefüllt — gefüllt las man sie als Blätter; der Kiel endet vor
   der Spitze, sonst stand unten ein nackter Stiel heraus. Buchstaben nur in
   Schriften, die jedes Gerät hat (Maske = Bild, keine Webfonts). Keine
-  SVG-Filter (bremsen). Beim Üben kein Rand: er lenkte neben der Karte ab.
+  SVG-Filter (bremsen). Beim Üben und im Editor kein Rand: er lenkte neben
+  der Karte ab. Die Set-Seite eines Links mit `go=1` schaltet ihn nur ein,
+  wenn die Runde nicht startet (`useRand(!autoStart)`, dieselbe Bedingung
+  wie der Start, beim ersten Anzeigen festgehalten — `go` bleibt wahr,
+  solange der Trainer nicht neu zeichnet). `useRand(false)` nimmt ihn weg — die Fehlerseite einer
+  Route (`OpenError`) braucht das, der `<head>` hat ihn dort schon gesetzt.
+  `Open` findet eigene Sets und Beispiele ohne Ladeschritt: dazwischen nahm
+  die Übersicht beim Gehen den Rand weg und die Set-Seite setzte ihn erst
+  einen Schritt später wieder (Blinken).
   Frei stehender Text darauf trägt `.frei`, Knöpfe `.auf-rand`.
   **Geladen wird er vor React:** das Markup steht fest im `<body>` (Marken
   «rand-html»), die Masken des aktuellen Modus lädt das Skript im `<head>`
   per Preload vor (Marken «rand-preload», mit `crossOrigin`, sonst lädt die
   Maske ein zweites Mal) — beides schreibt `make-hintergrund.py`. Vorher hing
-  der Rand an React und kam erst nach Babel (~2,5 s); die CDN-Skripte im
+  der Rand an React und kam erst nach Babel (~2.5 s); die CDN-Skripte im
   `<head>` blockieren den Parser, darum reicht statisches Markup allein nicht.
   Sichtbar nur mit `data-rand` am `<html>`: der `<head>` setzt es, wenn der
-  Hash keine Route trägt (zweite Kopie von `ROUTE_KEYS`), danach `useRand`
-  in `Selection`.
+  Hash weder `edit`/`new` (`NO_RAND`) noch `go=1` trägt, danach `useRand`
+  in `Selection`, `SetPage` und `OpenError`.
 - **Leitner-Fächer** `fach-0…5`: neu = `--linie`, dann von `--rot` über
   `--orange` nach `--gruen` gemischt — die Schemen haben keine eigene Skala.
 
