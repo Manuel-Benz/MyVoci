@@ -13,17 +13,64 @@ Datei direkt im Browser öffnen geht nicht (Clipboard, `fetch`).
 
 ## Aufbau der index.html
 
-Ein einziges `<script type="text/babel">`, gegliedert durch
-`// ---------- Abschnitt ----------`-Kommentare. Reihenfolge grob: Speicher →
+Ein einziges App-Skript `<script type="text/plain" id="app">` (JSX), gegliedert durch
+`// ---------- Abschnitt ----------`-Kommentare; der kleine Lader direkt
+darunter übersetzt es bei `DOMContentLoaded` mit `Babel.transform` (nur das
+React-Preset, keine Plugins, keine Sourcemap, `retainLines`) und hängt es als
+Skript an. React, ReactDOM und Babel laden mit `defer`. Reihenfolge grob: Speicher →
 Sprache/I18N → Beispiel-Sets → KI-Prompt → Parser/Export → Ordner → Lernstand →
 Direktlinks → Routing → **Korrektur** → Vorlesen/Spracherkennung/Vollbild →
 Bausteine (Modal, Icons, QR, Scanner, Anleitung, Einstellungen) → Seiten.
 Die Wortformen (`formSet`) stehen gleich nach den Listen, vor dem Parser.
 
+**Performance (gemessen 13.10.2026, Playwright/Chrome, CPU 4× ≈ älteres iPad):**
+- **Babel nur für JSX** ist der grösste Hebel: als `text/babel` nahm Babel auch
+  `env` dazu und baute bei jedem Start 300 KB JSX in 1.35 MB ES5 um
+  (regenerator, `var`, Inline-Sourcemap) — erstes Bild 1.2 s statt 0.37 s am
+  Mac, 5.8 s statt 1.6 s gedrosselt. Die Standard-Plugins von Babel
+  standalone und die Inline-Sourcemap (815 KB) sparte erst der eigene Lader.
+  Folgen: das Skript beginnt mit `'use strict'` (das gab früher `env` dazu),
+  braucht Safari/iPadOS 14 (Optional Chaining; Tailwind 3.4 verlangt das
+  ohnehin) und ein Zugriff vor der Zeile wirft (TDZ). Dagegen steht ein
+  Hinweis statt einer weissen Seite: `Crash` (Error Boundary um `App`, zeigt `OpenError`) für
+  Fehler beim Zeichnen, ein `error`-Listener im `<head>` für alles davor
+  (Skriptfehler, CDN weg). ESLint `no-use-before-define` mit `variables: false`
+  sieht nur denselben Gültigkeitsbereich, keine Closures, die beim Zeichnen
+  laufen. Vorübersetzen (0.04 s) und Tailwind vorab bauen (0.01 s) brächten
+  noch mehr, wären aber ein Build-Schritt.
+- **CDN-Adressen mit fester Version** (`react@18.3.1`, `cdn.tailwindcss.com/3.4.17`):
+  `react@18` leitet per 302 weiter und das ist nur 60 s gecacht.
+- **Listen memoisiert:** `SetRow` (Übersicht), `WordCard` (Editor) und
+  `WordList` (Set-Seite) laufen über `memoLang` — `React.memo`, das die
+  Sprache als Prop mitgibt, sonst zeichnete ein Sprachwechsel die Texte nicht
+  neu (`t()` liest `currentLang`). Neue memo-Komponenten immer darüber.
+  Handlungen kommen als stabile Objekte (`acts`-Ref bzw. `ops` aus
+  `useState`, nur Setter/Updater); die Wortkarten tragen einen festen
+  Schlüssel `_k` (nur im Editor). Der Kasten «Voci-Set erstellen» ist eine
+  eigene Komponente (`CreateBox`) mit eigenem Zustand fürs Einfügefeld.
+  Vorher zeichnete jedes Zeichen die ganze Liste bzw. alle Wortkarten neu
+  (bei 200 Sets/400 Wörtern 30- bis 170-mal mehr Elemente).
+- **`content-visibility: auto`** auf `.liste-zeile`, `.wortkarte`, `.wortliste > li`:
+  nach den Memos war Paint der Rest (6× Ordner klappen: 612 → 17 ms Paint).
+  Die Ersatzhöhe (`contain-intrinsic-block-size`) zählt ohne Polster und
+  Rand, gemessen für Computer und Handy. Was über den Rand ragt, schneidet
+  die Regel ab — Texte darin brechen um (`break-words`).
+- **`findWord` (`splitSentence`)** baut pro Wort nur die Alternation ohne
+  `\p{L}`; Wortgrenze (`letterBefore`) und Endung prüfen zwei feste Ausdrücke,
+  Zeichen ausserhalb der Grundebene zählen zwei Stellen (sonst lief die Suche
+  hinter einem Emoji endlos). Ein Ausdruck mit `\p{L}` pro Satz neu gebaut
+  kostete die Set-Seite eines Sets mit 400 Wörtern über eine Sekunde.
+  `gapFor` merkt sein Ergebnis pro Wort (`WeakMap`, Wörter werden nur
+  ersetzt): die Auswahl fragt bei jedem Tastendruck in «von/bis» alle Wörter.
+  `NO_PROGRESS` (statt `|| {}`) hält `prog` stabil, wenn der Trainer neu zeichnet.
+- **Rückfragen über `useAsk`** (wie `useToast`, auf jeder Seite): sie stehen
+  an, statt sich zu überschreiben — beim Import mehrerer Dateien kam sonst
+  nur das letzte «ersetzen?», die anderen Dateien still gar nicht.
+
 Die Übersicht ist gebaut wie in MyMemory (dort schon nach dem Designsystem):
 Markenzug statt Kopfleiste, die Abschnitte auf Karten mit kleinem Kopf
 (`kopf`), darin die **kompakte Liste** (`liste-zeile`/`liste-name`/
-`liste-zahl`/`liste-ordner` in `row`/`folderBox`): Titel in fester Spalte mit
+`liste-zahl`/`liste-ordner` in `SetRow`/`folderBox`): Titel in fester Spalte mit
 der Wortzahl dahinter in einer Flucht, rechts Symbolknöpfe (`RowTool` fängt
 seinen Klick selbst ab — die ganze Zeile öffnet das Set bzw. klappt den
 Ordner), Ordnerinhalt an einer Linie eingerückt.
@@ -35,7 +82,7 @@ einfügen, «von Hand» (`onNew(into)` → Editor). Das `+` führte früher dire
 in den Editor, der Kasten kannte nur die Hauptebene — je nach Einstieg fehlte
 die Hälfte. Ein Ziehen aufs Fenster landet weiterhin auf der Hauptebene, aufs
 Ordner-Feld im Ordner. Die Ablage-Fläche im Kasten hat dafür ein
-eigenes `onDrop` (`importHere`), sonst fiele die Datei zum Fenster-Listener
+eigenes `onDrop` (in `CreateBox`, über `onFiles`), sonst fiele die Datei zum Fenster-Listener
 durch. Die Titelzeile des Kastens heisst Hauptebene (setzt `target` zurück);
 Umbenennen/Verschieben nimmt die Wahl mit (`followMove`), ein Import klappt
 seinen Ordner auf (`openTo`), und `FolderSelect` teilt sich die Ordnerliste
@@ -434,11 +481,11 @@ verzweigen, wenn es um Inhalte geht.
   auseinanderlaufen. Von Hand benannte Dateien (`Fremd.txt` mit `# Von Hand`)
   behalten so trotzdem ihren Namen, statt eine zweite Datei zu bekommen.
 - **Was ins Einstellungs-Panel geht, muss vor `useSettings` deklariert sein.**
-  Das Panel ist ein Argument, sein JSX wird also vorher ausgewertet, und Babel
-  macht aus `const` ein `var`: eine später deklarierte Variable ist dort still
-  `undefined` statt ein Fehler (der Haken «Beispiele anzeigen» blieb leer,
-  obwohl die Beispiele standen). Gilt auch für `help` — der Ordner-Kasten im
-  Panel verweist in die Anleitung.
+  Das Panel ist ein Argument, sein JSX wird also vorher ausgewertet: eine
+  später deklarierte Variable wirft dort (TDZ, weisse Seite). Als Babel noch
+  nach ES5 übersetzte, war sie still `undefined` (der Haken «Beispiele
+  anzeigen» blieb leer, obwohl die Beispiele standen). Gilt auch für `help` —
+  der Ordner-Kasten im Panel verweist in die Anleitung.
 - **Handschrift auf dem iPad: `.sketch` (`user-select: none`) auf der ganzen
   Karte, `touchstart` nativ mit `preventDefault`.** Safari deutet einen kurz
   gehaltenen Strich neben Text als Auswahl-Geste — das Wort oben wurde

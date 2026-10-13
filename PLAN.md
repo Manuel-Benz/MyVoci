@@ -4,6 +4,21 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (13.10.2026, 23):** **Performance** durchgemessen (Playwright,
+Chrome, CPU 4× gedrosselt) und behoben: ein eigener Lader übersetzt nur noch
+JSX (kein ES5, keine Plugins, keine Sourcemap) — Start 3.7-mal schneller;
+CDN-Adressen mit fester Version, React/Babel mit `defer`; Übersicht, Editor und
+Wortliste zeichnen beim Tippen nur noch, was sich ändert (`memoLang`),
+`content-visibility` für lange Listen, Satzsuche im Lückentext ohne teuren
+Ausdruck pro Wort. Danach Review (max, 15 Befunde) behoben: Hinweis statt
+weisser Seite bei Startfehlern (`Crash`, `error`-Listener), `'use strict'`
+zurück, mehrere «ersetzen?» beim Import mehrerer Dateien stehen an, statt sich
+zu überschreiben (`useAsk`, alle Seiten), eingefügter Text bleibt nach
+«Abbrechen»; die neue Satzsuche liefert im Zufallstest gegen die alte dasselbe
+(3 000 Fälle, auch mit Emoji). Offen: das übersetzte
+Skript in IndexedDB merken, dann bräuchte ein warmer Start Babel gar nicht.
+Auf dem iPad noch nicht geprüft.
+
 **Stand (13.10.2026, 22):** Der **Rand oben** steht jetzt auch auf der
 Set-Seite (nicht beim Üben, nicht im Editor, nicht bei einem Link, der gleich
 die Runde startet). **QR-Codes grosser Sets** las das iPad nicht (gut 2 px pro

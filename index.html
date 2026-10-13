@@ -67,6 +67,22 @@
       // Safari vor 14 kennt am matchMedia-Objekt nur das alte `addListener`
       if (dark.addEventListener) dark.addEventListener('change', bar); else dark.addListener(bar);
 
+      // Startet die App nicht (Fehler im Skript, CDN nicht erreichbar), stünde
+      // sonst eine leere Seite da — ohne Hinweis, dass die Sets noch da sind.
+      // Läuft React einmal, fängt `Crash` die Fehler beim Zeichnen ab.
+      window.addEventListener('error', () => {
+        const root = document.getElementById('root');
+        if (!root || root.childElementCount) return;
+        const fromHash = location.hash.slice(1).split('&').find((x) => /^l=(de|en)$/.test(x));
+        const en = (fromHash ? fromHash.slice(2) : read('myvoci_lang')) === 'en';
+        const box = document.createElement('div');
+        box.style.cssText = 'max-width:32rem;margin:8rem auto 0;padding:0 1rem;text-align:center;line-height:1.5';
+        box.textContent = en
+          ? 'MyVoci could not start. Your sets are still saved: reload the page, or try again later.'
+          : 'MyVoci konnte nicht starten. Deine Sets sind noch gespeichert: Seite neu laden oder später nochmals versuchen.';
+        root.appendChild(box);
+      });
+
       // Rand oben auf der Übersicht und der Set-Seite, nicht im Editor und
       // nicht, wenn ein Link gleich die Runde startet (`go=1`) — sonst blitzte
       // er auf, bis React die Seite kennt. Danach hält `useRand` ihn nach.
@@ -89,7 +105,7 @@
       }
     })();
   </script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script>
     // Tailwind kennt nur die Farben des Designsystems (wie MyMemory): eine
     // vergessene Klasse wie `text-red-600` erzeugt gar keinen Stil statt
@@ -131,9 +147,9 @@
     };
   </script>
   <script defer src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+  <script defer crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script defer crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script defer src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
   <style type="text/tailwindcss">
     /* Über Tailwind verarbeitet, sonst läge dessen Preflight (button { background:
        transparent }) hinter diesen Regeln und gewönne. Komponenten in @layer
@@ -237,9 +253,15 @@
     .kuerzel { padding: 0 6px; border-radius: var(--radius-s); background: var(--hover); color: var(--text-2);
       font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
     /* Kompakte Liste (DESIGN.md, Listen): keine Fläche, nur Hover */
+    /* `content-visibility`: nicht malen, was ausserhalb des Fensters liegt (lange
+       Listen). Ersatzhöhe ohne Polster und Rand, gemessen (Handy unten); was
+       über den Rand ragt, wird abgeschnitten — Texte darin brechen um. */
     .liste-zeile { display: flex; align-items: center; gap: 2px; padding: 5px 6px 5px 10px; margin-bottom: 2px;
-      border-radius: var(--radius); transition: background .15s; }
+      border-radius: var(--radius); transition: background .15s;
+      content-visibility: auto; contain-intrinsic-block-size: auto 34px; }
     .liste-zeile:hover { background: var(--hover); }
+    .wortkarte { content-visibility: auto; contain-intrinsic-block-size: auto 430px; }
+    .wortliste > li { content-visibility: auto; contain-intrinsic-block-size: auto 20px; }
     .liste-name { flex: 0 1 19rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       font-weight: 600; text-align: left; }
     /* Die Zahl kürzt nie, der Name gibt nach — nur auf dem Handy dreht es sich um (s. unten) */
@@ -253,6 +275,8 @@
       .liste-zahl { flex-shrink: 1; padding: 0 4px; font-size: 14px; }
       .liste-zahl .kuerzel { display: none; }
       .liste-ordner { margin-left: 6px; padding-left: 6px; }
+      .liste-zeile { contain-intrinsic-block-size: auto 30px; }
+      .wortkarte { contain-intrinsic-block-size: auto 600px; }
     }
     .ablage { border-radius: var(--radius); outline: 2px dashed transparent; outline-offset: -2px; transition: background .15s, outline-color .15s; }
     .ablage.ziel { background: var(--akzent-weich); outline-color: var(--akzent); }
@@ -298,7 +322,10 @@
   <!-- </rand-html> -->
   <div id="root"></div>
 
-  <script type="text/babel">
+  <!-- Das App-Skript übersetzt der Lader darunter: nur JSX, kein ES5, keine
+       Plugins, keine Sourcemap (warum: CLAUDE.md, «Performance»). -->
+  <script type="text/plain" id="app">
+    'use strict';
     const { useState, useEffect, useMemo, useRef } = React;
 
     // ---------- Browser-Speicher ----------
@@ -748,6 +775,7 @@
         again: 'Nochmal',
         toSet: 'Zum Set',
         loading: 'Lade Set…',
+        crashed: 'Da ist etwas schiefgelaufen. Deine Sets und dein Lernstand sind noch gespeichert.',
         errNoSuchSet: 'Dieses Set gibt es nicht.',
         errNotStored: 'Dieses Set ist in diesem Browser nicht gespeichert.',
         errLinkEmpty: 'Der Link enthält keine Wörter.',
@@ -1161,6 +1189,7 @@
         again: 'Again',
         toSet: 'Back to the set',
         loading: 'Loading set…',
+        crashed: 'Something went wrong. Your sets and your progress are still saved.',
         errNoSuchSet: 'This set does not exist.',
         errNotStored: 'This set is not stored in this browser.',
         errLinkEmpty: 'The link contains no words.',
@@ -2404,11 +2433,42 @@
       <span>{parts.map(([ch, same], i) => (same ? <span key={i}>{ch}</span> : <span key={i} className={cls}>{ch}</span>))}</span>
     );
 
-    // Das Wort im Satz hervorheben (Wortstamm reicht: «marchons» zu «marcher»)
-    // Gesucht wird der Wortstamm ohne Artikel und ohne typische Endung, am
-    // Wortanfang; zurück kommt die Form im Satz («marchons»). Vollständige
-    // Treffer gewinnen vor Stamm-Treffern («la maison» vor «mais…»).
     const stripAnyArticle = (s) => Object.keys(ARTICLES).reduce((acc, l) => stripArticle(acc, l), s);
+    // Das Wort im Satz finden (Wortstamm reicht: «marchons» zu «marcher»):
+    // erst die Formen ohne Artikel, dann die Stämme ohne typische Endung, je am
+    // Wortanfang; zurück kommt die Stelle samt Endung im Satz. Vollständige
+    // Treffer gewinnen vor Stamm-Treffern («la maison» vor «mais…»).
+    // `\p{L}` steht nur in den zwei festen Ausdrücken, nicht im Suchausdruck
+    // pro Wort: so einen pro Satz zu bauen kostete die Set-Seite eines Sets
+    // mit 400 Wörtern über eine Sekunde. Kein Lookbehind: Safari kennt `(?<!…)`
+    // erst ab 16.4 und wirft sonst beim Bauen des Ausdrucks.
+    const LETTER_AT = /\p{L}/uy;
+    const LETTERS_AFTER = /\p{L}*/uy;
+    const escRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Steht vor Stelle i ein Buchstabe? Ein Zeichen ausserhalb der Grundebene
+    // (Emoji, manche Schriften) belegt zwei Stellen.
+    const letterBefore = (hay, i) => {
+      if (!i) return false;
+      const low = hay.charCodeAt(i - 1), high = hay.charCodeAt(i - 2);
+      LETTER_AT.lastIndex = low >= 0xdc00 && low <= 0xdfff && high >= 0xd800 && high <= 0xdbff ? i - 2 : i - 1;
+      return LETTER_AT.test(hay);
+    };
+    const findWord = (hay, word) => {
+      const forms = variants(word).map((v) => stripAnyArticle(v.toLowerCase())).filter((v) => v.length >= 2);
+      const stems = forms.map((v) => v.replace(/(er|ir|re|en|e|s)$/i, '')).filter((v) => v.length >= 3);
+      for (const list of [forms, stems]) {
+        if (!list.length) continue;
+        const re = new RegExp(list.map(escRegex).join('|'), 'giu');
+        for (let m; (m = re.exec(hay)); ) {
+          // Mitten im Wort: ein ganzes Zeichen weiter — eine Stelle mitten in
+          // einem Emoji setzte `u` auf denselben Treffer zurück (endlos).
+          if (letterBefore(hay, m.index)) { re.lastIndex = m.index + (hay.codePointAt(m.index) > 0xffff ? 2 : 1); continue; }
+          LETTERS_AFTER.lastIndex = m.index + m[0].length;
+          return { at: m.index, length: m[0].length + LETTERS_AFTER.exec(hay)[0].length };
+        }
+      }
+      return null;
+    };
     // Zerlegt einen Satz in {before, form, after}. Steht im Satz eine Markierung
     // «*vais*», gilt genau die (für Formen, die kein Stamm findet); sonst wird
     // gesucht. Ohne Treffer null — der Satz wird dann nur angezeigt.
@@ -2418,37 +2478,29 @@
         const clean = sentence.replace(/\*/g, '');
         return { before: clean.slice(0, star.index), form: star[1], after: clean.slice(star.index + star[1].length) };
       }
-      const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const forms = variants(word).map((v) => stripAnyArticle(v.toLowerCase())).filter((v) => v.length >= 2);
-      const stems = forms.map((v) => v.replace(/(er|ir|re|en|e|s)$/i, '')).filter((v) => v.length >= 3);
       // Gesucht wird in einer Fassung mit geraden Apostrophen — genau wie das
       // Wort, das durch `variants` schon normalisiert ist. Der Ersatz ist
       // zeichengleich, die gefundenen Stellen passen also auf das Original.
-      const hay = straightQuotes(sentence);
-      for (const list of [forms, stems]) {
-        if (!list.length) continue;
-        // Kein Lookbehind: das Zeichen davor wird mitgelesen und wieder
-        // abgezogen — Safari kennt `(?<!…)` erst ab 16.4 und wirft sonst beim
-        // Bauen des Ausdrucks, mitten im Aufbau der Set-Seite.
-        const m = hay.match(new RegExp(`(^|[^\\p{L}])(${list.map(esc).join('|')})[\\p{L}]*`, 'iu'));
-        if (!m) continue;
-        const at = m.index + m[1].length, form = m[0].slice(m[1].length);
-        return { before: sentence.slice(0, at), form: sentence.substr(at, form.length), after: sentence.slice(at + form.length) };
-      }
-      return null;
+      const hit = findWord(straightQuotes(sentence), word);
+      if (!hit) return null;
+      const { at, length } = hit;
+      return { before: sentence.slice(0, at), form: sentence.substr(at, length), after: sentence.slice(at + length) };
     };
     const markWord = (sentence, word) => {
       const m = splitSentence(sentence, word);
       if (!m) return sentence.replace(/\*/g, '');
       return <>{m.before}<b>{m.form}</b>{m.after}</>;
     };
-    // Lückentext: der erste Satz, in dem das Wort (Sprache B) vorkommt
+    // Lückentext: der erste Satz, in dem das Wort (Sprache B) vorkommt.
+    // Gemerkt pro Wort (Wörter werden nie verändert, nur ersetzt): Set-Seite
+    // und Auswahl fragen bei jedem Tastendruck in «von/bis» alle Wörter.
+    const gapCache = new WeakMap();
     const gapFor = (word) => {
-      for (const s of word.s || []) {
-        const m = splitSentence(s, word.b);
-        if (m) return m;
-      }
-      return null;
+      if (gapCache.has(word)) return gapCache.get(word);
+      let gap = null;
+      for (const s of word.s || []) if ((gap = splitSentence(s, word.b))) break;
+      gapCache.set(word, gap);
+      return gap;
     };
 
     // ---------- Vorlesen ----------
@@ -2932,6 +2984,18 @@
 
     // Kurzmeldung unten am Rand. Zwei Seiten brauchen sie (Übersicht und
     // Set-Seite) — eine Stelle bestimmt Dauer und Aussehen.
+    // Rückfragen (AskModal) stehen an, für jede Seite gleich: mehrere Dateien
+    // auf einmal können je ein «ersetzen?» brauchen und eine zweite überschrieb
+    // sonst die erste — deren Datei kam still nicht an. `key`, damit jede
+    // Rückfrage mit ihrem eigenen Feld beginnt. Funktional, weil der
+    // Fenster-Listener der Übersicht nur einmal entsteht.
+    const useAsk = () => {
+      const [queue, setQueue] = useState([]);
+      const ask = (dialog) => setQueue((q) => [...q, { ...dialog, id: newId() }]);
+      const node = queue.length > 0 && <AskModal key={queue[0].id} dialog={queue[0]} onClose={() => setQueue((q) => q.slice(1))} />;
+      return [ask, node];
+    };
+
     const useToast = () => {
       const [toast, setToast] = useState(null);
       const timer = useRef(0);
@@ -3040,6 +3104,96 @@
     }, [on]);
 
     // ---------- Auswahlseite ----------
+    // `React.memo` für Zeilen langer Listen, immer über diese Stelle: `t()`
+    // liest `currentLang` und nicht eine Prop, nach einem Sprachwechsel sähe
+    // `memo` also keinen Grund zum Neuzeichnen. Die Sprache geht darum als
+    // Prop `lang` mit, die Komponente selbst muss sie nicht lesen.
+    const memoLang = (Component) => {
+      const Memo = React.memo(Component);
+      return (props) => <Memo {...props} lang={currentLang} />;
+    };
+
+    // Eine Zeile der Liste (wie MyMemory): Titel in fester Spalte (kürzt bei
+    // Bedarf), Wortzahl dahinter in einer Flucht, rechts die Symbolknöpfe.
+    // Die ganze Zeile öffnet das Set. `memo`: Ordner auf- und zuklappen, über
+    // die Liste ziehen, eine Meldung oder ein Fenster zeichneten sonst jede
+    // Zeile neu — bei 200 Sets ein spürbares Stocken. Darum kommen die
+    // Handlungen über `acts`, eine Ref, die immer dieselbe bleibt und beim
+    // Klick den neuesten Stand liest; frische Funktionen bei jedem Rendern
+    // höben `memo` wieder auf.
+    const SetRow = memoLang(({ set, deletable, acts }) => {
+      // `dragProps` darf beim Zeichnen gelesen werden: es greift nur auf die
+      // Ref `dragged` und den festen Setter `setDropDir` zu, veraltet also nie.
+      return (
+        <div onClick={() => acts.current.open(set)} className="liste-zeile cursor-pointer"
+          {...(deletable ? acts.current.dragProps({ kind: 'set', id: set.id, dir: set.dir || '' }) : {})}>
+          <button className="liste-name">{set.title}</button>
+          <span className="liste-zahl">{t('nWords', set.words.length)}{langBadge(set)}</span>
+          <RowTool onClick={() => acts.current.exportOne(set)} title={t('exportOne')} extra="hidden sm:inline-flex"><DownloadIcon /></RowTool>
+          <RowTool onClick={() => acts.current.copyLink(set)} title={t('copyLink')}><LinkIcon /></RowTool>
+          <RowTool onClick={() => acts.current.showQr(set)} title={t('showQr')}><QrIcon /></RowTool>
+          {deletable && (
+            <>
+              <RowTool onClick={() => acts.current.edit(set)} title={t('edit')}><PenIcon /></RowTool>
+              <RowTool onClick={() => acts.current.askDelete(set)} title={t('del')} hover="gefahr"><TrashIcon /></RowTool>
+            </>
+          )}
+        </div>
+      );
+    });
+
+    // Kasten «Voci-Set erstellen». Eine eigene Komponente mit eigenem Zustand
+    // für Titel und eingefügten Text: lag der in der Übersicht, zeichnete jedes
+    // getippte Zeichen die ganze Liste neu. Was hier ankommt (Auswahl,
+    // Ablage-Fläche, Einfügen), geht in den gewählten Ordner `into`.
+    const CreateBox = ({ open, onToggle, into, onPick, folders, hint, onFiles, onPaste, onNew, onCopyPrompt }) => {
+      const [pasted, setPasted] = useState('');
+      const [pastedTitle, setPastedTitle] = useState('');
+      const fileInput = useRef(null);
+      const importPasted = () => onPaste(pasted, pastedTitle.trim() || 'Voci', () => { setPasted(''); setPastedTitle(''); });
+      // Die Fläche braucht ein eigenes onDrop: sonst fiele die Datei zum
+      // Fenster-Listener durch — der kennt nur die Hauptebene.
+      const hereDrop = {
+        onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); },
+        onDrop: (e) => { if (!e.dataTransfer.files.length) return; e.preventDefault(); e.stopPropagation(); onFiles(e.dataTransfer.files); },
+      };
+      return (
+        <Collapsible id="create" title={t('createTitle')} open={open} onToggle={onToggle}>
+          {folders.length > 0 && (
+            <label className="flex items-center gap-3 mb-4">
+              <span className={LABEL}>{t('createIn')}</span>
+              <FolderSelect value={into} onChange={onPick} folders={folders} className="text-sm" rootLabel={t('autoFolder')} />
+            </label>
+          )}
+          <ol className="list-decimal list-inside text-sm text-text-2 space-y-1 mb-4">{t('steps')}</ol>
+          <button onClick={onCopyPrompt} className={`w-full ${BTN_PRIMARY} px-4 py-2 mb-6`}>
+            {t('copyPrompt')}
+          </button>
+          <div onClick={() => fileInput.current.click()} {...hereDrop}
+            className="border-2 border-dashed border-linie rounded-lg p-6 text-center text-text-2 cursor-pointer hover:border-akzent hover:text-text hover:bg-akzent-weich transition-all">
+            <span className="flex items-center justify-center gap-2 font-bold"><InboxIcon /> {t('dropTitle')}</span>
+            <span className="block text-sm text-text-3">{t('dropHint')}</span>
+          </div>
+          <input ref={fileInput} type="file" accept=".txt,.md" multiple className="hidden"
+            onChange={(e) => { onFiles(e.target.files); e.target.value = ''; }} />
+          <OrDivider>{t('orPaste')}</OrDivider>
+          <input type="text" value={pastedTitle} onChange={(e) => setPastedTitle(e.target.value)} placeholder={t('pastedTitlePh')}
+            className={`w-full mb-2 ${INPUT} text-sm`} />
+          <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={6} placeholder={t('pastePh')}
+            className={`w-full ${INPUT} text-sm font-mono`} />
+          <button onClick={importPasted} disabled={!pasted.trim()}
+            className={`w-full mt-2 px-4 py-2 ${BTN_PRIMARY}`}>
+            {t('importText')}
+          </button>
+          <OrDivider>{t('orByHand')}</OrDivider>
+          <button onClick={onNew} className={`w-full ${BTN_NEUTRAL} px-4 py-2 flex items-center justify-center gap-2`}>
+            <PenIcon /> {t('byHand')}
+          </button>
+          <p className="text-xs text-text-3 mt-3">{hint}</p>
+        </Collapsible>
+      );
+    };
+
     const Selection = ({ own, folders, onOpen, onEdit, onNew, onImport, onDelete, folderApi, backup, dir }) => {
       useRand();
       const [showToast, toastNode] = useToast();
@@ -3084,9 +3238,7 @@
         </div>
       );
       // Muss VOR `useSettings` stehen: das Panel ist ein Argument, sein JSX wird
-      // also vorher ausgewertet. Babel macht aus `const` ein `var` — eine später
-      // deklarierte Variable wäre hier still `undefined` statt eines Fehlers
-      // (der Haken blieb leer, obwohl die Beispiele standen).
+      // also vorher ausgewertet: eine später deklarierte Variable wirft hier (TDZ).
       // Dasselbe gilt für die Anleitung: der Ordner-Kasten im Panel verweist
       // darauf. `null` | 'all' | Abschnitt.
       const [showDemos, setShowDemos] = useState(loadShowDemos);
@@ -3144,10 +3296,7 @@
       const [openDirs, setOpenDirs] = useState(loadOpen);
       const [dropDir, setDropDir] = useState(null);
       const dragged = useRef(null);
-      const [dialog, setDialog] = useState(null);
-      const [pasted, setPasted] = useState('');
-      const [pastedTitle, setPastedTitle] = useState('');
-      const fileInput = useRef(null);
+      const [ask, dialogNode] = useAsk();
 
       const copyText = async (text, msg) => {
         if (await copyLater(() => text)) showToast(msg); else showToast(t('copyFailed'));
@@ -3170,42 +3319,30 @@
       // Ohne gewählten Ordner (Kasten auf «automatisch», aufs Fenster gezogen)
       // legt placeFor ab; `foldersRef`, weil der Fenster-Listener nur einmal
       // entsteht.
-      const addImported = (text, name, chosen, complain) => {
+      // `done` erst, wenn das Set wirklich da ist: nach «ersetzen?» kann auch
+      // «Abbrechen» kommen und der eingefügte Text soll dann stehen bleiben.
+      const addImported = (text, name, chosen, complain, done) => {
         const parsed = parseFile(text, name);
-        if (!parsed.words.length) { showToast(complain); return false; }
+        if (!parsed.words.length) { showToast(complain); return; }
         const dir = chosen || placeFor(parsed, ownRef.current, foldersRef.current);
         const put = () => {
           onImport({ id: newId(), ...parsed, ...(dir ? { dir } : {}) });
           openTo(dir);
           showToast(t('imported', parsed.title, parsed.words.length));
+          if (done) done();
         };
         // Gleicher Titel im gleichen Ordner heisst «neue Fassung desselben
         // Sets» — die alten Wörter sind danach weg. Das ist einen Klick wert,
         // es gibt kein Zurück.
         if (ownRef.current.some((s) => sameSlot(s, { dir, title: parsed.title }))) {
-          setDialog({ kind: 'confirm', ok: t('replace'), text: t('confirmReplace', parsed.title), onYes: put });
+          ask({ kind: 'confirm', ok: t('replace'), text: t('confirmReplace', parsed.title), onYes: put });
         } else put();
-        return true;
       };
       const importFiles = (fileList, dir) => {
         for (const file of fileList) {
           if (/\.json$/i.test(file.name)) { file.text().then(importBackupText); continue; } // Sicherung aufs Fenster gezogen
           file.text().then((text) => addImported(text, file.name, dir, t('noWordsInFile', file.name)));
         }
-      };
-      const importPasted = () => {
-        if (!addImported(pasted, pastedTitle.trim() || 'Voci', into, t('noWordsFound'))) return;
-        setPasted('');
-        setPastedTitle('');
-      };
-
-      // Alles, was im Kasten ankommt (Auswahl, Ablage-Fläche), geht in dessen
-      // Ordner. Die Fläche braucht ein eigenes onDrop: sonst fiele die Datei zum
-      // Fenster-Listener durch, und der kennt nur die Hauptebene.
-      const importHere = (fileList) => importFiles(fileList, into);
-      const hereDrop = {
-        onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); },
-        onDrop: (e) => { if (!e.dataTransfer.files.length) return; e.preventDefault(); e.stopPropagation(); importHere(e.dataTransfer.files); },
       };
 
       useEffect(() => {
@@ -3276,14 +3413,14 @@
         },
       });
 
-      const newFolder = (parent) => setDialog({
+      const newFolder = (parent) => ask({
         kind: 'prompt', ok: t('create'), label: parent ? t('askSubfolder', dirName(parent)) : t('askFolder'),
         onOk: (name) => {
           const path = folderApi.makeFolder(parent, name);
           if (path) rememberOpen([...new Set([...openDirs, parent, path].filter(Boolean))]);
         },
       });
-      const renameFolder = (dir) => setDialog({
+      const renameFolder = (dir) => ask({
         kind: 'prompt', ok: t('rename'), label: t('askRename'), preset: dirName(dir),
         onOk: (name) => {
           const target = folderApi.renameFolder(dir, name);
@@ -3293,34 +3430,20 @@
       });
       const dropFolder = (dir) => {
         if (own.some((s) => inside(s.dir || '', dir)) || folders.some((f) => f !== dir && inside(f, dir))) { showToast(t('folderNotEmpty')); return; }
-        setDialog({
+        ask({
           kind: 'confirm', ok: t('del'), text: t('confirmDeleteFolder', dirName(dir)),
           onYes: () => { folderApi.removeFolder(dir); rememberOpen(openDirs.filter((d) => d !== dir)); },
         });
       };
 
-      // Kompakte Liste (DESIGN.md, wie MyMemory): Titel in fester Spalte
-      // (kürzt bei Bedarf), Wortzahl dahinter in einer Flucht, rechts die
-      // Symbolknöpfe spaltenweise untereinander. Die ganze Zeile öffnet das Set.
-      const row = (set, deletable) => (
-        <div key={set.id} onClick={() => onOpen(set)} className="liste-zeile cursor-pointer"
-          {...(deletable ? dragProps({ kind: 'set', id: set.id, dir: set.dir || '' }) : {})}>
-          <button className="liste-name">{set.title}</button>
-          <span className="liste-zahl">{t('nWords', set.words.length)}{langBadge(set)}</span>
-          <RowTool onClick={() => exportOne(set)} title={t('exportOne')} extra="hidden sm:inline-flex"><DownloadIcon /></RowTool>
-          <RowTool onClick={() => copyLink(set)} title={t('copyLink')}><LinkIcon /></RowTool>
-          <RowTool onClick={() => showQr(set)} title={t('showQr')}><QrIcon /></RowTool>
-          {deletable && (
-            <>
-              <RowTool onClick={() => onEdit(set)} title={t('edit')}><PenIcon /></RowTool>
-              <RowTool title={t('del')} hover="gefahr"
-                onClick={() => setDialog({ kind: 'confirm', ok: t('del'), text: t('confirmDeleteSet', set.title), onYes: () => onDelete(set.id) })}>
-                <TrashIcon />
-              </RowTool>
-            </>
-          )}
-        </div>
-      );
+      // Was die Zeilen tun (s. SetRow): bei jedem Rendern neu eingesetzt, die
+      // Ref selbst bleibt dieselbe — so bleibt `memo` wirksam.
+      const acts = useRef(null);
+      acts.current = {
+        open: onOpen, edit: onEdit, exportOne, copyLink, showQr, dragProps,
+        askDelete: (set) => ask({ kind: 'confirm', ok: t('del'), text: t('confirmDeleteSet', set.title), onYes: () => onDelete(set.id) }),
+      };
+      const row = (set, deletable) => <SetRow key={set.id} set={set} deletable={deletable} acts={acts} />;
 
       const folderBox = (dir) => {
         const isOpen = openDirs.includes(dir);
@@ -3370,40 +3493,12 @@
               </div>
             )}
 
-            <Collapsible id="create" title={t('createTitle')} open={createOpen}
-              onToggle={() => { setTarget(''); setCreateOpen((v) => !v); }}>
-              {folders.length > 0 && (
-                <label className="flex items-center gap-3 mb-4">
-                  <span className={LABEL}>{t('createIn')}</span>
-                  <FolderSelect value={into} onChange={setTarget} folders={folders} className="text-sm" rootLabel={t('autoFolder')} />
-                </label>
-              )}
-              <ol className="list-decimal list-inside text-sm text-text-2 space-y-1 mb-4">{t('steps')}</ol>
-              <button onClick={() => copyText(kiPrompt(), t('promptCopied'))} className={`w-full ${BTN_PRIMARY} px-4 py-2 mb-6`}>
-                {t('copyPrompt')}
-              </button>
-              <div onClick={() => fileInput.current.click()} {...hereDrop}
-                className="border-2 border-dashed border-linie rounded-lg p-6 text-center text-text-2 cursor-pointer hover:border-akzent hover:text-text hover:bg-akzent-weich transition-all">
-                <span className="flex items-center justify-center gap-2 font-bold"><InboxIcon /> {t('dropTitle')}</span>
-                <span className="block text-sm text-text-3">{t('dropHint')}</span>
-              </div>
-              <input ref={fileInput} type="file" accept=".txt,.md" multiple className="hidden"
-                onChange={(e) => { importHere(e.target.files); e.target.value = ''; }} />
-              <OrDivider>{t('orPaste')}</OrDivider>
-              <input type="text" value={pastedTitle} onChange={(e) => setPastedTitle(e.target.value)} placeholder={t('pastedTitlePh')}
-                className={`w-full mb-2 ${INPUT} text-sm`} />
-              <textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={6} placeholder={t('pastePh')}
-                className={`w-full ${INPUT} text-sm font-mono`} />
-              <button onClick={importPasted} disabled={!pasted.trim()}
-                className={`w-full mt-2 px-4 py-2 ${BTN_PRIMARY}`}>
-                {t('importText')}
-              </button>
-              <OrDivider>{t('orByHand')}</OrDivider>
-              <button onClick={() => onNew(into)} className={`w-full ${BTN_NEUTRAL} px-4 py-2 flex items-center justify-center gap-2`}>
-                <PenIcon /> {t('byHand')}
-              </button>
-              <p className="text-xs text-text-3 mt-3">{dir.status === 'ok' ? t('importHintDir', dir.name) : t('importHint')}</p>
-            </Collapsible>
+            <CreateBox open={createOpen} onToggle={() => { setTarget(''); setCreateOpen((v) => !v); }}
+              into={into} onPick={setTarget} folders={folders} onNew={() => onNew(into)}
+              hint={dir.status === 'ok' ? t('importHintDir', dir.name) : t('importHint')}
+              onFiles={(files) => importFiles(files, into)}
+              onPaste={(text, title, done) => addImported(text, title, into, t('noWordsFound'), done)}
+              onCopyPrompt={() => copyText(kiPrompt(), t('promptCopied'))} />
 
             <div className={`${CARD} p-3 sm:p-4 mb-6`}>
               <div className="flex items-center gap-0.5 mb-2 pl-2.5">
@@ -3448,7 +3543,7 @@
             )}
           </div>
 
-          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+          {dialogNode}
           {qr && <QrModal title={qr.title} url={qr.url} onClose={() => setQr(null)} onCopy={() => copyText(qr.url, t('linkCopied'))} />}
           {scan && <Scanner onClose={() => setScan(false)} onCode={onCode} />}
           {help && <Help only={help === 'all' ? null : help} onClose={() => setHelp(null)} />}
@@ -3478,18 +3573,89 @@
       if (odd.length) out.push(t('formsIssueCells', odd.join(', '), width));
       return out;
     };
+    // Eine Wortkarte im Editor. `memo`: ein getipptes Zeichen zeichnete sonst
+    // alle Karten neu, samt `formIssues` für jede Tabelle — bei 400 Wörtern
+    // gut 80 ms pro Taste auf einem langsamen Gerät. Neu gezeichnet wird nur
+    // die Karte, deren Wort sich geändert hat; dafür bleiben `ops` (s.
+    // SetEditor) und die Beschriftungen über die Tastendrücke gleich.
+    const WordCard = memoLang(({ w, i, nameA, nameB, ops }) => {
+      // Beide Seiten mehrzeilig: eine Zeile pro Listenpunkt («1. …», «- …»)
+      const side = (key, label, placeholder) => (
+        <label className="block">
+          <span className={LABEL}>{label}</span>
+          <textarea rows={Math.max(1, w[key].split('\n').length)} value={w[key]} placeholder={placeholder}
+            onChange={(e) => ops.setWord(i, key, e.target.value)} className={`w-full mt-1 ${INPUT} resize-y`} />
+        </label>
+      );
+      const field = (key, label, placeholder) => (
+        <label className="block">
+          <span className={LABEL}>{label}</span>
+          <input type="text" value={w[key]} placeholder={placeholder} onChange={(e) => ops.setWord(i, key, e.target.value)}
+            className={`w-full mt-1 ${INPUT}`} />
+        </label>
+      );
+      return (
+        <div className="kachel wortkarte p-4 mb-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="flex-1 text-sm font-semibold text-text-3">{t('wordN', i + 1)}</span>
+            <IconButton onClick={() => ops.move(i, -1)} title={t('moveUp')}>↑</IconButton>
+            <IconButton onClick={() => ops.move(i, 1)} title={t('moveDown')}>↓</IconButton>
+            <IconButton onClick={() => ops.remove(i)} title={t('deleteWord')} hover="hover:bg-rot-weich"><TrashIcon /></IconButton>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3 mb-3">
+            {side('a', nameA, t('sideAPh'))}
+            {side('b', nameB, t('sideBPh'))}
+          </div>
+          {/* Dieselbe Prüfung wie beim Speichern (cleanWord), sonst ginge ein Haken verloren */}
+          {[w.a, w.b].some((x) => isList(joinAnswer(x.split('\n')))) && (
+            <label className="flex items-center gap-2 -mt-1 mb-3 text-sm text-text-2">
+              <input type="checkbox" checked={w.all} onChange={(e) => ops.setWord(i, 'all', e.target.checked)} /> {t('allNeeded')}
+            </label>
+          )}
+          <label className="block mb-3">
+            <span className={LABEL}>{t('sentences')}</span>
+            <textarea rows={2} value={w.s} placeholder={t('sentencesPh')} onChange={(e) => ops.setWord(i, 's', e.target.value)}
+              className={`w-full mt-1 ${INPUT} text-sm`} />
+          </label>
+          {field('h', t('hint'), t('hintPh'))}
+          <div className="grid sm:grid-cols-2 gap-3 mt-3">
+            {field('ha', t('hintSide', nameA), t('hintSidePh'))}
+            {field('hb', t('hintSide', nameB), t('hintSidePh'))}
+          </div>
+          {/* Wortformen: zugeklappt, solange das Wort keine hat — die
+              meisten Wörter brauchen keine Tabelle */}
+          {w.ft || w.fOpen ? (
+            <label className="block mt-3">
+              <span className={LABEL}>{t('formsLabel')}</span>
+              <textarea rows={Math.max(4, w.ft.split('\n').length)} value={w.ft} placeholder={t('formsPh')}
+                onChange={(e) => ops.setWord(i, 'ft', e.target.value)} spellCheck={false}
+                className={`w-full mt-1 ${INPUT} text-sm font-mono`} />
+              {formIssues(w.ft).map((x, k) => <span key={k} className="block text-xs text-orange mt-1 break-words">{x}</span>)}
+            </label>
+          ) : (
+            <button type="button" onClick={() => ops.openForms(i)}
+              className="mt-3 text-sm font-semibold text-akzent-text hover:underline">+ {t('formsAdd')}</button>
+          )}
+        </div>
+      );
+    });
+
     const SetEditor = ({ set, sets, folders, onSave, onCancel, onNewFolder }) => {
       const [title, setTitle] = useState(set.title);
       const [dir, setDir] = useState(set.dir || '');
       const [lang, setLang] = useState(set.lang || '');
       const [langA, setLangA] = useState(set.langs ? set.langs[0] : '');
       const [langB, setLangB] = useState(set.langs ? set.langs[1] : '');
+      // `_k`: ein fester Schlüssel pro Wort, nur im Editor (Speichern nimmt die
+      // Felder einzeln). Mit dem Index als Schlüssel wanderten nach Löschen
+      // oder Verschieben Karte, gemerkte Höhe und Rückgängig der Felder zum
+      // nächsten Wort.
       const [words, setWords] = useState(() =>
         set.words.length
-          ? set.words.map((w) => ({ ...EMPTY_WORD, ...w, s: (w.s || []).join('\n'), all: !!w.all, ft: w.f ? formText(w.f) : '' }))
-          : [{ ...EMPTY_WORD }]);
+          ? set.words.map((w) => ({ ...EMPTY_WORD, ...w, s: (w.s || []).join('\n'), all: !!w.all, ft: w.f ? formText(w.f) : '', _k: newId() }))
+          : [{ ...EMPTY_WORD, _k: newId() }]);
       const [error, setError] = useState('');
-      const [dialog, setDialog] = useState(null);
+      const [ask, dialogNode] = useAsk();
 
       // Ein Merkmal statt eines JSON-Vergleichs des ganzen Sets bei jedem
       // Zeichen: gefragt ist nur, ob überhaupt etwas angefasst wurde.
@@ -3499,16 +3665,29 @@
       const editTitle = touch(setTitle), editDir = touch(setDir), editLang = touch(setLang);
       const editLangA = touch(setLangA), editLangB = touch(setLangB);
 
-      const setWord = touch((i, key, value) => setWords((ws) => ws.map((w, j) => (j === i ? { ...w, [key]: value } : w))));
-      const addWord = touch(() => setWords((ws) => [...ws, { ...EMPTY_WORD }]));
-      const removeWord = touch((i) => setWords((ws) => ws.filter((_, j) => j !== i)));
-      const moveWord = touch((i, delta) => setWords((ws) => {
-        const j = i + delta;
-        if (j < 0 || j >= ws.length) return ws;
-        const next = [...ws];
-        [next[i], next[j]] = [next[j], next[i]];
-        return next;
-      }));
+      // Was die Wortkarten tun (s. WordCard): einmal gebaut und danach immer
+      // dieselben Funktionen, sonst zeichnete jedes Zeichen wieder alle Karten.
+      // Das geht, weil sie nur Setter und Updater benutzen — kein Zustand
+      // aus der Closure, der veralten könnte. Unverändert bleibende Wörter
+      // behalten ihr Objekt, daran erkennt `memo` sie.
+      const [ops] = useState(() => {
+        const change = touch(setWords);
+        const at = (i, patch) => (ws) => ws.map((w, j) => (j === i ? { ...w, ...patch } : w));
+        return {
+          setWord: (i, key, value) => change(at(i, { [key]: value })),
+          add: () => change((ws) => [...ws, { ...EMPTY_WORD, _k: newId() }]),
+          remove: (i) => change((ws) => ws.filter((_, j) => j !== i)),
+          move: (i, delta) => change((ws) => {
+            const j = i + delta;
+            if (j < 0 || j >= ws.length) return ws;
+            const next = [...ws];
+            [next[i], next[j]] = [next[j], next[i]];
+            return next;
+          }),
+          // Nur aufklappen, noch keine Änderung am Set
+          openForms: (i) => setWords(at(i, { fOpen: true })),
+        };
+      });
 
       const save = () => {
         const clean = words
@@ -3532,31 +3711,15 @@
       };
       const cancel = () => {
         if (!dirty) return onCancel();
-        setDialog({ kind: 'confirm', ok: t('discard'), text: t('confirmDiscard'), onYes: onCancel });
+        ask({ kind: 'confirm', ok: t('discard'), text: t('confirmDiscard'), onYes: onCancel });
       };
-      const newFolder = () => setDialog({
+      const newFolder = () => ask({
         kind: 'prompt', ok: t('create'), label: dir ? t('askSubfolder', dirName(dir)) : t('askFolder'),
         onOk: (name) => { const path = onNewFolder(dir, name); if (path) editDir(path); },
       });
 
       const nameA = langA ? langName(langCode(langA)) : t('sideA');
       const nameB = langB ? langName(langCode(langB)) : t('sideB');
-      // Beide Seiten mehrzeilig: eine Zeile pro Listenpunkt («1. …», «- …»)
-      const side = (i, key, label, placeholder) => (
-        <label className="block">
-          <span className={LABEL}>{label}</span>
-          <textarea rows={Math.max(1, words[i][key].split('\n').length)} value={words[i][key]} placeholder={placeholder}
-            onChange={(e) => setWord(i, key, e.target.value)} className={`w-full mt-1 ${INPUT} resize-y`} />
-        </label>
-      );
-      const field = (i, key, label, placeholder) => (
-        <label className="block">
-          <span className={LABEL}>{label}</span>
-          <input type="text" value={words[i][key]} placeholder={placeholder} onChange={(e) => setWord(i, key, e.target.value)}
-            className={`w-full mt-1 ${INPUT}`} />
-        </label>
-      );
-
       return (
         <div className={`${SCREEN} p-4 sm:p-8`}>
           <div className={COLUMN}>
@@ -3593,52 +3756,9 @@
               </label>
             </div>
 
-            {words.map((w, i) => (
-              <div key={i} className="kachel p-4 mb-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="flex-1 text-sm font-semibold text-text-3">{t('wordN', i + 1)}</span>
-                  <IconButton onClick={() => moveWord(i, -1)} title={t('moveUp')}>↑</IconButton>
-                  <IconButton onClick={() => moveWord(i, 1)} title={t('moveDown')}>↓</IconButton>
-                  <IconButton onClick={() => removeWord(i)} title={t('deleteWord')} hover="hover:bg-rot-weich"><TrashIcon /></IconButton>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-3 mb-3">
-                  {side(i, 'a', nameA, t('sideAPh'))}
-                  {side(i, 'b', nameB, t('sideBPh'))}
-                </div>
-                {/* Dieselbe Prüfung wie beim Speichern (cleanWord), sonst ginge ein Haken verloren */}
-                {[w.a, w.b].some((x) => isList(joinAnswer(x.split('\n')))) && (
-                  <label className="flex items-center gap-2 -mt-1 mb-3 text-sm text-text-2">
-                    <input type="checkbox" checked={w.all} onChange={(e) => setWord(i, 'all', e.target.checked)} /> {t('allNeeded')}
-                  </label>
-                )}
-                <label className="block mb-3">
-                  <span className={LABEL}>{t('sentences')}</span>
-                  <textarea rows={2} value={w.s} placeholder={t('sentencesPh')} onChange={(e) => setWord(i, 's', e.target.value)}
-                    className={`w-full mt-1 ${INPUT} text-sm`} />
-                </label>
-                {field(i, 'h', t('hint'), t('hintPh'))}
-                <div className="grid sm:grid-cols-2 gap-3 mt-3">
-                  {field(i, 'ha', t('hintSide', nameA), t('hintSidePh'))}
-                  {field(i, 'hb', t('hintSide', nameB), t('hintSidePh'))}
-                </div>
-                {/* Wortformen: zugeklappt, solange das Wort keine hat — die
-                    meisten Wörter brauchen keine Tabelle */}
-                {w.ft || w.fOpen ? (
-                  <label className="block mt-3">
-                    <span className={LABEL}>{t('formsLabel')}</span>
-                    <textarea rows={Math.max(4, w.ft.split('\n').length)} value={w.ft} placeholder={t('formsPh')}
-                      onChange={(e) => setWord(i, 'ft', e.target.value)} spellCheck={false}
-                      className={`w-full mt-1 ${INPUT} text-sm font-mono`} />
-                    {formIssues(w.ft).map((x, k) => <span key={k} className="block text-xs text-orange mt-1">{x}</span>)}
-                  </label>
-                ) : (
-                  <button type="button" onClick={() => setWords((ws) => ws.map((x, j) => (j === i ? { ...x, fOpen: true } : x)))}
-                    className="mt-3 text-sm font-semibold text-akzent-text hover:underline">+ {t('formsAdd')}</button>
-                )}
-              </div>
-            ))}
+            {words.map((w, i) => <WordCard key={w._k} w={w} i={i} nameA={nameA} nameB={nameB} ops={ops} />)}
 
-            <button onClick={addWord} className={`w-full px-4 py-2 mb-4 ${BTN_NEUTRAL} bg-karte flex items-center justify-center gap-2`}>
+            <button onClick={ops.add} className={`w-full px-4 py-2 mb-4 ${BTN_NEUTRAL} bg-karte flex items-center justify-center gap-2`}>
               <PlusIcon /> {t('addWord')}
             </button>
             {error && <p className="text-sm text-rot mb-2">{error}</p>}
@@ -3648,7 +3768,7 @@
             </div>
             <p className="text-xs text-text-3 mt-3">{t('editorHint')}</p>
           </div>
-          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+          {dialogNode}
         </div>
       );
     };
@@ -3793,6 +3913,23 @@
                         // nicht gewählte Lesart die gewählte (nur Fehler)
     };
 
+    const BOX_COLORS = ['bg-fach-0', 'bg-fach-1', 'bg-fach-2', 'bg-fach-3', 'bg-fach-4', 'bg-fach-5'];
+    // Die aufgeklappte Wortliste der Set-Seite hängt nur an Wörtern und
+    // Lernstand: jeder Tastendruck in «von/bis» zeichnete sonst alle Zeilen neu.
+    const WordList = memoLang(({ words, prog }) => (
+      <ol className="wortliste text-sm text-text space-y-1">
+        {words.map((w, i) => {
+          const r = prog[wordKey(w)];
+          return (
+            <li key={i} className="flex items-start gap-2">
+              <span className={`mt-1.5 inline-block w-2.5 h-2.5 rounded-full shrink-0 ${BOX_COLORS[r ? Math.min(r.box, 5) : 0]}`} />
+              <span className="text-text-3 w-6 shrink-0 text-right">{i + 1}.</span>
+              <span className="flex-1 min-w-0 break-words"><b>{inline(w.a)}</b> — {inline(w.b)}{(w.h || w.ha || w.hb) && <span className="text-text-3"> ({[w.h, w.ha, w.hb].filter(Boolean).join(' · ')})</span>}</span>
+            </li>
+          );
+        })}
+      </ol>
+    ));
     const SetPage = ({ set, prog, preset, go, onStart, onReset, onBack }) => {
       // Ein geteilter Link bringt seine Einstellungen mit (preset) — die gelten
       // für diesen Besuch, gemerkt wird erst, was hier umgestellt wird.
@@ -3803,7 +3940,7 @@
       const [inkKeys, setInkKeys] = useState(() => !!myscriptKeys());
       const settingsButton = useSettings(<MyScriptKeys onSaved={() => setInkKeys(!!myscriptKeys())} />);
       const [help, setHelp] = useState(false); // Anleitung: false oder der Abschnitt ('ink', 'forms')
-      const [dialog, setDialog] = useState(null);
+      const [ask, dialogNode] = useAsk();
       const [listOpen, setListOpen] = useState(false);
       const [shareGo, setShareGo] = useState(false);
       const [qr, setQr] = useState(null);
@@ -3840,8 +3977,6 @@
       const boxes = [0, 0, 0, 0, 0, 0];
       recs.forEach((r) => { boxes[r ? Math.min(r.box, 5) : 0]++; });
       const seen = recs.filter(Boolean).length;
-      // `gapFor` zerlegt jeden Satz und baut dabei Ausdrücke — das darf nicht
-      // an jedem Tastendruck in den Bereichsfeldern hängen.
       const gapN = useMemo(() => pool.words.filter(gapFor).length, [pool]);
       // Eine Stelle entscheidet, ob ein Modus geht, und warum nicht (der
       // I18N-Schlüssel des Grundes, sonst null) — sonst können ausgegrauter
@@ -3883,7 +4018,6 @@
       useEffect(() => { if (autoStart) onStart(opts, chosen); }, []);
       useRand(!autoStart);
       const A = sideName(set, 0), B = sideName(set, 1);
-      const BOX_COLORS = ['bg-fach-0', 'bg-fach-1', 'bg-fach-2', 'bg-fach-3', 'bg-fach-4', 'bg-fach-5'];
 
       return (
         <div className={PAGE}>
@@ -4041,27 +4175,16 @@
               </div>
               <p className="text-xs text-text-3 mb-3">{t('progressHint')}</p>
               {seen > 0 && (
-                <button onClick={() => setDialog({ kind: 'confirm', ok: t('resetProgress'), text: t('confirmReset'), onYes: onReset })}
+                <button onClick={() => ask({ kind: 'confirm', ok: t('resetProgress'), text: t('confirmReset'), onYes: onReset })}
                   className={`px-4 py-2 text-sm ${BTN_NEUTRAL}`}>{t('resetProgress')}</button>
               )}
             </div>
 
             <Collapsible title={`${t(forms ? 'formList' : 'wordList')} (${n})`} open={listOpen} onToggle={() => setListOpen((v) => !v)}>
-              <ol className="text-sm text-text space-y-1">
-                {pool.words.map((w, i) => {
-                  const r = recs[i];
-                  return (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className={`mt-1.5 inline-block w-2.5 h-2.5 rounded-full shrink-0 ${BOX_COLORS[r ? Math.min(r.box, 5) : 0]}`} />
-                      <span className="text-text-3 w-6 shrink-0 text-right">{i + 1}.</span>
-                      <span className="flex-1"><b>{inline(w.a)}</b> — {inline(w.b)}{(w.h || w.ha || w.hb) && <span className="text-text-3"> ({[w.h, w.ha, w.hb].filter(Boolean).join(' · ')})</span>}</span>
-                    </li>
-                  );
-                })}
-              </ol>
+              <WordList words={pool.words} prog={prog} />
             </Collapsible>
           </div>
-          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+          {dialogNode}
           {qr && <QrModal title={qr.title} url={qr.url} onClose={() => setQr(null)} onCopy={copyShare} />}
           {help && <Help only={help} onClose={() => setHelp(false)} />}
           {toastNode}
@@ -4395,7 +4518,7 @@
       const watched = useRef(false); // war das Vollbild je aktiv? Sonst überwacht niemand
       const [startedAt] = useState(Date.now);
       const exam = !!opts.exam && AUTO_MODES.includes(opts.mode);
-      const [dialog, setDialog] = useState(null);
+      const [ask, dialogNode] = useAsk();
       const inputRef = useRef(null);
 
       const item = queue[pos];
@@ -4615,7 +4738,7 @@
         else if (phase === 'copy') { e.preventDefault(); checkCopy(); }
         else if (phase === 'feedback') { e.preventDefault(); next(); }
       };
-      const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
+      const quit = () => ask({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
 
       // Sprechen: einmal zuhören, beste Alternative zählt. Nichts verstanden
       // ist kein Fehler — nochmals versuchen.
@@ -4959,7 +5082,7 @@
               <div className="mt-6">{body}</div>
             </div>
           </PracticeFrame>
-          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+          {dialogNode}
         </div>
       );
     };
@@ -4987,7 +5110,7 @@
       const [errored, setErrored] = useState([]); // Wörter mit Fehlversuch
       const [log, setLog] = useState([]);
       const [startedAt] = useState(Date.now);
-      const [dialog, setDialog] = useState(null);
+      const [ask, dialogNode] = useAsk();
       // Beide Zeitgeber müssen beim Verlassen weg: sonst reisst der Wechsel
       // zur nächsten Gruppe eine schon beendete Runde in die Bilanz.
       const timers = useRef([]);
@@ -5023,7 +5146,7 @@
           later(() => { setFlash(null); setLeft(null); }, 700);
         }
       };
-      const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
+      const quit = () => ask({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
       const tile = (w, side, i, onClick, active) => {
         const isMatched = matched.includes(w);
         const isFlash = flash && (side === 'l' ? flash.l === w : flash.r === w);
@@ -5055,7 +5178,7 @@
               {flash && <p className="text-center text-rot font-semibold mt-3">{t('wrongPair')}</p>}
             </div>
           </PracticeFrame>
-          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+          {dialogNode}
         </div>
       );
     };
@@ -5071,8 +5194,8 @@
       const [tables] = useState(() => {
         const bySrc = new Map();
         for (const w of words) {
-          if (!bySrc.has(w.src)) bySrc.set(w.src, { tab: w.tab, ask: [] });
-          bySrc.get(w.src).ask.push(w);
+          if (!bySrc.has(w.src)) bySrc.set(w.src, { tab: w.tab, cells: [] });
+          bySrc.get(w.src).cells.push(w);
         }
         const list = [...bySrc.values()];
         return opts.order === 'random' ? shuffleArray(list) : list;
@@ -5082,12 +5205,12 @@
       const [results, setResults] = useState(null); // nach dem Prüfen: { 'i,j': Ergebnis }
       const [log, setLog] = useState([]);
       const [startedAt] = useState(Date.now);
-      const [dialog, setDialog] = useState(null);
+      const [ask, dialogNode] = useAsk();
       const rootRef = useRef(null);
-      const { tab, ask } = tables[g];
+      const { tab, cells } = tables[g];
       const lang = set.langs && set.langs[1];
       const key = (i, j) => `${i},${j}`;
-      const asked = new Map(ask.map((w) => [key(w.ri, w.ci), w]));
+      const asked = new Map(cells.map((w) => [key(w.ri, w.ci), w]));
       // Spaltenweise, damit Enter eine Zeitform von oben nach unten füllt
       const order = [];
       tab.t[0].forEach((_, j) => tab.t.forEach((_, i) => { if (asked.has(key(i, j))) order.push(key(i, j)); }));
@@ -5125,7 +5248,7 @@
         if (at < order.length - 1) focusCell(order[at + 1]);
         else check();
       };
-      const quit = () => setDialog({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
+      const quit = () => ask({ kind: 'confirm', ok: t('quit'), text: t('confirmQuit'), onYes: onBack });
       const right = results && Object.values(results).filter((r) => r.status !== 'wrong').length;
 
       const cell = (form, i, j) => {
@@ -5191,7 +5314,7 @@
               )}
             </div>
           </PracticeFrame>
-          {dialog && <AskModal dialog={dialog} onClose={() => setDialog(null)} />}
+          {dialogNode}
         </div>
       );
     };
@@ -5259,9 +5382,12 @@
     };
 
     // ---------- Trainer: Set-Seite → Runde → Ende ----------
+    const NO_PROGRESS = {};
     const Trainer = ({ set, setKey, progress, onResult, onReset, onBack }) => {
       const [stage, setStage] = useState({ kind: 'setup' });
-      const prog = progress[setKey] || {};
+      // Ohne Lernstand dasselbe leere Objekt: ein neues `{}` bei jedem Rendern
+      // höbe die Memos der Set-Seite (Auswahl, Liste) auf.
+      const prog = progress[setKey] || NO_PROGRESS;
       // Einstellungen aus dem Link; «go» zündet nur beim ersten Aufbau der
       // Set-Seite, sonst startete jede beendete Runde von selbst die nächste.
       const [preset] = useState(optsFromHash);
@@ -5630,7 +5756,29 @@
         );
     };
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    // Fehler beim Zeichnen: ohne Grenze nähme React die ganze Seite weg und
+    // sie bliebe weiss. So steht da, dass die Sets noch gespeichert sind.
+    class Crash extends React.Component {
+      constructor(props) { super(props); this.state = { failed: false }; }
+      static getDerivedStateFromError() { return { failed: true }; }
+      render() {
+        return this.state.failed
+          ? <OpenError error={t('crashed')} onBack={() => { location.href = location.pathname; }} />
+          : this.props.children;
+      }
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Crash><App /></Crash>);
+  </script>
+  <script>
+    // React, ReactDOM und Babel laden mit `defer` und laufen vor
+    // DOMContentLoaded — der Rand im <body> wartet so nicht auf sie.
+    // `retainLines`: Zeilen in Fehlermeldungen passen zum Skript oben.
+    document.addEventListener('DOMContentLoaded', () => {
+      const el = document.createElement('script');
+      el.textContent = Babel.transform(document.getElementById('app').textContent, { presets: ['react'], retainLines: true }).code;
+      document.body.appendChild(el);
+    });
   </script>
 </body>
 </html>
