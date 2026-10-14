@@ -180,7 +180,25 @@ liegen bleibt. Safari/iPad: kein Ordner, dort bleibt die Sicherung als Datei.
 **Lernstand** getrennt davon unter `myvoci_progress`:
 `{ <setKey>: { <wordKey>: { ok, bad, box, last, lastOk } } }`. `setKey` ist die
 id (eigene Sets) oder `demo:<id>` (Beispiele). `wordKey` ist `ab`.
-Leitner-Fächer 1–5, fällig nach `BOX_DAYS`. Steckt **nie** im Link.
+Steckt **nie** im Link. `box` ist die **Stufe** 1–5 (in der Oberfläche nie
+«Fach»): nicht gewusst · unsicher · kommt langsam · fast sicher · sitzt, davor
+«neu». Richtig = eine höher, ein neues Wort gleich auf 2 (sonst hiesse «nicht
+gewusst» nichts); falsch = zwei zurück, mindestens 1 (auf «sitzt» ist ein
+Fehler meist ein Ausrutscher). **Keine Tage**: niemand übt regelmässig, an
+einem Abend darf alles auf «sitzt» kommen; wer lange weg war, setzt zurück.
+Auswahl beim Üben: `sel` = alle · `stage` (bis `upTo` 1–4, «neu» immer
+dabei, `stageOf`) · `wrong` (zuletzt falsch), dazu unabhängig der Schalter
+`range` (von/bis, leer = Anfang/Ende) — so geht auch «1–20, bis kommt
+langsam». Kein Schieber: vier Werte, auf dem Handy nicht beschriftbar. Die
+Zahlen daneben zählt `selectWords` selbst, sonst wichen sie beim Lückentext
+und beim Bestimmen vom Startknopf ab. `normSel` übersetzt alte Wahlen
+(`sel=due` → bis «fast sicher», `sel=range` → Schalter), gespeichert wie im
+Link. **Ein Übungs-Link legt die ganze Übung fest** (`startOpts`: trägt er
+`sel`, baut er auf `DEFAULT_OPTS` statt auf der gespeicherten Wahl auf) —
+sonst schnitt der gespeicherte Bereich des Empfängers eine geteilte Übung
+still zu, auch bei alten Links, die `range` nicht kennen. `upgradeRec` hebt alte
+Einträge nie falsch beantworteter Wörter eine Stufe an (früher Stufe k nach
+k richtigen, heute k + 1); neue Einträge treffen die Bedingung nie.
 
 **Geteilte Links bleiben** (`keepLink` in `App`): ein `#v=`-Link (Direktlink
 und QR-Code sind dieselbe Adresse) wird beim Öffnen übernommen wie ein Import
@@ -563,7 +581,7 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   `bg-karte`, `bg-hover`, `border-linie`, `bg-akzent`/`-weich`,
   `text-akzent-text`, Signalfarben `rot`/`gruen`/`orange` je als Schrift
   (`text-rot`), getönte Fläche (`bg-rot-weich`), Rand (`border-rot-linie`),
-  deckend (`bg-rot-voll`), dazu `fach-0…5` für die Leitner-Fächer. Eine alte
+  deckend (`bg-rot-voll`), dazu `fach-0…5` für die Lernstufen. Eine alte
   Klasse wie `text-gray-500` oder `bg-red-100` erzeugt **gar nichts**.
   `white`/`black` gibt es nur für das, was so bleiben muss: Schreibflächen
   (`PAD_FRAME`, die Tinte von iink ist dunkel), Knopf im `Switch`, Kamerabild.
@@ -653,7 +671,8 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   Sichtbar nur mit `data-rand` am `<html>`: der `<head>` setzt es, wenn der
   Hash weder `edit`/`new` (`NO_RAND`) noch `go=1` trägt, danach `useRand`
   in `Selection`, `SetPage` und `OpenError`.
-- **Leitner-Fächer** `fach-0…5`: neu = `--linie`, dann von `--rot` über
+- **Stufen** `fach-0…5`: neu = `--text-3` (mit `--linie` verschwand es im
+  leeren Balken), dann von `--rot` über
   `--orange` nach `--gruen` gemischt — die Schemen haben keine eigene Skala.
 
 ## Icon

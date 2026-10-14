@@ -4,6 +4,20 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (14.10.2026):** **Lernstand neu gedacht.** Aus den Leitner-Fächern
+wurden fünf **Stufen** mit Namen (nicht gewusst · unsicher · kommt langsam ·
+fast sicher · sitzt, davor «neu»): richtig = eine weiter, ein neues, gleich
+gewusstes Wort startet bei «unsicher», falsch = zwei zurück. **Keine Tage
+mehr** — niemand übt regelmässig, an einem Abend darf alles auf «sitzt»
+kommen; nach langer Pause setzt man selber zurück. Kopf des Kastens «k von n
+sitzen», «neu» mit eigener Farbe. **Auswahl** neu: alle · nach Stufe (bis …,
+vier Knöpfe statt Schieber) · zuletzt falsch, dazu der Bereich als eigener
+Schalter, der sich mit allem verträgt. Danach Review (max): ein geteilter Link
+legt die ganze Übung fest (vorher schnitt der gespeicherte Bereich des
+Empfängers sie still zu, auch bei alten Links), die Zahlen der Auswahl zählt
+dieselbe Funktion wie der Startknopf, von/bis lässt sich leeren, alter
+Lernstand wird angehoben. Im Browser und mit node geprüft, auf dem iPad nicht.
+
 **Stand (13.10.2026, 23):** **Performance** durchgemessen (Playwright,
 Chrome, CPU 4× gedrosselt) und behoben: ein eigener Lader übersetzt nur noch
 JSX (kein ES5, keine Plugins, keine Sourcemap) — Start 3.7-mal schneller;
@@ -269,8 +283,8 @@ S: Je vais à l'école. | Nous marchons vite.
 | **Sprechen** (später) | Wort aussprechen (SpeechRecognition, nur Chrome) | automatisch, unscharf |
 | **Blitzrunde** (später) | beliebiger Modus mit Timer, Punktestand | — |
 
-Einstellbar pro Runde: Richtung (A→B, B→A, gemischt), Auswahl (alle / nur
-Fehler / Leitner-fällig / Bereich 1–20), Reihenfolge (zufällig / wie in Datei),
+Einstellbar pro Runde: Richtung (A→B, B→A, gemischt), Auswahl (alle / nach
+Stufe / zuletzt falsch, dazu wahlweise ein Bereich), Reihenfolge (zufällig / wie in Datei),
 Hinweise ein/aus, Toleranz streng/locker.
 
 ## Eingabe und Korrektur
@@ -297,9 +311,9 @@ Feinheiten (Akzente, Doppelkonsonanten), die eine Erkennung glattbügelt.
 
 ## Lernstand
 
-Pro Set und Wort im Browser: richtig/falsch-Zähler, Leitner-Fach (1–5),
-zuletzt geübt. Daraus: **Fehlerliste** (nur falsche wiederholen), **Fällig
-heute** (Leitner: Fach 1 täglich, Fach 5 alle 2 Wochen), Fortschrittsbalken
+Pro Set und Wort im Browser: richtig/falsch-Zähler, Stufe (1–5, seit
+14.10.2026 ohne Tage), zuletzt geübt. Daraus: **zuletzt falsch** (nur falsche
+wiederholen), **nach Stufe** (alles bis zu einer Stufe), Fortschrittsbalken
 pro Set, kleine Statistik am Rundenende (Zeit, Trefferquote, schwierigste
 Wörter). Zurücksetzen pro Set möglich. Nicht im Link — der teilt nur Inhalt.
 

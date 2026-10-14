@@ -1,7 +1,7 @@
 # MyVoci
 
 Vokabeltrainer für den Unterricht – Tastatur oder Stift, beide Richtungen,
-automatische Korrektur, Anwendungssätze, Lernstand mit Leitner-Fächern.
+automatische Korrektur, Anwendungssätze, Lernstand in fünf Stufen.
 Komplett clientseitig (wie MyMemory): kein Backend, keine Inhalte auf GitHub.
 
 **Live:** https://manuel-benz.github.io/MyVoci/
@@ -78,10 +78,13 @@ Set antippen → Einstellungen wählen → **Üben starten**.
   Lösungen erst am Ende als Tabelle. Startet im Vollbild; Verlassen des
   Vollbilds oder Wechseln der App wird gezählt und im Ergebnis angezeigt.
   Zusammen mit dem Geführten Zugriff (s. unten) ist das die Prüfungssituation.
-- **Richtung** A→B, B→A oder gemischt; **Auswahl** alle / nur Fehler / fällig
-  heute / Bereich; Reihenfolge zufällig oder wie in der Liste.
-- **Lernstand** pro Wort im Browser: richtig = ein Leitner-Fach höher (Fach 5
-  alle zwei Wochen fällig), falsch = zurück in Fach 1. Bleibt beim Teilen aussen vor.
+- **Richtung** A→B, B→A oder gemischt; **Auswahl** alle / nach Stufe (bis
+  «nicht gewusst» … «fast sicher») / zuletzt falsch, dazu wahlweise nur ein
+  Bereich; Reihenfolge zufällig oder wie in der Liste.
+- **Lernstand** pro Wort im Browser, in Stufen von «nicht gewusst» bis «sitzt»:
+  richtig = eine Stufe weiter (ein neues, gleich gewusstes Wort startet bei
+  «unsicher»), falsch = zwei zurück. Ohne Tage: man übt, wann man will, und
+  setzt nach einer langen Pause selber zurück. Bleibt beim Teilen aussen vor.
 
 ## iPad
 

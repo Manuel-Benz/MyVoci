@@ -131,7 +131,7 @@
           rot: signal('rot'),
           gruen: signal('gruen'),
           orange: signal('orange'),
-          // Leitner-Fächer 0–5: von «neu» über rot nach grün (Werte unten in :root)
+          // Lernstufen 0–5: von «neu» über rot nach grün (Werte unten in :root)
           fach: Object.fromEntries([0, 1, 2, 3, 4, 5].map((i) => [i, `var(--fach-${i})`])),
         },
         borderRadius: {
@@ -171,7 +171,7 @@
       --rot-linie: color-mix(in oklab, var(--rot) 45%, var(--karte));
       --gruen-linie: color-mix(in oklab, var(--gruen) 45%, var(--karte));
       --orange-linie: color-mix(in oklab, var(--orange) 50%, var(--karte));
-      --fach-0: var(--linie);
+      --fach-0: var(--text-3);
       --fach-1: var(--rot);
       --fach-2: var(--orange);
       --fach-3: color-mix(in oklab, var(--orange) 50%, var(--gruen));
@@ -655,7 +655,7 @@
         direction: 'Richtung',
         dirAB: (a, b) => `${a} → ${b}`,
         dirMix: 'gemischt',
-        selRange: 'Bereich',
+        selRangeOnly: 'nur einen Bereich',
         rangeFrom: 'von',
         rangeTo: 'bis',
         order: 'Reihenfolge',
@@ -687,8 +687,9 @@
         rowWords: 'Wörter',
         rowExtras: 'Dazu',
         selAllN: (n) => `alle ${n}`,
-        selWrongN: (n) => `Fehler ${n}`,
-        selDueN: (n) => `fällig ${n}`,
+        selWrongN: (n) => `zuletzt falsch ${n}`,
+        selStage: 'nach Stufe',
+        selUpTo: 'bis',
         tolStrictHint: 'Alles muss stimmen.',
         tolNormalHint: 'Ein Tippfehler zählt als «fast richtig».',
         tolLooseHint: 'Auch Akzente und Artikel sind egal.',
@@ -698,11 +699,10 @@
         start: 'Üben starten',
         nothingSelected: 'Keine Wörter in dieser Auswahl.',
         progress: 'Lernstand',
-        boxLabel: (n) => (n === 0 ? 'neu' : `Fach ${n}`),
-        wrongCount: (n) => `${n} ${n === 1 ? 'Fehler' : 'Fehler'}`,
-        dueCount: (n) => `${n} fällig`,
+        boxLabel: (n) => ['neu', 'nicht gewusst', 'unsicher', 'kommt langsam', 'fast sicher', 'sitzt'][n],
+        sitCount: (k, n) => `${k} von ${n} ${k === 1 ? 'sitzt' : 'sitzen'}`,
         resetProgress: 'Lernstand zurücksetzen',
-        progressHint: 'Der Lernstand bleibt in diesem Browser. Richtig = ein Fach höher (Fach 5 alle zwei Wochen fällig), falsch = zurück in Fach 1.',
+        progressHint: 'Der Lernstand bleibt in diesem Browser. Richtig = eine Stufe weiter, von «nicht gewusst» bis «sitzt»; falsch = zwei Stufen zurück. Ein neues Wort, das du gleich weisst, startet bei «unsicher».',
         wordList: 'Wörter',
         formList: 'Wortformen',
         modeParse: 'Bestimmen',
@@ -727,7 +727,7 @@
             <li><b>So entsteht sie:</b> am einfachsten über den KI-Prompt — die Zeile «Formen» leer lassen, dann entscheidet die KI und fragt nach, wenn es unklar ist. Oder im Editor beim Wort auf <b>«+ Wortformen»</b>.</li>
             <li><b>Schreibweise</b> (Datei und Editor): <code>Zeilen: je | tu | il/elle …</code> und <code>Spalten: présent | imparfait</code>, dann pro Zeile <code>T: vais | allais</code>. «–» heisst: gibt es nicht. Mehrere richtige Formen mit « / ». Ohne «Spalten:» hat die Tabelle eine Spalte.</li>
             <li><b>Vor dem Üben durchsehen:</b> Eine KI irrt sich bei seltenen Formen, und geprüft wird Buchstabe für Buchstabe — ohne Tippfehler- und ohne Artikel-Toleranz, weil dort ein Buchstabe die Grammatik ist.</li>
-            <li><b>Üben:</b> beim Set oben <b>«Wortformen»</b> wählen. Dann laufen alle Modi auf den einzelnen Formen, dazu <b>Bestimmen</b> (die Form ist gegeben, Person oder Fall wählen) und <b>Tabelle</b> (die ganze Tabelle ausfüllen; mit «nur Fehler» sind nur die Lücken leer).</li>
+            <li><b>Üben:</b> beim Set oben <b>«Wortformen»</b> wählen. Dann laufen alle Modi auf den einzelnen Formen, dazu <b>Bestimmen</b> (die Form ist gegeben, Person oder Fall wählen) und <b>Tabelle</b> (die ganze Tabelle ausfüllen; mit «zuletzt falsch» sind nur die Lücken leer).</li>
           </>
         ),
         whatHow: 'Was willst du üben?',
@@ -1071,7 +1071,7 @@
         direction: 'Direction',
         dirAB: (a, b) => `${a} → ${b}`,
         dirMix: 'mixed',
-        selRange: 'Range',
+        selRangeOnly: 'only a range',
         rangeFrom: 'from',
         rangeTo: 'to',
         order: 'Order',
@@ -1103,8 +1103,9 @@
         rowWords: 'Words',
         rowExtras: 'Extras',
         selAllN: (n) => `all ${n}`,
-        selWrongN: (n) => `mistakes ${n}`,
-        selDueN: (n) => `due ${n}`,
+        selWrongN: (n) => `last wrong ${n}`,
+        selStage: 'by level',
+        selUpTo: 'up to',
         tolStrictHint: 'Everything must match.',
         tolNormalHint: 'One typo counts as “almost right”.',
         tolLooseHint: 'Accents and articles are ignored too.',
@@ -1114,11 +1115,10 @@
         start: 'Start practising',
         nothingSelected: 'No words in this selection.',
         progress: 'Progress',
-        boxLabel: (n) => (n === 0 ? 'new' : `Box ${n}`),
-        wrongCount: (n) => `${n} ${n === 1 ? 'mistake' : 'mistakes'}`,
-        dueCount: (n) => `${n} due`,
+        boxLabel: (n) => ['new', 'not known', 'unsure', 'getting there', 'almost sure', 'mastered'][n],
+        sitCount: (k, n) => `${k} of ${n} mastered`,
         resetProgress: 'Reset progress',
-        progressHint: 'Progress stays in this browser. Right = one box up (box 5 is due every two weeks), wrong = back to box 1.',
+        progressHint: 'Progress stays in this browser. Right = one level up, from «not known» to «mastered»; wrong = two levels back. A new word you know right away starts at «unsure».',
         wordList: 'Words',
         formList: 'Word forms',
         modeParse: 'Identify',
@@ -1143,7 +1143,7 @@
             <li><b>How to get one:</b> easiest via the AI prompt — leave the line «Forms» empty, the AI decides and asks back if it is unclear. Or in the editor, <b>«+ Word forms»</b> at the word.</li>
             <li><b>Notation</b> (file and editor): <code>Rows: I | you | he/she/it …</code> and <code>Columns: present | past</code>, then one line per row <code>T: am | was</code>. «–» means: does not exist. Several correct forms with « / ». Without «Columns:» the table has one column.</li>
             <li><b>Check before practising:</b> an AI gets rare forms wrong, and checking is letter by letter — no typo or article tolerance, since there one letter is the grammar.</li>
-            <li><b>Practise:</b> choose <b>«Word forms»</b> at the top of the set. All modes then run on the single forms, plus <b>Identify</b> (the form is given, choose person or case) and <b>Table</b> (fill in the whole table; with «wrong only» just the gaps are empty).</li>
+            <li><b>Practise:</b> choose <b>«Word forms»</b> at the top of the set. All modes then run on the single forms, plus <b>Identify</b> (the form is given, choose person or case) and <b>Table</b> (fill in the whole table; with «last wrong» just the gaps are empty).</li>
           </>
         ),
         whatHow: 'What do you want to practise?',
@@ -2116,10 +2116,25 @@
     };
 
     // ---------- Lernstand ----------
-    // Pro Set und Wort: richtig/falsch-Zähler, Leitner-Fach 1–5, letzter Versuch,
+    // Pro Set und Wort: richtig/falsch-Zähler, Stufe 1–5 (`box`), letzter Versuch,
     // ob der letzte Versuch sass. Bleibt im Browser, steckt nie im Link.
     const PROGRESS_KEY = 'myvoci_progress';
-    const loadProgress = () => readLocal(PROGRESS_KEY, {}) || {};
+    // Früher stand ein nie falsch beantwortetes Wort nach k richtigen Antworten
+    // auf Stufe k, heute auf k + 1 (neu und gleich gewusst → 2). Neue Einträge
+    // treffen die Bedingung nie (auf 5 ändert sich nichts), also gefahrlos bei
+    // jedem Laden. Wörter mit Fehlern lassen sich nicht nachrechnen.
+    const upgradeRec = (rec) => (!rec.bad && rec.box > 0 && rec.box < 5 && rec.box === rec.ok ? { ...rec, box: rec.box + 1 } : rec);
+    const loadProgress = () => {
+      const all = readLocal(PROGRESS_KEY, {}) || {};
+      for (const words of Object.values(all)) {
+        if (!words || typeof words !== 'object') continue; // 'use strict': in einen String schreiben wirft
+        for (const k of Object.keys(words)) {
+          const rec = words[k];
+          if (rec && typeof rec === 'object') words[k] = upgradeRec(rec);
+        }
+      }
+      return all;
+    };
     const wordKey = (w) => `${w.a}\u0001${w.b}`;
     // «Ergänzt, was fehlt»: vorhandene bleiben in ihrer Reihenfolge stehen,
     // neue kommen hinten dazu. Das Verbinden mit einem Ordner und das
@@ -2128,14 +2143,16 @@
       const has = new Set(a.map(wordKey));
       return [...a, ...b.filter((w) => !has.has(wordKey(w)))];
     };
-    const BOX_DAYS = [0, 1, 3, 7, 14];
-    const isDue = (rec, now = Date.now()) =>
-      !rec || !rec.box || now - rec.last >= BOX_DAYS[Math.min(rec.box, 5) - 1] * 864e5;
+    // Stufen ohne Tage: niemand übt regelmässig, an einem Abend darf alles
+    // auf «sitzt» kommen. Wer länger weg war, setzt den Lernstand zurück.
+    const stageOf = (rec) => Math.min(rec?.box || 0, 5); // 0 = neu
     const isWrong = (rec) => !!rec && rec.lastOk === false;
     const applyResult = (rec, ok) => ({
       ok: (rec?.ok || 0) + (ok ? 1 : 0),
       bad: (rec?.bad || 0) + (ok ? 0 : 1),
-      box: ok ? Math.min(5, (rec?.box || 0) + 1) : 1,
+      // neu und gleich gewusst → Stufe 2 («nicht gewusst» heisst sonst nichts);
+      // falsch → zwei zurück: auf «sitzt» ist ein Fehler meist ein Ausrutscher
+      box: ok ? Math.max(2, Math.min(5, stageOf(rec) + 1)) : Math.max(1, stageOf(rec) - 2),
       last: Date.now(),
       lastOk: ok,
     });
@@ -2184,10 +2201,10 @@
     // Ein geteilter Übungs-Link trägt die Einstellungen als eigene Teile
     // (…&mode=write&dir=ab…); die Route ist der erste Teil, der weder Sprache
     // noch Option ist. `go=1` startet die Übung ohne Einstellungsseite.
-    const OPT_KEYS = ['mode', 'forms', 'dir', 'sel', 'from', 'to', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', 'go'];
+    const OPT_KEYS = ['mode', 'forms', 'dir', 'sel', 'upTo', 'range', 'from', 'to', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', 'go'];
     const isOptPart = (x) => OPT_KEYS.includes(x.split('=')[0]);
     const routePart = () => hashParts().find((x) => !x.startsWith('l=') && !isOptPart(x)) || '';
-    const OPT_NUM = ['from', 'to', 'timer'], OPT_BOOL = ['forms', 'hints', 'copy', 'exam', 'penOnly', 'go'];
+    const OPT_NUM = ['upTo', 'from', 'to', 'timer'], OPT_BOOL = ['forms', 'range', 'hints', 'copy', 'exam', 'penOnly', 'go'];
     const optsFromHash = () => {
       const out = {};
       for (const part of hashParts().filter(isOptPart)) {
@@ -2196,11 +2213,12 @@
       }
       return out;
     };
-    // `forms` steht immer drin, auch als 0 — sonst gälte beim Empfänger seine
+    // `forms` und `range` stehen immer drin, auch als 0 — sonst gälte beim Empfänger seine
     // eigene letzte Wahl, und eine Wörter-Übung (samt `go=1`) liefe dort als
     // Wortformen. Bei einem Set ohne Tabellen tut `forms=0` nichts.
     const optsToHash = (opts, go) => {
-      const keep = ['mode', 'forms', 'dir', 'sel', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', ...(opts.sel === 'range' ? ['from', 'to'] : [])];
+      const keep = ['mode', 'forms', 'dir', 'sel', ...(opts.sel === 'stage' ? ['upTo'] : []), 'range', ...(opts.range ? ['from', 'to'] : []),
+        'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer'];
       return keep.map((k) => `&${k}=${typeof opts[k] === 'boolean' ? (opts[k] ? 1 : 0) : opts[k]}`).join('') + (go ? '&go=1' : '');
     };
     const applyLang = (id) => {
@@ -3775,17 +3793,28 @@
 
     // ---------- Set-Seite: Einstellungen für die Runde + Lernstand ----------
     const OPTS_KEY = 'myvoci_practice';
-    const DEFAULT_OPTS = { mode: 'write', input: 'write', forms: false, dir: 'ab', sel: 'all', from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false, timer: 0 };
-    const loadOpts = () => ({ ...DEFAULT_OPTS, ...(readLocal(OPTS_KEY, {}) || {}) });
+    const DEFAULT_OPTS = { mode: 'write', input: 'write', forms: false, dir: 'ab', sel: 'all', upTo: 4, range: false, from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false, timer: 0 };
+    // Früher eine einzige Wahl: «fällig» (`due`) ist heute «nach Stufe» bis
+    // «fast sicher», «Bereich» ein eigener Schalter, der sich mit allem verträgt.
+    // Gilt für Gespeichertes und für alte Links.
+    const normSel = (o) => (o.sel === 'due' ? { ...o, sel: 'stage', upTo: DEFAULT_OPTS.upTo }
+      : o.sel === 'range' ? { ...o, sel: 'all', range: true } : o);
+    const loadOpts = () => normSel({ ...DEFAULT_OPTS, ...(readLocal(OPTS_KEY, {}) || {}) });
+    // Ein Übungs-Link (er trägt immer `sel`) legt die ganze Übung fest: was er
+    // nicht nennt, kommt aus den Vorgaben, nie aus der Wahl des Empfängers —
+    // sonst schnitt dessen gespeicherter Bereich eine geteilte Übung still zu
+    // (Links von vor dem Schalter kennen `range` nicht).
+    const startOpts = (preset) => ({ ...('sel' in preset ? DEFAULT_OPTS : loadOpts()), ...normSel(preset) });
 
     // Bausteine der Set-Seite: Segment-Schalter für kleine Wahlen, Schalter
     // für Ja/Nein, eine Zeile «Beschriftung links, Wahl rechts» (auf dem
     // Handy untereinander). Keine Trennlinien — gegliedert wird über Abstand.
-    // `even`: gleich breite (und damit gleich hohe) Felder, auch wenn eines
-    // auf dem Handy umbricht — für Wahlen mit Icon wie die Eingabe.
-    const Seg = ({ options, value, onChange, even }) => (
-      <div className={`${even ? 'inline-grid' : 'inline-flex flex-wrap'} gap-0.5 p-[3px] rounded-lg border border-linie`}
-        style={even ? { gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` } : undefined}>
+    // `cols`: gleich breite (und damit gleich hohe) Felder in so vielen Spalten,
+    // auch wenn eines auf dem Handy umbricht — für Wahlen mit Icon wie die
+    // Eingabe, oder in zwei Reihen wie die Stufen.
+    const Seg = ({ options, value, onChange, cols }) => (
+      <div className={`${cols ? 'inline-grid' : 'inline-flex flex-wrap'} gap-0.5 p-[3px] rounded-lg border border-linie`}
+        style={cols ? { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` } : undefined}>
         {options.map(([id, label, disabled, title]) => (
           <button key={id} disabled={disabled} onClick={() => onChange(id)} title={title} aria-pressed={value === id}
             className={`px-3 py-1.5 rounded-md text-sm font-semibold flex items-center justify-center gap-1.5 text-center leading-tight transition-colors ${value === id ? 'bg-akzent-weich text-akzent-text' : `text-text-2 ${disabled ? '' : 'hover:bg-hover'}`} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
@@ -3810,6 +3839,10 @@
       </div>
     );
     const NOTE = 'text-xs text-text-3 mt-1.5';
+    const SUBROW = 'flex items-center gap-2 mt-2 text-sm text-text-2'; // Zusatzzeile unter einer Wahl
+    // von/bis darf beim Tippen leer sein (gilt in selectWords als Anfang/Ende),
+    // sonst sprang das Feld auf 1 zurück und die nächste Ziffer hängte sich an
+    const numOrEmpty = (e) => (e.target.value === '' ? '' : +e.target.value);
     const TOL_LABEL = { strict: 'tolStrict', normal: 'tolNormal', loose: 'tolLoose' }; // dazu je `…Hint`
     // Linien-Icons der Modi und Eingaben, eine Farbe (currentColor)
     const MODE_ICON = {
@@ -3895,6 +3928,9 @@
 
     const selectWords = (set, opts, prog) => {
       const recs = set.words.map((w) => prog[wordKey(w)]);
+      // ein leeres von/bis (beim Tippen) gilt als Anfang bzw. Ende
+      const from = opts.from || 1, to = opts.to || set.words.length;
+      const lo = Math.min(from, to), hi = Math.max(from, to);
       // Bestimmen: «rosae» steht dreimal in der Tabelle, gefragt wird es
       // einmal — jede Lesart zählt (s. task in Practice)
       const seen = new Set();
@@ -3905,15 +3941,17 @@
       };
       return set.words.filter((w, i) => (() => {
         if (opts.mode === 'gap' && !gapFor(w)) return false;
+        if (opts.range && (i + 1 < lo || i + 1 > hi)) return false;
         if (opts.sel === 'wrong') return isWrong(recs[i]);
-        if (opts.sel === 'due') return isDue(recs[i]);
-        if (opts.sel === 'range') return i + 1 >= Math.min(opts.from, opts.to) && i + 1 <= Math.max(opts.from, opts.to);
+        if (opts.sel === 'stage') return stageOf(recs[i]) <= opts.upTo; // «neu» immer dabei
         return true;
       })() && once(w)); // erst die Auswahl, dann einmal: sonst verdrängte eine
-                        // nicht gewählte Lesart die gewählte (nur Fehler)
+                        // nicht gewählte Lesart die gewählte (zuletzt falsch)
     };
 
     const BOX_COLORS = ['bg-fach-0', 'bg-fach-1', 'bg-fach-2', 'bg-fach-3', 'bg-fach-4', 'bg-fach-5'];
+    // Der Farbpunkt einer Stufe: Wortliste, Stufenwahl und Legende
+    const StageDot = ({ s, className = '' }) => <span className={`inline-block w-2.5 h-2.5 rounded-full shrink-0 ${BOX_COLORS[s]} ${className}`} />;
     // Die aufgeklappte Wortliste der Set-Seite hängt nur an Wörtern und
     // Lernstand: jeder Tastendruck in «von/bis» zeichnete sonst alle Zeilen neu.
     const WordList = memoLang(({ words, prog }) => (
@@ -3922,7 +3960,7 @@
           const r = prog[wordKey(w)];
           return (
             <li key={i} className="flex items-start gap-2">
-              <span className={`mt-1.5 inline-block w-2.5 h-2.5 rounded-full shrink-0 ${BOX_COLORS[r ? Math.min(r.box, 5) : 0]}`} />
+              <StageDot s={stageOf(r)} className="mt-1.5" />
               <span className="text-text-3 w-6 shrink-0 text-right">{i + 1}.</span>
               <span className="flex-1 min-w-0 break-words"><b>{inline(w.a)}</b> — {inline(w.b)}{(w.h || w.ha || w.hb) && <span className="text-text-3"> ({[w.h, w.ha, w.hb].filter(Boolean).join(' · ')})</span>}</span>
             </li>
@@ -3934,7 +3972,7 @@
       // Ein geteilter Link bringt seine Einstellungen mit (preset) — die gelten
       // für diesen Besuch, gemerkt wird erst, was hier umgestellt wird.
       // `wanted` ist die Wahl, `opts` (unten) das, was bei diesem Set geht
-      const [wanted, setWanted] = useState(() => ({ ...loadOpts(), ...preset }));
+      const [wanted, setWanted] = useState(() => startOpts(preset));
       // Neu eingetragene Schlüssel sollen «mit Kontrolle» sofort freigeben —
       // vor `useSettings`, das JSX des Panels wird vorher ausgewertet
       const [inkKeys, setInkKeys] = useState(() => !!myscriptKeys());
@@ -3972,10 +4010,8 @@
       const dir = fixedDir({ mode: wanted.mode, forms }) ? 'ab' : wanted.dir;
       const n = pool.words.length;
       const recs = pool.words.map((w) => prog[wordKey(w)]);
-      const wrongN = recs.filter(isWrong).length;
-      const dueN = recs.filter((r) => isDue(r)).length;
       const boxes = [0, 0, 0, 0, 0, 0];
-      recs.forEach((r) => { boxes[r ? Math.min(r.box, 5) : 0]++; });
+      recs.forEach((r) => { boxes[stageOf(r)]++; });
       const seen = recs.filter(Boolean).length;
       const gapN = useMemo(() => pool.words.filter(gapFor).length, [pool]);
       // Eine Stelle entscheidet, ob ein Modus geht, und warum nicht (der
@@ -4008,6 +4044,9 @@
       const inkOff = modeOff('ink');
       const writing = group === 'write';
       const chosen = useMemo(() => selectWords(pool, opts, prog), [pool, opts, prog]);
+      // Die Zahlen der Auswahl zählt dieselbe Funktion wie der Startknopf (Bereich,
+      // Lückentext ohne Satz, Bestimmen einmal) — sonst stünde «alle 12» über «8 Wörter»
+      const [allN, wrongN] = useMemo(() => ['all', 'wrong'].map((sel) => (sel === opts.sel ? chosen : selectWords(pool, { ...opts, sel }, prog)).length), [pool, opts, prog, chosen]);
       // «Direkt starten» aus dem Link — nur beim ersten Anzeigen (s. Trainer).
       // Ein gleichwertiger Ersatz (MODE_FALLBACK) startet auch, «Schreiben»
       // statt Lückentext nicht: das wäre eine andere Übung. Startet die Runde
@@ -4041,7 +4080,7 @@
                 <h2 className="text-lg font-semibold text-text mb-3">{t('whatHow')}</h2>
                 {/* Ohne Tabellen merkt ein Tipp auf «Wörter» nichts: sonst
                     verlöre das nächste Set mit Tabellen die Wahl «Wortformen» */}
-                <Seg even value={forms ? 'forms' : 'words'} onChange={(v) => formsOk && set_({ forms: v === 'forms' })}
+                <Seg cols={2} value={forms ? 'forms' : 'words'} onChange={(v) => formsOk && set_({ forms: v === 'forms' })}
                   options={[['words', t('whatWords', set.words.length)],
                     ['forms', t('whatForms', formSet(set).words.length), !formsOk, noForms]]} />
                 <p className={NOTE}>{noForms || t(forms ? 'formsHint' : 'wordsHint')} <HelpLink onClick={() => setHelp('forms')} /></p>
@@ -4070,7 +4109,7 @@
               <div className="space-y-4 mt-6">
                 {writing && (
                   <OptRow label={t('input')}>
-                    <Seg even value={opts.mode} onChange={(m) => set_({ mode: m, input: m })}
+                    <Seg cols={WRITE_INPUTS.length} value={opts.mode} onChange={(m) => set_({ mode: m, input: m })}
                       options={WRITE_INPUTS.map((m) => {
                         const off = modeOff(m);
                         return [m, (
@@ -4098,13 +4137,22 @@
                 )}
                 <OptRow label={t(forms ? 'formList' : 'rowWords')}>
                   <Seg value={opts.sel} onChange={(sel) => set_({ sel })}
-                    options={[['all', t('selAllN', n)], ['wrong', t('selWrongN', wrongN), !wrongN], ['due', t('selDueN', dueN)], ['range', t('selRange')]]} />
-                  {opts.sel === 'range' && (
-                    <div className="flex items-center gap-2 mt-2 text-sm text-text-2">
+                    options={[['all', t('selAllN', allN)], ['stage', t('selStage')], ['wrong', t('selWrongN', wrongN), !wrongN]]} />
+                  {opts.sel === 'stage' && (
+                    <div className={SUBROW}>
+                      {t('selUpTo')}
+                      {/* zwei Reihen statt eines Umbruchs mitten in der Skala */}
+                      <Seg cols={2} value={opts.upTo} onChange={(upTo) => set_({ upTo })}
+                        options={[1, 2, 3, 4].map((s) => [s, <><StageDot s={s} />{t('boxLabel', s)}</>])} />
+                    </div>
+                  )}
+                  <div className="mt-3"><Switch checked={opts.range} onChange={(range) => set_({ range })}>{t('selRangeOnly')}</Switch></div>
+                  {opts.range && (
+                    <div className={SUBROW}>
                       {t('rangeFrom')}
-                      <input type="number" min={1} max={n} value={opts.from} onChange={(e) => set_({ from: +e.target.value || 1 })} className={`w-20 ${INPUT}`} />
+                      <input type="number" min={1} max={n} value={opts.from} onChange={(e) => set_({ from: numOrEmpty(e) })} className={`w-20 ${INPUT}`} />
                       {t('rangeTo')}
-                      <input type="number" min={1} max={n} value={opts.to} onChange={(e) => set_({ to: +e.target.value || n })} className={`w-20 ${INPUT}`} />
+                      <input type="number" min={1} max={n} value={opts.to} onChange={(e) => set_({ to: numOrEmpty(e) })} className={`w-20 ${INPUT}`} />
                       <span className="text-text-3">/ {n}</span>
                     </div>
                   )}
@@ -4163,14 +4211,14 @@
             <div className={`${CARD} p-6 mb-6`}>
               <div className="flex items-center gap-2 mb-3">
                 <h2 className="text-lg font-semibold text-text flex-1">{t('progress')}</h2>
-                <span className="text-sm text-text-2">{t('wrongCount', wrongN)} · {t('dueCount', dueN)}</span>
+                <span className="text-sm text-text-2">{t('sitCount', boxes[5], n)}</span>
               </div>
               <div className="flex h-4 rounded-full overflow-hidden bg-linie mb-2">
                 {boxes.map((c, i) => c > 0 && <div key={i} className={`${BOX_COLORS[i]}`} style={{ width: `${(c / n) * 100}%` }} title={`${t('boxLabel', i)}: ${c}`} />)}
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-2 mb-3">
                 {boxes.map((c, i) => (
-                  <span key={i} className="flex items-center gap-1"><span className={`inline-block w-3 h-3 rounded-sm ${BOX_COLORS[i]}`} />{t('boxLabel', i)}: {c}</span>
+                  <span key={i} className="flex items-center gap-1"><StageDot s={i} />{t('boxLabel', i)}: {c}</span>
                 ))}
               </div>
               <p className="text-xs text-text-3 mb-3">{t('progressHint')}</p>
@@ -5185,8 +5233,8 @@
 
     // ---------- Tabelle ausfüllen ----------
     // Eine Tabelle nach der anderen. Leer sind die gewählten Formen (alle,
-    // nur Fehler, fällig, Bereich — dieselbe Auswahl wie sonst), die übrigen
-    // stehen schon da: so übt «nur Fehler» genau die Lücken, im Zusammenhang.
+    // nach Stufe, zuletzt falsch, Bereich — dieselbe Auswahl wie sonst), die übrigen
+    // stehen schon da: so übt «zuletzt falsch» genau die Lücken, im Zusammenhang.
     // «Prüfen» wertet jede leere Zelle für sich (`forms`: ohne Tippfehler-
     // und Artikel-Toleranz); gezählt wird pro Form, wie in den anderen Modi.
     // Enter springt spaltenweise weiter — eine Zeitform von oben nach unten.
@@ -5613,9 +5661,9 @@
               const mine = { ...(next[target] || {}) };
               for (const [wk, rec] of Object.entries(words || {})) {
                 // Nur brauchbare Einträge: ein fehlendes `box`/`last` machte
-                // aus dem Fortschrittsbalken NaN-Breiten und «nie fällig».
+                // aus dem Fortschrittsbalken NaN-Breiten.
                 if (!rec || typeof rec.box !== 'number' || typeof rec.last !== 'number') continue;
-                if (!mine[wk] || rec.last > mine[wk].last) mine[wk] = rec;
+                if (!mine[wk] || rec.last > mine[wk].last) mine[wk] = upgradeRec(rec);
               }
               next[target] = mine;
             }
