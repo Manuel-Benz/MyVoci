@@ -496,7 +496,7 @@
         confirmDeleteSet: (title) => `«${title}» löschen?`,
         confirmDiscard: 'Änderungen verwerfen?',
         confirmReset: 'Lernstand dieses Sets zurücksetzen?',
-        qrTooBig: 'Dieses Set ist zu gross für einen QR-Code — nutze den Direktlink.',
+        qrFailed: 'Der QR-Code geht gerade nicht — nutze den Direktlink.',
         qrParts: (i, n) => `Code ${i} von ${n} — die Codes wechseln von selbst. Mit dem Scan-Knopf von MyVoci einlesen, die Kamera-App kann nur einzelne Codes.`,
         // Editor
         editSet: 'Set bearbeiten',
@@ -712,6 +712,17 @@
         modeParseShort: 'Person, Fall … erkennen',
         modeTable: 'Tabelle',
         modeTableShort: 'ganze Tabelle ausfüllen',
+        modeDefense: 'Verteidigen',
+        modeDefenseShort: 'Burg gegen Wörter halten',
+        pace: 'Tempo',
+        paceCalm: 'ruhig', paceNormal: 'normal', paceFast: 'schnell',
+        paceCalmHint: 'Die Gegner warten, solange du tippst.',
+        paceNormalHint: 'Die Gegner laufen weiter, auch beim Tippen.',
+        paceFastHint: 'Wie normal, aber flinker und dichter.',
+        gameLoading: 'Spiel wird geladen …',
+        gameLoadFail: 'Das Spiel liess sich nicht laden. Bist du online?',
+        gameStale: 'MyVoci wurde aktualisiert. Lade die Seite neu, dann geht das Spiel.',
+        reloadPage: 'Neu laden',
         modeFormsOnly: 'nur mit Wortformen',
         parseOf: (lemma, meaning) => `Form von ${lemma}${meaning ? ` (${meaning})` : ''}`,
         tableSelHint: 'Die gewählten Formen sind leer, die übrigen stehen schon in der Tabelle.',
@@ -917,7 +928,7 @@
         confirmDeleteSet: (title) => `Delete “${title}”?`,
         confirmDiscard: 'Discard changes?',
         confirmReset: 'Reset the progress of this set?',
-        qrTooBig: 'This set is too big for a QR code — use the direct link.',
+        qrFailed: 'The QR code is not available right now — use the direct link.',
         qrParts: (i, n) => `Code ${i} of ${n} — the codes change by themselves. Read them with MyVoci's scan button, the camera app only reads single codes.`,
         editSet: 'Edit set',
         titleLabel: 'Title',
@@ -1131,6 +1142,17 @@
         modeParseShort: 'name person, case …',
         modeTable: 'Table',
         modeTableShort: 'fill in the whole table',
+        modeDefense: 'Defend',
+        modeDefenseShort: 'hold the castle against words',
+        pace: 'Pace',
+        paceCalm: 'calm', paceNormal: 'normal', paceFast: 'fast',
+        paceCalmHint: 'Enemies wait while you type.',
+        paceNormalHint: 'Enemies keep walking while you type.',
+        paceFastHint: 'Like normal, but quicker and closer together.',
+        gameLoading: 'Loading the game …',
+        gameLoadFail: 'The game could not be loaded. Are you online?',
+        gameStale: 'MyVoci has been updated. Reload the page to play.',
+        reloadPage: 'Reload',
         modeFormsOnly: 'word forms only',
         parseOf: (lemma, meaning) => `form of ${lemma}${meaning ? ` (${meaning})` : ''}`,
         tableSelHint: 'The chosen forms are empty, the others are already filled in.',
@@ -1237,25 +1259,38 @@
     const sideName = (set, side) => (set.langs && set.langs[side] ? langName(set.langs[side]) : t(side === 0 ? 'sideA' : 'sideB'));
     const TTS_LOCALE = { de: 'de-DE', fr: 'fr-FR', en: 'en-GB', it: 'it-IT', es: 'es-ES', pt: 'pt-PT' };
 
-    // Eine Bibliothek erst holen, wenn jemand sie braucht. `get` liefert das
-    // Global; kommt trotz `onload` keins an (Captive Portal, Werbeblocker,
-    // Fehlerseite mit Status 200), gilt das als Fehlschlag — sonst bliebe die
-    // gemerkte Promise für die ganze Sitzung auf `undefined` stehen und kein
-    // späterer Versuch lüde je nach.
-    const scriptCache = {};
-    const loadScript = (url, get) => {
+    // Erst holen, was jemand braucht (Bibliothek, Spiel), und jedes nur
+    // einmal. `get` liefert das Ergebnis; kommt trotz Erfolg keins an (Captive
+    // Portal, Werbeblocker, Fehlerseite mit Status 200), gilt das als
+    // Fehlschlag — sonst bliebe die gemerkte Promise für die ganze Sitzung auf
+    // `undefined` stehen und kein späterer Versuch lüde je nach. Ein hängendes
+    // Schulnetz meldet sich nie (WebKit wartet ewig): nach LOAD_TIMEOUT bricht
+    // `start` ab (`signal`) — sonst fiele iink nie auf die Fläche ohne
+    // Erkennung zurück und der Scanner nie auf «geht nicht».
+    const LOAD_TIMEOUT = 30000;
+    const loadCache = {};
+    const loadOnce = (key, get, start) => {
       const there = get();
       if (there) return Promise.resolve(there);
-      if (!scriptCache[url]) scriptCache[url] = new Promise((ok, fail) => {
-        const el = document.createElement('script');
-        el.src = url;
-        const giveUp = () => { scriptCache[url] = null; el.remove(); fail(new Error(url)); };
-        el.onload = () => { const lib = get(); lib ? ok(lib) : giveUp(); };
-        el.onerror = giveUp;
-        document.head.appendChild(el);
-      });
-      return scriptCache[url];
+      if (!loadCache[key]) {
+        const stop = new AbortController();
+        const timer = setTimeout(() => stop.abort(), LOAD_TIMEOUT);
+        loadCache[key] = start(stop.signal)
+          .then(() => { const got = get(); if (!got) throw new Error(key); return got; })
+          .catch((e) => { loadCache[key] = null; throw e; })
+          .finally(() => clearTimeout(timer));
+      }
+      return loadCache[key];
     };
+    const loadScript = (url, get) => loadOnce(url, get, (signal) => new Promise((ok, fail) => {
+      const el = document.createElement('script');
+      el.src = url;
+      const giveUp = () => { el.remove(); fail(new Error(url)); };
+      el.onload = () => (get() ? ok() : giveUp());
+      el.onerror = giveUp;
+      signal.addEventListener('abort', giveUp);
+      document.head.appendChild(el);
+    }));
 
     // ---------- Handschrift-Erkennung (MyScript iink, Cloud) ----------
     // Optional: mit den zwei Schlüsseln aus developer.myscript.com erkennt der
@@ -2207,7 +2242,7 @@
     // Ein geteilter Übungs-Link trägt die Einstellungen als eigene Teile
     // (…&mode=write&dir=ab…); die Route ist der erste Teil, der weder Sprache
     // noch Option ist. `go=1` startet die Übung ohne Einstellungsseite.
-    const OPT_KEYS = ['mode', 'forms', 'dir', 'sel', 'upTo', 'range', 'from', 'to', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', 'go'];
+    const OPT_KEYS = ['mode', 'pace', 'forms', 'dir', 'sel', 'upTo', 'range', 'from', 'to', 'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', 'go'];
     const isOptPart = (x) => OPT_KEYS.includes(x.split('=')[0]);
     const routePart = () => hashParts().find((x) => !x.startsWith('l=') && !isOptPart(x)) || '';
     const OPT_NUM = ['upTo', 'from', 'to', 'timer'], OPT_BOOL = ['forms', 'range', 'hints', 'copy', 'exam', 'penOnly', 'go'];
@@ -2224,7 +2259,7 @@
     // Wortformen. Bei einem Set ohne Tabellen tut `forms=0` nichts.
     const optsToHash = (opts, go) => {
       const keep = ['mode', 'forms', 'dir', 'sel', ...(opts.sel === 'stage' ? ['upTo'] : []), 'range', ...(opts.range ? ['from', 'to'] : []),
-        'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer'];
+        'order', 'level', 'hints', 'copy', 'exam', 'penOnly', 'timer', ...(PACE_MODES.includes(opts.mode) ? ['pace'] : [])];
       return keep.map((k) => `&${k}=${typeof opts[k] === 'boolean' ? (opts[k] ? 1 : 0) : opts[k]}`).join('') + (go ? '&go=1' : '');
     };
     const applyLang = (id) => {
@@ -2288,6 +2323,14 @@
         const j = Math.floor(Math.random() * (i + 1));
         [out[i], out[j]] = [out[j], out[i]];
       }
+      return out;
+    };
+    // In Gruppen zu `size`; eine Restgruppe mit höchstens `tiny` Einträgen
+    // kommt an die vorige (Zuordnen, Wellen im Spiel)
+    const groupsOf = (list, size, tiny) => {
+      const out = [];
+      for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+      if (out.length > 1 && out[out.length - 1].length <= tiny) out[out.length - 2].push(...out.pop());
       return out;
     };
 
@@ -2735,47 +2778,60 @@
     const QR_QUIET = 4;
     const QR_NARROW = 384; // Inhaltsbreite von `Modal` ohne `wide`
     // Ein grosses Set (4 KB Datei) gibt einen Link von über 2000 Zeichen, ein
-    // Code mit 150 Modulen — das las das iPad vom Bildschirm nicht mehr, und
+    // Code mit 150 Modulen — das las das iPad vom Bildschirm nicht mehr und
     // ab etwa 3000 Zeichen passt gar nichts mehr in einen Code. Darum kommt
-    // ein langer Link als Folge kleiner Codes (je etwa 80 Module), die von
+    // ein langer Link als Folge kleiner Codes (Version 15, 77 Module), die von
     // selbst wechseln; der Scanner sammelt sie in beliebiger Reihenfolge.
-    // Ein kurzer Link bleibt ein Code, den auch die Kamera-App liest.
-    const QR_SINGLE = 700, QR_PART = 450, QR_FRAME_MS = 700;
+    // Bis 1000 Zeichen (Version 22, 105 Module — so gross las das iPad ihn
+    // seit 5 px pro Modul) bleibt es ein Code, den auch die Kamera-App liest.
+    const QR_SINGLE = 1000, QR_PART = 450, QR_FRAME_MS = 700;
     const QR_TAG = 'MYVOCI:';
     const textId = (text) => {
       let h = 5381;
       for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
       return h.toString(36);
     };
-    // Gleich lange Teile, damit alle Codes gleich gross sind und nichts springt
+    // Gleich lange Teile; gleich gross macht sie erst `QrModal` (eine Version für alle)
     const qrParts = (url) => {
       if (url.length <= QR_SINGLE) return [url];
       const n = Math.ceil(url.length / QR_PART), size = Math.ceil(url.length / n), id = textId(url);
       return Array.from({ length: n }, (_, i) => `${QR_TAG}${i + 1}/${n}/${id}:${url.slice(i * size, (i + 1) * size)}`);
     };
     const readPart = (text) => {
-      const m = /^MYVOCI:(\d+)\/(\d+)\/(\w+):/.exec(text);
-      return m && { i: +m[1], n: +m[2], id: m[3], data: text.slice(m[0].length) };
+      const m = text.startsWith(QR_TAG) && /^(\d+)\/(\d+)\/(\w+):/.exec(text.slice(QR_TAG.length));
+      return m ? { i: +m[1], n: +m[2], id: m[3], data: text.slice(QR_TAG.length + m[0].length) } : null;
+    };
+    // `type` 0 = so klein wie möglich; eine Folge zeichnet alle Teile in der
+    // Version des längsten — der letzte ist kürzer, ab Teil 10 der Kopf länger
+    // und der Code (samt `wide`) sprang sonst im Takt der Folge
+    const makeQr = (text, type) => {
+      try {
+        const code = window.qrcode(type, 'L');
+        code.addData(text);
+        code.make();
+        return { type: (code.getModuleCount() - 17) / 4, svg: code.createSvgTag({ cellSize: 1, margin: QR_QUIET, scalable: true }), px: (code.getModuleCount() + 2 * QR_QUIET) * QR_PX };
+      } catch { return null; }
     };
     const QrModal = ({ title, hint, url, onClose, onCopy }) => {
-      const codes = useMemo(() => {
-        try {
-          return qrParts(url).map((part) => {
-            const code = window.qrcode(0, 'L');
-            code.addData(part);
-            code.make();
-            return { svg: code.createSvgTag({ cellSize: 1, margin: QR_QUIET, scalable: true }), px: (code.getModuleCount() + 2 * QR_QUIET) * QR_PX };
-          });
-        } catch { return null; }
+      // Der längste Teil gibt die Version für alle und ist gleich fertig, die
+      // übrigen kommen, wenn sie dran sind (je ~50 ms auf einem älteren iPad
+      // — alle auf einmal hielten das Öffnen auf)
+      const { parts, type, codes } = useMemo(() => {
+        const all = qrParts(url);
+        const long = all.reduce((a, p, i) => (p.length > all[a].length ? i : a), 0);
+        const first = makeQr(all[long], 0);
+        return { parts: all, type: first ? first.type : 0, codes: { [long]: first } };
       }, [url]);
       const [frame, setFrame] = useState(0);
-      const many = codes && codes.length > 1;
+      const many = parts.length > 1;
       useEffect(() => {
         if (!many) return;
-        const id = setInterval(() => setFrame((f) => (f + 1) % codes.length), QR_FRAME_MS);
+        const id = setInterval(() => setFrame((f) => (f + 1) % parts.length), QR_FRAME_MS);
         return () => clearInterval(id);
-      }, [codes]);
-      const qr = codes && codes[frame % codes.length];
+      }, [parts]);
+      const at = frame % parts.length;
+      if (!(at in codes)) codes[at] = makeQr(parts[at], type);
+      const qr = codes[at];
       return (
         <Modal onClose={onClose} wide={qr && qr.px > QR_NARROW}>
           <h2 className="text-xl font-bold text-center mb-4 text-text">{title}</h2>
@@ -2783,8 +2839,8 @@
           {qr ? (
             <div className="mx-auto mb-4 aspect-square [&>svg]:w-full [&>svg]:h-full"
               style={{ width: `min(100%, max(14rem, min(${qr.px}px, calc(85vh - 16rem))))` }} dangerouslySetInnerHTML={{ __html: qr.svg }} />
-          ) : <div className="text-center text-rot mb-4">{t('qrTooBig')}</div>}
-          {many && <p className="text-sm text-text-2 text-center mb-4">{t('qrParts', frame % codes.length + 1, codes.length)}</p>}
+          ) : <div className="text-center text-rot mb-4">{t('qrFailed')}</div>}
+          {many && <p className="text-sm text-text-2 text-center mb-4">{t('qrParts', at + 1, parts.length)}</p>}
           <div className="text-xs text-text-3 break-all max-h-16 overflow-y-auto mb-4">{url}</div>
           <div className="flex gap-2">
             <button onClick={onCopy} className={`flex-1 ${BTN_PRIMARY} px-4 py-2`}>{t('copyLinkBtn')}</button>
@@ -3848,18 +3904,24 @@
 
     // ---------- Set-Seite: Einstellungen für die Runde + Lernstand ----------
     const OPTS_KEY = 'myvoci_practice';
-    const DEFAULT_OPTS = { mode: 'write', input: 'write', forms: false, dir: 'ab', sel: 'all', upTo: 4, range: false, from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false, timer: 0 };
+    // Tempo der Spiele mit Gegnern (`PACE_MODES`), dazu je `…Hint`
+    const PACE_LABEL = { calm: 'paceCalm', normal: 'paceNormal', fast: 'paceFast' };
+    const PACES = Object.keys(PACE_LABEL);
+    const DEFAULT_OPTS = { mode: 'write', input: 'write', forms: false, dir: 'ab', sel: 'all', upTo: 4, range: false, from: 1, to: 20, order: 'random', level: 'normal', hints: true, copy: true, exam: false, penOnly: false, timer: 0, pace: 'normal' };
     // Früher eine einzige Wahl: «fällig» (`due`) ist heute «nach Stufe» bis
     // «fast sicher», «Bereich» ein eigener Schalter, der sich mit allem verträgt.
     // Gilt für Gespeichertes und für alte Links.
     const normSel = (o) => (o.sel === 'due' ? { ...o, sel: 'stage', upTo: DEFAULT_OPTS.upTo }
       : o.sel === 'range' ? { ...o, sel: 'all', range: true } : o);
-    const loadOpts = () => normSel({ ...DEFAULT_OPTS, ...(readLocal(OPTS_KEY, {}) || {}) });
+    // Ein unbekanntes Tempo (Link von Hand, `pace=toString`) liess das Spiel
+    // stehen (NaN) — wie die Auswahl beim Lesen bereinigt
+    const normOpts = (o) => normSel(PACES.includes(o.pace) ? o : { ...o, pace: DEFAULT_OPTS.pace });
+    const loadOpts = () => normOpts({ ...DEFAULT_OPTS, ...(readLocal(OPTS_KEY, {}) || {}) });
     // Ein Übungs-Link (er trägt immer `sel`) legt die ganze Übung fest: was er
     // nicht nennt, kommt aus den Vorgaben, nie aus der Wahl des Empfängers —
     // sonst schnitt dessen gespeicherter Bereich eine geteilte Übung still zu
     // (Links von vor dem Schalter kennen `range` nicht).
-    const startOpts = (preset) => ({ ...('sel' in preset ? DEFAULT_OPTS : loadOpts()), ...normSel(preset) });
+    const startOpts = (preset) => normOpts({ ...('sel' in preset ? DEFAULT_OPTS : loadOpts()), ...preset });
 
     // Bausteine der Set-Seite: Segment-Schalter für kleine Wahlen, Schalter
     // für Ja/Nein, eine Zeile «Beschriftung links, Wahl rechts» (auf dem
@@ -3911,6 +3973,7 @@
       scramble: <><path d="M3 7h3c3.5 0 5.5 10 9 10h5M17.5 14l2.5 3-2.5 3M3 17h3c1.4 0 2.5-1.6 3.5-3.4M14 9.5C15 8 15.8 7 17 7h3M17.5 4l2.5 3-2.5 3" /></>,
       parse: <><path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8.5-8.5 8.5z" /><circle cx="8" cy="8" r="1.5" /></>,
       table: <><rect x="3.5" y="4" width="17" height="16" rx="2" /><path d="M3.5 9.5h17M3.5 14.5h17M9.5 4v16" /></>,
+      defense: <><path d="M4 21V9h3v2h2V9h2v2h2V9h2v2h2V9h3v12z" /><path d="M10 21v-4a2 2 0 0 1 4 0v4" /><path d="M12 9V3l4 1.5L12 6" /></>,
     };
     const INPUT_ICON = {
       write: <><rect x="2.5" y="6" width="19" height="12" rx="2" /><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M8 14h8" /></>,
@@ -3930,7 +3993,7 @@
     );
 
     // Welche Modi gibt es, und was braucht ein Modus vom Set?
-    const MODES = ['write', 'pen', 'ink', 'cards', 'choice', 'match', 'gap', 'listen', 'speak', 'scramble', 'parse', 'table'];
+    const MODES = ['write', 'pen', 'ink', 'cards', 'choice', 'match', 'gap', 'listen', 'speak', 'scramble', 'defense', 'parse', 'table'];
     // Nur mit Wortformen (`opts.forms`): Bestimmen (Form → Zeile/Spalte) und
     // Tabelle ausfüllen. Ohne Wortformen fehlen die Kacheln ganz — bei den
     // meisten Sets wären sie sonst dauerhaft grau, und am Set liesse sich das
@@ -3955,7 +4018,7 @@
     const HAND_MODES = ['pen', 'ink']; // Schreibfläche statt Eingabefeld
     // Gleichwertiger Ersatz, wenn ein Modus bei diesem Set nicht geht (sonst «Schreiben»)
     const MODE_FALLBACK = { ink: 'pen' };
-    const MODE_LABEL = { write: 'modeWrite', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', speak: 'modeSpeak', scramble: 'modeScramble', parse: 'modeParse', table: 'modeTable' };
+    const MODE_LABEL = { write: 'modeWrite', cards: 'modeCards', choice: 'modeChoice', match: 'modeMatch', gap: 'modeGap', listen: 'modeListen', speak: 'modeSpeak', scramble: 'modeScramble', parse: 'modeParse', table: 'modeTable', defense: 'modeDefense' };
     // Modi, die der Rechner selber werten kann — Voraussetzung für Blitzrunde
     // und Prüfung (beides braucht ein Urteil ohne Zutun des Übenden).
     const AUTO_MODES = ['write', 'gap', 'listen', 'choice', 'scramble', 'parse'];
@@ -3964,7 +4027,8 @@
     // Wer nach Toleranz gewertet wird, muss sie auch einstellen können: die
     // Handschrift mit Kontrolle hat kein Eingabefeld, wird aber genauso
     // gemessen — sonst gälte still, was zuletzt bei der Tastatur gewählt war.
-    const LEVEL_MODES = [...TYPED_MODES, 'ink', 'table'];
+    const LEVEL_MODES = [...TYPED_MODES, 'ink', 'table', 'defense'];
+    const PACE_MODES = ['defense']; // Gegner laufen: Zeile «Tempo», `&pace=` im Link
     // Liste ganz verlangt (`W: alle`): gewertet beim Schreiben, von Hand oder
     // getippt, bei Karteikarten nur als Vermerk
     const NEED_ALL_MODES = [...WRITE_INPUTS, 'cards'];
@@ -4111,6 +4175,9 @@
       const [autoStart] = useState(() => go && (mode === wanted.mode || !!MODE_FALLBACK[wanted.mode]) && chosen.length > 0);
       useEffect(() => { if (autoStart) onStart(opts, chosen); }, []);
       useRand(!autoStart);
+      // Ein Spiel schon holen, während die Einstellungen gewählt werden:
+      // dann steht es beim Start bereit (Fehler meldet erst die Runde)
+      useEffect(() => { if (GAME_FILE[opts.mode]) loadGame(opts.mode).catch(() => {}); }, [opts.mode]);
       const A = sideName(set, 0), B = sideName(set, 1);
 
       return (
@@ -4216,6 +4283,12 @@
                 <OptRow label={t('order')}>
                   <Seg value={opts.order} onChange={(order) => set_({ order })} options={[['random', t('orderRandom')], ['file', t('orderFile')]]} />
                 </OptRow>
+                {PACE_MODES.includes(opts.mode) && (
+                  <OptRow label={t('pace')}>
+                    <Seg value={opts.pace} onChange={(pace) => set_({ pace })} options={PACES.map((p) => [p, t(PACE_LABEL[p])])} />
+                    <p className={NOTE}>{t(PACE_LABEL[opts.pace] + 'Hint')}</p>
+                  </OptRow>
+                )}
                 {LEVEL_MODES.includes(opts.mode) && (
                   <OptRow label={t('tolerance')}>
                     <Seg value={opts.level} onChange={(level) => set_({ level })} options={Object.entries(TOL_LABEL).map(([id, key]) => [id, t(key)])} />
@@ -4314,6 +4387,12 @@
       }));
     };
     const promptOf = (item) => (item.dir === 'ab' ? item.word.a : item.word.b);
+    // Hinweise zur Frage: H: immer, HF:/HA: nur der gefragten Seite (der der
+    // gesuchten verriete das Wort, er kommt erst mit der Lösung)
+    const promptHint = (item) => [item.word.h, item.dir === 'ab' ? item.word.ha : item.word.hb].filter(Boolean).join(' · ');
+    // Die übrigen Lösungen der Runde: wer eine davon exakt tippt, hat
+    // verwechselt, nicht sich vertippt (s. checkAnswer)
+    const otherSolutions = (words, item, solution) => words.map((w) => (item.dir === 'ab' ? w.b : w.a)).filter((s) => s !== solution);
     const solutionOf = (item) => (item.dir === 'ab' ? item.word.b : item.word.a);
     const langOf = (set, item, side) => set.langs && set.langs[(item.dir === 'ab') === (side === 'prompt') ? 0 : 1];
     // Erste Alternative ohne Klammern: was vorgelesen und im Buchstabensalat gezeigt wird
@@ -4711,9 +4790,7 @@
         // Abschreiben nur bei einem Feld — eine ganze Liste abzuschreiben ist Strafarbeit
         setPhase(r.status === 'wrong' && opts.copy && TYPED_MODES.includes(mode) && !task.need ? 'copy' : 'feedback');
       };
-      // Die übrigen Lösungen dieser Runde: wer eine davon exakt tippt, hat
-      // verwechselt, nicht sich vertippt (s. checkAnswer).
-      const others = useMemo(() => (item ? words.map((w) => (item.dir === 'ab' ? w.b : w.a)).filter((s) => s !== task.solution) : []), [item]);
+      const others = useMemo(() => (item ? otherSolutions(words, item, task.solution) : []), [item]);
       // Bestimmen: fertig gewählt, wenn Zeile und (falls es sie gibt) Spalte stehen
       const parseReady = (p) => p.r != null && (!item.word.tab.cols.length || p.c != null);
       // Eine Stelle fürs Werten — Knopf, Handschrift, Bestimmen und Wecker.
@@ -4881,9 +4958,8 @@
       // gefragten sofort, bei der gesuchten erst mit der Lösung. Sonst
       // verraten Stammformen oder Genitiv das gesuchte Wort.
       const showHints = opts.hints && !exam;
-      const sideHint = (side) => (side === 'a' ? item.word.ha : item.word.hb);
-      const hint = showHints && [item.word.h, sideHint(item.dir === 'ab' ? 'a' : 'b')].filter(Boolean).join(' · ');
-      const answerHint = showHints && sideHint(item.dir === 'ab' ? 'b' : 'a');
+      const hint = showHints && promptHint(item);
+      const answerHint = showHints && (item.dir === 'ab' ? item.word.hb : item.word.ha);
       const answerHintLine = answerHint && <div className="text-sm text-text-2 mt-1">{answerHint}</div>;
       const needNote = task.need && (
         <div className="text-sm font-semibold text-akzent-text mb-2">{t(HAND_MODES.includes(mode) ? 'needAllPen' : 'needAll', task.need.length)}</div>
@@ -5197,14 +5273,8 @@
     // fertig, wenn alle Paare stehen.
     const MATCH_GROUP = 6;
     const MatchRound = ({ set, opts, words, onDone, onBack, onResult }) => {
-      const [groups] = useState(() => {
-        const list = opts.order === 'random' ? shuffleArray(words) : words;
-        const out = [];
-        for (let i = 0; i < list.length; i += MATCH_GROUP) out.push(list.slice(i, i + MATCH_GROUP));
-        // Eine Restgruppe mit einem einzigen Paar wäre keine Aufgabe: ans Ende der vorigen
-        if (out.length > 1 && out[out.length - 1].length === 1) out[out.length - 2].push(...out.pop());
-        return out;
-      });
+      // Eine Restgruppe mit einem einzigen Paar wäre keine Aufgabe: ans Ende der vorigen
+      const [groups] = useState(() => groupsOf(opts.order === 'random' ? shuffleArray(words) : words, MATCH_GROUP, 1));
       const [g, setG] = useState(0);
       const [right, setRight] = useState(() => shuffleArray(groups[0]));
       const [left, setLeft] = useState(null); // gewähltes Wort links
@@ -5422,10 +5492,65 @@
       );
     };
 
+    // ---------- Spiele: eigene Dateien, erst bei Bedarf geladen ----------
+    // Ein Spiel ist eine Runde wie MatchRound, steht aber in `spiele/` und
+    // kommt erst, wenn jemand es wählt: der Start der App bleibt gleich
+    // schnell und index.html wächst nicht mit jedem Spiel. `runJsx` (unten im
+    // Lader) übersetzt es wie das App-Skript und lässt es in einer eigenen
+    // Funktion laufen: es sieht alles, was hier auf oberster Ebene steht
+    // (`checkAnswer`, `t`, `PracticeFrame` …), seine eigenen Namen bleiben
+    // drinnen und es trägt sich selbst ein (`GAMES.defense = …`). Seine
+    // Texte hängt es an `I18N` an; was die Set-Seite vor dem Laden zeigt
+    // (Kachel, Tempo), steht hier.
+    const GAMES = {};
+    const GAME_FILE = { defense: 'spiele/verteidigen.jsx' };
+    // Was ein Spiel von der App braucht (Helfer, Props, Rückgabe von `onDone`).
+    // Ändert sich das, steigt die Zahl hier und im Spiel (`DefenseRound.api`):
+    // `no-cache` holt immer das neuste Spiel, die laufende App kann aber älter
+    // sein (Pages cacht index.html 10 min, die Home-Bildschirm-App lebt Tage)
+    // — dann «neu laden» statt eines Absturzes mitten im Spiel.
+    const GAME_API = 1;
+    const loadGame = (mode) => loadOnce(GAME_FILE[mode], () => GAMES[mode], (signal) =>
+      fetch(GAME_FILE[mode], { cache: 'no-cache', signal })
+        .then((r) => { if (!r.ok) throw new Error(GAME_FILE[mode]); return r.text(); })
+        .then((code) => {
+          runJsx(code, true);
+          if (GAMES[mode] && GAMES[mode].api !== GAME_API) { delete GAMES[mode]; throw Object.assign(new Error('stale'), { stale: true }); }
+        }));
+    // Laden in der Kopfzeile einer Runde: «Beenden» geht, solange es dauert
+    const GameRound = (props) => {
+      const mode = props.opts.mode;
+      const [Game, setGame] = useState(() => GAMES[mode] || null);
+      const [failed, setFailed] = useState(null); // I18N-Schlüssel des Grundes
+      useEffect(() => {
+        if (!Game) loadGame(mode).then((g) => setGame(() => g)).catch((e) => { console.error(e); setFailed(e.stale ? 'gameStale' : 'gameLoadFail'); });
+      }, []);
+      if (Game) return <Game {...props} />;
+      return (
+        <div className={`${SCREEN} p-3 sm:p-6`}>
+          <PracticeFrame set={props.set} pos={0} queue={1} done={0} total={props.words.length} item={null} onQuit={props.onBack}>
+            <div className={`${CARD} p-6 text-center`}>
+              <p className={failed ? 'text-rot font-semibold' : 'text-text-2'}>{t(failed || 'gameLoading')}</p>
+              {failed && (
+                <div className="flex flex-wrap justify-center gap-2 mt-4">
+                  {failed === 'gameStale' && <button onClick={() => location.reload()} className={`${BTN_PRIMARY} px-6 py-3`}>{t('reloadPage')}</button>}
+                  <button onClick={props.onBack} className={`${failed === 'gameStale' ? BTN_NEUTRAL : BTN_PRIMARY} px-6 py-3`}>← {t('toSet')}</button>
+                </div>
+              )}
+            </div>
+          </PracticeFrame>
+        </div>
+      );
+    };
+
     // ---------- Rundenende ----------
-    const Summary = ({ set, log, seconds, exam, leaves, watched, onRetry, onAgain, onBack }) => {
+    const Summary = ({ set, log, seconds, exam, leaves, watched, game, retry, onRetry, onAgain, onBack }) => {
       const ok = log.filter((e) => e.ok).length;
       const wrong = log.filter((e) => !e.ok);
+      // Ein Spiel gibt die Liste selbst mit (`retry`): auch Wörter, die erst
+      // nach der ersten Antwort schiefgingen — sonst stand «Alles richtig»
+      // neben «Die Burg ist gefallen.»
+      const redo = retry || wrong.map((e) => e.item);
       const settingsButton = useSettings();
       return (
         <div className={`${SCREEN} p-4 sm:p-8`}>
@@ -5442,6 +5567,7 @@
               </div>
               <p className="text-text-2">{t('result', ok, log.length)}</p>
               <p className="text-text-3 text-sm">{t('timeUsed', Math.floor(seconds / 60), seconds % 60)}</p>
+              {game && <p className={`mt-2 font-semibold ${game.stars ? 'text-orange' : 'text-rot'}`}>{t(game.text)}{game.stars > 0 && ` · ${'★'.repeat(game.stars)}${'☆'.repeat(game.of - game.stars)}`}</p>}
               {exam && (
                 <p className={`mt-2 font-semibold ${!watched ? 'text-orange' : leaves ? 'text-rot' : 'text-gruen'}`}>
                   {!watched ? t('examUnwatched') : leaves ? t('examLeaves', leaves) : t('examNoLeaves')}
@@ -5467,17 +5593,17 @@
                 </table>
               </div>
             )}
-            {wrong.length ? (
+            {redo.length ? (
               <div className={`${CARD} p-6 mb-4`}>
                 <h3 className="font-semibold text-text mb-2">{t('wrongWords')}</h3>
                 <ul className="space-y-1 text-text">
-                  {wrong.map((e, i) => <li key={i}><b>{inline(promptOf(e.item))}</b> — {inline(solutionOf(e.item))}</li>)}
+                  {redo.map((item, i) => <li key={i}><b>{inline(promptOf(item))}</b> — {inline(solutionOf(item))}</li>)}
                 </ul>
               </div>
             ) : <p className="text-center text-gruen font-semibold mb-4">{t('allRight')}</p>}
             <div className="flex flex-col sm:flex-row gap-3">
-              {wrong.length > 0 && <button onClick={() => onRetry(wrong.map((e) => e.item.word))} className={`flex-1 ${BTN_PRIMARY} px-4 py-3`}>{t('retryWrong')}</button>}
-              <button onClick={onAgain} className={`flex-1 px-4 py-3 ${wrong.length ? BTN_SECONDARY : BTN_PRIMARY}`}>{t('again')}</button>
+              {redo.length > 0 && <button onClick={() => onRetry(redo.map((item) => item.word))} className={`flex-1 ${BTN_PRIMARY} px-4 py-3`}>{t('retryWrong')}</button>}
+              <button onClick={onAgain} className={`flex-1 px-4 py-3 ${redo.length ? BTN_SECONDARY : BTN_PRIMARY}`}>{t('again')}</button>
             </div>
           </div>
         </div>
@@ -5502,17 +5628,17 @@
       const roundSet = stage.opts && stage.opts.forms ? formSet(set) : set;
 
       if (stage.kind === 'run') {
-        const Round = { match: MatchRound, table: TableRound }[stage.opts.mode] || Practice;
+        const Round = { match: MatchRound, table: TableRound }[stage.opts.mode] || (GAME_FILE[stage.opts.mode] ? GameRound : Practice);
         return (
-          <Round key={stage.n} set={roundSet} opts={stage.opts} words={stage.words}
+          <Round key={stage.n} set={roundSet} opts={stage.opts} words={stage.words} prog={prog}
             onResult={(word, ok) => onResult(setKey, word, ok)}
-            onDone={({ log, seconds, exam, leaves, watched }) => setStage({ kind: 'done', opts: stage.opts, words: stage.words, log, seconds, exam, leaves, watched })}
+            onDone={(res) => setStage({ kind: 'done', opts: stage.opts, words: stage.words, res })}
             onBack={() => setStage({ kind: 'setup' })} />
         );
       }
       if (stage.kind === 'done') {
         return (
-          <Summary set={roundSet} log={stage.log} seconds={stage.seconds} exam={stage.exam} leaves={stage.leaves} watched={stage.watched}
+          <Summary set={roundSet} {...stage.res}
             onRetry={(words) => startRound(stage.opts, words)}
             onAgain={() => startRound(stage.opts, stage.words)}
             onBack={() => setStage({ kind: 'setup' })} />
@@ -5874,14 +6000,23 @@
     ReactDOM.createRoot(document.getElementById('root')).render(<Crash><App /></Crash>);
   </script>
   <script>
+    // Übersetzt JSX (nur das React-Preset, keine Plugins, keine Sourcemap) und
+    // hängt es als klassisches Skript an: das App-Skript beim Start, Spiele
+    // bei Bedarf (`loadGame`). `retainLines`: Zeilen in Fehlermeldungen passen
+    // zur Quelle. `own` lässt den Code in einer eigenen Funktion laufen: er
+    // sieht die Namen der App, seine eigenen bleiben drinnen — keine
+    // Kollisionen und ein halb ausgeführtes Skript blockiert keinen zweiten
+    // Versuch (oberste `const` blieben sonst für immer belegt). Auf derselben
+    // Zeile, damit die Zeilennummern stimmen.
+    function runJsx(code, own) {
+      const js = Babel.transform(code, { presets: ['react'], retainLines: true }).code;
+      const el = document.createElement('script');
+      el.textContent = own ? '(() => {' + js + '\n})();' : js;
+      document.body.appendChild(el);
+    }
     // React, ReactDOM und Babel laden mit `defer` und laufen vor
     // DOMContentLoaded — der Rand im <body> wartet so nicht auf sie.
-    // `retainLines`: Zeilen in Fehlermeldungen passen zum Skript oben.
-    document.addEventListener('DOMContentLoaded', () => {
-      const el = document.createElement('script');
-      el.textContent = Babel.transform(document.getElementById('app').textContent, { presets: ['react'], retainLines: true }).code;
-      document.body.appendChild(el);
-    });
+    document.addEventListener('DOMContentLoaded', () => runJsx(document.getElementById('app').textContent));
   </script>
 </body>
 </html>

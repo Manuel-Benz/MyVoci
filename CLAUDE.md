@@ -2,8 +2,9 @@
 
 Vokabeltrainer für den Unterricht, clientseitig wie MyMemory: **eine**
 `index.html` (React 18 + Tailwind + Babel standalone per CDN, kein
-Build-Schritt), `localStorage` als einziger Speicher, Teilen über das
-`#`-Fragment. GitHub Pages ab `main`, Ordner `/`. Roadmap: PLAN.md.
+Build-Schritt), dazu Spiele in `spiele/*.jsx`, die erst bei Bedarf laden,
+`localStorage` als einziger Speicher, Teilen über das `#`-Fragment. GitHub
+Pages ab `main`, Ordner `/`. Roadmap: PLAN.md.
 Sprache im Code, in Kommentaren und in Commits: **Deutsch**.
 
 ```bash
@@ -15,12 +16,13 @@ Datei direkt im Browser öffnen geht nicht (Clipboard, `fetch`).
 
 Ein einziges App-Skript `<script type="text/plain" id="app">` (JSX), gegliedert durch
 `// ---------- Abschnitt ----------`-Kommentare; der kleine Lader direkt
-darunter übersetzt es bei `DOMContentLoaded` mit `Babel.transform` (nur das
-React-Preset, keine Plugins, keine Sourcemap, `retainLines`) und hängt es als
-Skript an. React, ReactDOM und Babel laden mit `defer`. Reihenfolge grob: Speicher →
+darunter (`runJsx`, lädt auch die Spiele) übersetzt es bei `DOMContentLoaded`
+mit `Babel.transform` (nur das React-Preset, keine Plugins, keine Sourcemap,
+`retainLines`) und hängt es als Skript an. React, ReactDOM und Babel laden mit `defer`. Reihenfolge grob: Speicher →
 Sprache/I18N → Beispiel-Sets → KI-Prompt → Parser/Export → Ordner → Lernstand →
 Direktlinks → Routing → **Korrektur** → Vorlesen/Spracherkennung/Vollbild →
-Bausteine (Modal, Icons, QR, Scanner, Anleitung, Einstellungen) → Seiten.
+Bausteine (Modal, Icons, QR, Scanner, Anleitung, Einstellungen) → Seiten
+(darin der Spiele-Lader vor `Summary`).
 Die Wortformen (`formSet`) stehen gleich nach den Listen, vor dem Parser.
 
 **Performance (gemessen 13.10.2026, Playwright/Chrome, CPU 4× ≈ älteres iPad):**
@@ -90,8 +92,9 @@ mit dem Editor.
 
 Seiten-Komponenten: `Selection` (Übersicht) · `SetEditor` · `SetPage`
 (Rundeneinstellungen + Lernstand + Teilen) · `Practice` (alle Modi ausser
-Zuordnen) · `MatchRound` (Zuordnen) · `Summary` · `Trainer` (Set-Seite → Runde →
-Ende) · `Open` (Set aus der Route laden) · `App`.
+Zuordnen) · `MatchRound` (Zuordnen) · `TableRound` (Tabelle) · `GameRound`
+(lädt ein Spiel aus `spiele/`, dort `DefenseRound`) · `Summary` · `Trainer`
+(Set-Seite → Runde → Ende) · `Open` (Set aus der Route laden) · `App`.
 
 ## Datenmodell
 
@@ -191,7 +194,7 @@ dabei, `stageOf`) · `wrong` (zuletzt falsch), dazu unabhängig der Schalter
 `range` (von/bis, leer = Anfang/Ende) — so geht auch «1–20, bis kommt
 langsam». Kein Schieber: vier Werte, auf dem Handy nicht beschriftbar. Die
 Zahlen daneben zählt `selectWords` selbst, sonst wichen sie beim Lückentext
-und beim Bestimmen vom Startknopf ab. `normSel` übersetzt alte Wahlen
+und beim Bestimmen vom Startknopf ab. `normSel` (über `normOpts`, das auch das Tempo prüft) übersetzt alte Wahlen
 (`sel=due` → bis «fast sicher», `sel=range` → Schalter), gespeichert wie im
 Link. **Ein Übungs-Link legt die ganze Übung fest** (`startOpts`: trägt er
 `sel`, baut er auf `DEFAULT_OPTS` statt auf der gespeicherten Wahl auf) —
@@ -324,16 +327,89 @@ den Berechtigungsdialog für ein Fenster, das nicht mehr da ist. **Schlüssel un
 Route werden unabhängig behandelt** — ein kaputter Schlüsselteil verwarf sonst
 das mitgelieferte Set; wird navigiert, trägt `keysArrived` die Meldung nach.
 
+## Spiele (`spiele/`, erst bei Bedarf geladen)
+
+Spiele stehen nicht in `index.html`, sondern je in einer eigenen Datei
+(`GAME_FILE`: Modus → Pfad). `loadGame` holt sie über `loadOnce` (wie
+`loadScript`: einmal, Ergebnis geprüft, Abbruch nach `LOAD_TIMEOUT` — WebKit
+wartet sonst ewig) mit `fetch` (`no-cache`) und gibt sie an `runJsx` (unten im
+Lader, dieselben Babel-Optionen wie für das App-Skript).
+Das Spiel läuft **in einer eigenen Funktion** (IIFE): es sieht alles, was im
+App-Skript auf oberster Ebene steht (`checkAnswer`, `buildQueue`,
+`PracticeFrame`, `t` …), seine eigenen Namen bleiben drinnen — keine
+Kollisionen und ein halb ausgeführtes Skript blockiert keinen zweiten
+Versuch (oberste `const` blieben sonst belegt). Hinaus geht nur
+`GAMES.defense = DefenseRound`; Texte hängt es an `I18N` an. **`GAME_API`**
+(index.html) und `DefenseRound.api` müssen gleich sein: steigen, wenn sich
+ändert, was ein Spiel von der App braucht. `no-cache` holt immer das neuste
+Spiel, die laufende App kann älter sein (Pages cacht index.html 10 min, die
+Home-Bildschirm-App lebt Tage) — bei Abweichung steht «neu laden» statt eines
+Absturzes. Was die Set-Seite vor dem Laden zeigt (Kachel, `MODE_LABEL`, Zeile
+«Tempo» für `PACE_MODES` mit `opts.pace`, geprüft in `normOpts`), steht in
+index.html. Die Set-Seite lädt das Spiel vor, sobald es gewählt ist; der
+Trainer zeigt es über `GameRound` (Laden in der Kopfzeile einer Runde, also
+mit «Beenden»). Ein Spiel bekommt dieselben Props wie `MatchRound`, dazu
+`prog`, und gibt bei `onDone` zusätzlich `game: { text, stars, of }` (die
+Zeile in `Summary`) und `retry` zurück: die ganze Liste für «nochmals üben»,
+auch Wörter, die erst nach der ersten Antwort schiefgingen. Der Trainer
+reicht das Ergebnis einer Runde ganz an `Summary` durch.
+
+**Verteidigen** (`spiele/verteidigen.jsx`, Tower Defense): Wörter laufen als
+Gegner zur Burg. Eine getippte Übersetzung trifft den Gegner, zu dem sie passt
+(das Ziel zuerst, «richtig» vor «fast richtig»); ein Fehler zählt beim
+**festgehaltenen** Ziel (`pin`: angetippt oder beim ersten Zeichen gemerkt) —
+das Ziel jedes Bild neu zu bestimmen liess die Antwort beim Überholen eines
+Pfeils ein fremdes Wort treffen und als falsch buchen. Bricht das
+festgehaltene Wort durch, bleibt der Text bei ihm (durchgestrichen) und bucht
+nichts weiter. Am Wellenende wird das Feld geleert. **Kein Wort fällt ohne
+Antwort**: Türme schiessen nicht, sie helfen (Frost halbiert das Tempo,
+Leuchtturm zeigt den ersten Buchstaben ohne Artikel und, wenn eingeschaltet,
+die Hinweise, Kanone nimmt einem gepanzerten Nachbarn einen Treffer, nie den
+letzten). Gegner nach Stufe (`dfKind`): neu = Schleim, nicht
+gewusst/unsicher = Ritter mit zwei Treffern, der zweite in der Gegenrichtung,
+ab «kommt langsam» = schneller Pfeil. Wellen zu 8 Wörtern, Durchgebrochene
+laufen in der nächsten mit, am Ende ein Boss aus den letzten Fehlern (Fehler
+neu einreihen: `Map.set` behielte die Stelle des ersten). Gebaut wird nur in
+der Pause, die Pause zeigt die kommenden Wörter samt Lösung, eine falsche
+Antwort zeigt die ganze Lösung über dem Eingabefeld. Gewertet mit
+`checkAnswer` (`otherSolutions`, Toleranz wie beim Schreiben), für den
+Lernstand zählt die erste Antwort pro Wort; ein unbeantwortet durchgebrochenes
+Wort gilt als nicht gewusst. Tempo `ruhig` hält an, solange getippt wird —
+nur mit Gegnern auf dem Feld, sonst käme nie einer. **Gespielt wird nur,
+solange das Eingabefeld den Fokus hat** (`document.hasFocus()` und
+`activeElement`): Rückfrage, Einstellungen, Anleitung, geschlossene Tastatur
+oder ein anderes Fenster halten das Spiel an, ein Hinweis sagt «tippe ins
+Feld». Münzen gelten nur in der Partie, Eingabe nur getippt.
+
+Technik: Spielstand in einer Ref; die Schleife ruft immer den `step` des
+letzten Renderns (`stepRef`). Pro Bild zeichnet nur das Feld (`DfField`,
+`act.frame`, über `memoLang`) und nur, wenn sich etwas bewegt hat; die Runde
+zeichnet nur bei Ereignissen. Laufen die Gegner bloss weiter, schiebt
+`act.frame` ihre `<g>` direkt (`setAttribute`), React zeichnet erst, wenn sich
+`look` ändert (Ziel, Treffer, Schuss, Lösung, Leuchtturm, Reihenfolge) —
+gemessen zwei Drittel weniger Rechenzeit. Weg, Burg und Plätze sind
+memoisiert. Gegner laufen auf einem Anteil 0…1
+des Wegs, Türme auf Platznummern — so wechselt die Karte (`DF_MAPS`: quer,
+hochkant unter 640 px) beim Drehen mitten im Spiel. Der Weg beginnt innerhalb
+der Karte und Beschriftungen rücken am Rand ein (`inside`) — sonst war das
+Wort eines neuen Gegners abgeschnitten oder ganz ausserhalb. Die Feldhöhe ist
+Fensterhöhe (`visualViewport` mal `scale`) minus gemessene Anzeige und
+Eingabekarte (die Kopfzeile darf beim Tippen wegscrollen); Schrift nie unter
+`DF_MIN_PX`. **Fokus**: Feld und «Feuer» verhindern `mousedown`, «Los»
+zeichnet per `flushSync` und fokussiert noch im Tipp — iOS öffnet die
+Tastatur nur dann und ein Knopf nahm dem Feld sonst nach jedem Schuss die
+Tastatur. Zeitgeber über `later` (beim Verlassen gelöscht, wie MatchRound).
+
 ## Modi
 
-`MODES` = write, pen, ink, cards, choice, match, gap, listen, speak, scramble, parse, table
+`MODES` = write, pen, ink, cards, choice, match, gap, listen, speak, scramble, defense, parse, table
 (die letzten zwei nur mit Wortformen, s. Datenmodell).
 `write`/`pen`/`ink` sind die drei Eingaben von «Schreiben» (`WRITE_INPUTS`:
 Tastatur · Handschrift, selbst bewerten / automatisch geprüft): intern eigene Modi, damit Link
 (`&mode=`), `modeOff` und die Listen unten nichts Neues lernen müssen; die
 Set-Seite zeigt eine Kachel «Schreiben» und darunter die Zeile «Eingabe».
 
-**Die Set-Seite** (Übungsmenü): oben die acht Modi als Kacheln (Linien-Icon
+**Die Set-Seite** (Übungsmenü): oben die neun Modi als Kacheln (Linien-Icon
 aus `MODE_ICON`, eine Zeile `…Short`; geht ein Modus nicht, steht dort der
 Grund — ein Tooltip käme auf dem iPad nie an). Den Grund liefert `modeOff`
 selbst (I18N-Schlüssel oder `null`), damit Sperre und Begründung nicht an zwei
@@ -534,7 +610,9 @@ verzweigen, wenn es um Inhalte geht.
 - **`loadScript` prüft, ob das Global wirklich da ist.** Ein Captive Portal
   liefert HTTP 200 mit einer Fehlerseite, `onload` feuert, und die gemerkte
   Promise stand für die ganze Sitzung auf `undefined` — kein späterer Versuch
-  lud je nach.
+  lud je nach. Dazu bricht `loadOnce` (darunter, auch für Spiele) nach
+  `LOAD_TIMEOUT` ab: ein hängendes Netz meldet sich in WebKit nie, iink fiel
+  sonst nie auf die Fläche ohne Erkennung zurück.
 - **Wer nach Toleranz gewertet wird, muss sie einstellen können** (`LEVEL_MODES`):
   `checkInk` misst mit `opts.level`, die Wahl stand aber nur bei `TYPED_MODES`.
   Still galt, was zuletzt in «Schreiben» gewählt war.
@@ -619,13 +697,17 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   (`QrModal`, über `QR_NARROW` `wide`): ein Set mit 30 Wörtern gibt über
   100 Module, auf 14rem gezeichnet las das iPad das nicht mehr vom
   Bildschirm.
-- **Grosse Sets kommen als Code-Folge** (`qrParts`, ab `QR_SINGLE` = 700
-  Zeichen): gleich lange Teile `MYVOCI:i/n/id:…` (je ~80 Module), die alle
-  `QR_FRAME_MS` wechseln; der `Scanner` sammelt sie in beliebiger Reihenfolge
-  (`readPart`, ein anderes `id` fängt neu an) und gibt erst den ganzen Link an
-  `onCode`. Ein einzelner Code mit 150 Modulen (Datei von 4 KB) las das iPad
-  nicht, ab ~3000 Zeichen passt gar nichts mehr hinein. Die Kamera-App liest
-  nur kurze Links (ein Code); Teile sind für sie bloss Text.
+- **Grosse Sets kommen als Code-Folge** (`qrParts`, über `QR_SINGLE` = 1000
+  Zeichen, also mehr als Version 22 mit 105 Modulen): gleich lange Teile
+  `MYVOCI:i/n/id:…` (`QR_TAG`, Version 15), die alle `QR_FRAME_MS` wechseln;
+  der `Scanner` sammelt sie in beliebiger Reihenfolge (`readPart`, ein anderes
+  `id` fängt neu an) und gibt erst den ganzen Link an `onCode`. Ein einzelner
+  Code mit 150 Modulen (Datei von 4 KB) las das iPad nicht, ab ~3000 Zeichen
+  passt gar nichts mehr hinein. Bis 1000 Zeichen bleibt es ein Code, den auch
+  die Kamera-App liest (mit 700 wurden schon Sets mit 36 Wörtern zur Folge).
+  `QrModal` zeichnet alle Teile in der Version des längsten (`makeQr`, sonst
+  sprang der Code samt `wide` im Takt) und erst, wenn sie dran sind.
+  `qrFailed` heisst nur noch «Bibliothek fehlt».
 - Schatten (`--schatten`) nur über die Klasse `schatten`: `shadow-[var(--schatten)]`
   liest Tailwind als Schattenfarbe und setzt gar keinen Schatten.
 - Sichtprüfung im Browser: `python3 -m http.server` liefert ohne

@@ -4,6 +4,22 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (15.10.2026):** Erstes **Spiel** und erste ausgelagerte Datei:
+**Verteidigen** (Tower Defense) in `spiele/verteidigen.jsx`, geladen erst
+beim Wählen des Modus (eigene Funktion, Versionsprüfung `GAME_API`). Wörter
+laufen als Gegner zur Burg, eine getippte Übersetzung trifft den Gegner, zu
+dem sie passt; Türme helfen nur (Frost, Leuchtturm, Kanone), kein Wort fällt
+ohne Antwort. Gegner nach Stufe, Wellen zu 8 Wörtern, Boss aus den Fehlern,
+Tempo ruhig/normal/schnell, Sterne in der Auswertung. Ausserdem **grosse Sets
+als QR-Code-Folge** (über 1000 Zeichen): ein langer Link wechselt durch kleine
+Codes, der Scanner sammelt sie. Danach Review (max, 15 Befunde) und /simplify:
+das Ziel bleibt beim Tippen fest, Pause ohne Fokus im Feld, Zeitgeber
+aufgeräumt, Leuchtturm ohne Artikel, Zeitlimit für alle Nachlade-Skripte, das
+Feld schiebt laufende Gegner direkt (zwei Drittel weniger Rechenzeit). Elf
+Partien im Browser durchgespielt (iPad quer und hoch, Handy, Dunkel, Latein,
+Wortformen, Set mit 77 Wörtern); auf dem iPad noch nicht. Spielideen im
+Backlog.
+
 **Stand (14.10.2026):** **Lernstand neu gedacht.** Aus den Leitner-Fächern
 wurden fünf **Stufen** mit Namen (nicht gewusst · unsicher · kommt langsam ·
 fast sicher · sitzt, davor «neu»): richtig = eine weiter, ein neues, gleich
@@ -281,6 +297,7 @@ S: Je vais à l'école. | Nous marchons vite.
 | **Hören** | Wort/Satz vorgelesen (Web Speech TTS), aufschreiben | automatisch |
 | **Buchstabensalat** | Buchstaben in richtige Reihenfolge ziehen | automatisch |
 | **Sprechen** (später) | Wort aussprechen (SpeechRecognition, nur Chrome) | automatisch, unscharf |
+| **Verteidigen** | Tower Defense, Übersetzung tippen trifft den Gegner | automatisch, mit Toleranz |
 | **Blitzrunde** (später) | beliebiger Modus mit Timer, Punktestand | — |
 
 Einstellbar pro Runde: Richtung (A→B, B→A, gemischt), Auswahl (alle / nach
@@ -345,7 +362,8 @@ Englisch Unit 1). Zusätzlich: **Link mit Voreinstellung** (`#v=…&mode=write&d
 ## Technik
 
 Eine `index.html` — React 18, Tailwind, qrcode-generator per CDN, kein
-Build-Schritt (Babel standalone wie MyMemory). Web Speech API für Hören/Sprechen,
+Build-Schritt (Babel standalone wie MyMemory); Spiele in `spiele/`, erst bei
+Bedarf geladen. Web Speech API für Hören/Sprechen,
 Canvas für die Schreibfläche, `localStorage` für Sets + Lernstand. GitHub Pages
 ab `main`. Lokal: `python3 -m http.server` → http://localhost:8000.
 
@@ -401,6 +419,10 @@ ab `main`. Lokal: `python3 -m http.server` → http://localhost:8000.
 
 - [x] **6 — Wortformen: Deklinieren und Konjugieren** (28.09.2026), s.
   Abschnitt unten.
+- [x] **7 — Spiele** (15.10.2026): **Verteidigen** (Tower Defense) als erstes
+  Spiel in `spiele/`, nachgeladen; Review und /simplify, s. Stand 15.10.
+  Offen: auf dem iPad prüfen (Tastatur, Fokus nach «Feuer» und «Los»), Türme
+  ausbauen (Stufe 2), weitere Spiele aus dem Backlog.
 
 ## Formen (Phase 6)
 
@@ -549,3 +571,12 @@ mange/manges/mangent klingen gleich.
   Token pro SchülerIn — eher nicht; die Sicherung als Datei deckt den Umzug ab).
 - Bilder statt Wort A (Bild-URL) für Anfänger.
 - Offline (Service Worker) für Schul-iPads ohne stabiles WLAN.
+- **Spiele** (Ideen vom 15.10.2026, je mit Skizze besprochen). Favoriten:
+  Papagei-Begleiter (Federn für «sitzt»), Boss-Kampf aus Fehlerwörtern, Duell
+  auf einem iPad. Weiter: Kombo-Multiplikator, Voci-Invasion, Inselreise,
+  Rangliste per QR, Kreuzworträtsel, Ballonflug, Sticker-Album, Rennen gegen
+  den Geist, Klassen-Bingo, Voci-Dungeon, Flappy-Papagei, Wort-Tetris,
+  Buchstaben-Snake, Karten-Duell, Voci-Garten, Rhythmus-Spiel,
+  QR-Schnitzeljagd, Escape Room, Hochstapler (bräuchte Verwechsler pro Wort,
+  etwa `X:`), Bombe entschärfen (zwei Geräte). Buchstabier-Spiele
+  (Kreuzworträtsel, Ballonflug, Snake) gehen nur mit Einträgen aus einem Wort.
