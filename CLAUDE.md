@@ -619,6 +619,13 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   (`QrModal`, über `QR_NARROW` `wide`): ein Set mit 30 Wörtern gibt über
   100 Module, auf 14rem gezeichnet las das iPad das nicht mehr vom
   Bildschirm.
+- **Grosse Sets kommen als Code-Folge** (`qrParts`, ab `QR_SINGLE` = 700
+  Zeichen): gleich lange Teile `MYVOCI:i/n/id:…` (je ~80 Module), die alle
+  `QR_FRAME_MS` wechseln; der `Scanner` sammelt sie in beliebiger Reihenfolge
+  (`readPart`, ein anderes `id` fängt neu an) und gibt erst den ganzen Link an
+  `onCode`. Ein einzelner Code mit 150 Modulen (Datei von 4 KB) las das iPad
+  nicht, ab ~3000 Zeichen passt gar nichts mehr hinein. Die Kamera-App liest
+  nur kurze Links (ein Code); Teile sind für sie bloss Text.
 - Schatten (`--schatten`) nur über die Klasse `schatten`: `shadow-[var(--schatten)]`
   liest Tailwind als Schattenfarbe und setzt gar keinen Schatten.
 - Sichtprüfung im Browser: `python3 -m http.server` liefert ohne
