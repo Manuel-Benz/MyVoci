@@ -571,12 +571,93 @@ mange/manges/mangent klingen gleich.
   Token pro SchülerIn — eher nicht; die Sicherung als Datei deckt den Umzug ab).
 - Bilder statt Wort A (Bild-URL) für Anfänger.
 - Offline (Service Worker) für Schul-iPads ohne stabiles WLAN.
-- **Spiele** (Ideen vom 15.10.2026, je mit Skizze besprochen). Favoriten:
-  Papagei-Begleiter (Federn für «sitzt»), Boss-Kampf aus Fehlerwörtern, Duell
-  auf einem iPad. Weiter: Kombo-Multiplikator, Voci-Invasion, Inselreise,
-  Rangliste per QR, Kreuzworträtsel, Ballonflug, Sticker-Album, Rennen gegen
-  den Geist, Klassen-Bingo, Voci-Dungeon, Flappy-Papagei, Wort-Tetris,
-  Buchstaben-Snake, Karten-Duell, Voci-Garten, Rhythmus-Spiel,
-  QR-Schnitzeljagd, Escape Room, Hochstapler (bräuchte Verwechsler pro Wort,
-  etwa `X:`), Bombe entschärfen (zwei Geräte). Buchstabier-Spiele
-  (Kreuzworträtsel, Ballonflug, Snake) gehen nur mit Einträgen aus einem Wort.
+- **Spiele**: s. Abschnitt «Spielideen» gleich darunter.
+
+## Spielideen (15.10.2026)
+
+Im Gespräch vom 15.10. in zwei Runden zu je zwölf skizziert, alle ohne
+Server (Browser, Link, QR). Umgesetzt ist **14 Tower Defense** als
+«Verteidigen». Favoriten fürs Klassenzimmer: **1 Papagei-Begleiter**
+(motiviert auf Dauer, passt zur Marke), **6 Boss-Kampf** (gibt den
+Fehlerwörtern einen Sinn) und **4 Duell** (ein iPad für zwei).
+
+**Runde 1 — Gamification rund ums Üben**
+
+1. **Papagei-Begleiter:** Jedes Wort auf «sitzt» gibt dem Papagei eine Feder;
+   volles Gefieder schaltet Hüte und Farben frei. Liest die Stufen aus dem
+   Lernstand, passt zum Federn-Rand. Mittel.
+2. **Kombo-Multiplikator:** Richtige am Stück erhöhen den Faktor (×2, ×3 …),
+   ein Fehler setzt auf ×1. Punkte am Rundenende. Nur Anzeige über `Practice`.
+3. **Voci-Invasion:** Wörter fallen herab, die getippte Übersetzung schiesst
+   sie ab; landet eines, kostet es ein Herz. Tempo steigt. Spielschleife wie
+   bei Verteidigen.
+4. **Duell auf einem iPad:** Zwei Kinder gegenüber, Bildschirm geteilt (eine
+   Hälfte gedreht), wer zuerst richtig wählt, holt den Punkt. Eigene Runde
+   wie `MatchRound`.
+5. **Inselreise:** Das Set als Karte, jede Insel ein Wortblock; das Boot fährt
+   erst weiter, wenn eine Insel sitzt. Am Ende die Fahne. Mittel.
+6. **Boss-Kampf:** Die zuletzt falschen Wörter bilden einen Gegner mit
+   Lebensbalken; richtig trifft, falsch heilt ihn. Auf der Auswahl «zuletzt
+   falsch». In Verteidigen steckt schon ein Boss aus den Fehlern der Partie.
+7. **Rangliste per QR:** Jedes Gerät zeigt am Ende einen Ergebnis-Code, die
+   Lehrperson scannt sie mit dem vorhandenen Scanner und projiziert die
+   Tabelle. Braucht eine Prüfsumme gegen Fälschen.
+8. **Kreuzworträtsel:** Aus dem Set gebaut, jedes Mal neu verschränkt, auch
+   als Druckblatt. Braucht einen Verschränk-Algorithmus.
+9. **Ballonflug:** Freundliches Galgenmännchen — Buchstaben raten, jeder
+   Fehler lässt einen Ballon platzen.
+10. **Sticker-Album:** Abzeichen für Taten statt Fleisspunkte (fehlerfrei,
+    alle Modi probiert, Wortformen gemeistert); leere Plätze machen neugierig.
+11. **Rennen gegen den Geist:** Gegen die eigene Bestzeit für dieses Set,
+    gemerkt im Browser — Wettkampf ohne Vergleich mit anderen. Nur Anzeige.
+12. **Klassen-Bingo:** Jedes Gerät zieht eine eigene Karte aus dem Set, die
+    App der Lehrperson liest deutsche Wörter vor. Braucht eine Ansicht für
+    die Lehrperson.
+
+**Runde 2 — mehr Spiel**
+
+13. **Voci-Dungeon:** Jede Tür ist ein Wort, richtig öffnet, falsch kostet
+    Leben; Truhen geben Hinweise, am Ende ein Drache mit den schwersten
+    Wörtern. Jede Runde ein neuer Grundriss.
+14. **Tower Defense** → umgesetzt als **Verteidigen**. Offen: Ausbaustufe 2
+    der Türme (grössere Reichweite).
+15. **Flappy-Papagei:** Der Papagei fliegt, oben das Wort; durch die Lücke mit
+    der richtigen Übersetzung fliegen, sonst Bruchlandung.
+16. **Wort-Tetris:** Ein Wort fällt, unten drei Übersetzungen; in die richtige
+    Spalte steuern. Volle Reihen verschwinden, Fehler stapeln sich.
+17. **Buchstaben-Snake:** Die Schlange frisst die Buchstaben in der richtigen
+    Reihenfolge und schreibt so das Wort; ein falscher Bissen kürzt sie.
+18. **Karten-Duell:** Jedes Wort eine Sammelkarte, Stärke = Stufe; ein Deck
+    gegen den Computer, ausspielen nur mit Übersetzung.
+19. **Voci-Garten:** Jedes Wort eine Pflanze, die mit der Stufe wächst;
+    blühende bringen Samen für Deko, falsche lassen Blätter hängen. Macht den
+    Lernstand sichtbar.
+20. **Rhythmus-Spiel:** Antworten rutschen im Takt auf drei Bahnen herunter,
+    die richtige auf der Linie antippen. Musik, kurze Runden, Timing zählt.
+21. **QR-Schnitzeljagd:** Gedruckte Codes im Schulhaus, jeder Scan stellt ein
+    Wort und gibt bei richtiger Antwort einen Buchstaben des Lösungsworts.
+    Die App erzeugt Stationscodes und Lösungswort zum Ausdrucken.
+22. **Escape Room:** Vier Rätsel aus verschiedenen Modi (Lückentext,
+    Zuordnen, Wortformen …) geben je eine Ziffer, die Kombination öffnet das
+    Schloss, alles auf Zeit. Ein Wortformen-Rätsel nur mit Tabellen.
+23. **Hochstapler:** Unter fünf Paaren ist eines fies falsch (vent · Wein);
+    finden gibt Punkte, die Begründung Bonus.
+24. **Bombe entschärfen:** Zwei Geräte, kooperativ: A sieht die Bombe mit
+    fremdsprachigen Drähten, B das deutsche Handbuch — gelöst nur durch
+    Reden und Übersetzen. Ein kurzer gemeinsamer Code legt den Zufall fest.
+
+**Was die Ideen vom Set brauchen**
+
+- **Neue Angaben:** nur 23 Hochstapler. Lustig wird es erst mit tückischen
+  Verwechslern pro Wort, etwa eine freiwillige Zeile `X: der Wein / die Wand`
+  (auch vom KI-Prompt erzeugt); ohne sie vertauscht die App nur
+  Übersetzungen innerhalb des Sets, was sofort auffällt.
+- **Nur kurze Einträge:** 8, 9, 17 buchstabieren — Sätze, Listen,
+  Alternativen (`aller / marcher`) und lange Wendungen fallen weg, also nur
+  Einträge aus einem Wort; ein reines Set «– Sätze» geht gar nicht. 15, 16,
+  20 brauchen Antworten, die auf schmale Flächen passen (kürzen oder
+  auslassen).
+- **Aus dem Set erzeugt:** 21, 22, 24 (s. oben).
+- **Nur Wörter und Lernstand:** 1–7, 10–14, 18, 19.
+- **Bilder** braucht keine Idee, sie werteten aber 18 und 19 deutlich auf
+  (falls «Bilder statt Wort A» kommt).

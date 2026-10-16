@@ -365,8 +365,8 @@ nichts weiter. Am Wellenende wird das Feld geleert. **Kein Wort fällt ohne
 Antwort**: Türme schiessen nicht, sie helfen (Frost halbiert das Tempo,
 Leuchtturm zeigt den ersten Buchstaben ohne Artikel und, wenn eingeschaltet,
 die Hinweise, Kanone nimmt einem gepanzerten Nachbarn einen Treffer, nie den
-letzten und nie dem angetippten Ziel — dessen Frage drehte sonst gleich
-nach dem Lesen). Gegner nach Stufe (`dfKind`): neu = Schleim, nicht
+letzten und nie dem angezeigten Ziel, weder dem beim Tippen noch dem
+danach — dessen Frage drehte sonst gleich nach dem Lesen). Gegner nach Stufe (`dfKind`): neu = Schleim, nicht
 gewusst/unsicher = Ritter mit zwei Treffern, der zweite in der Gegenrichtung,
 ab «kommt langsam» = schneller Pfeil. Wellen zu 8 Wörtern, Durchgebrochene
 laufen in der nächsten mit, am Ende ein Boss aus den letzten Fehlern (Fehler

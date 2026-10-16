@@ -450,26 +450,29 @@ const DefenseRound = ({ set, opts, words, prog, onDone, onBack, onResult }) => {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const strike = (e) => {
+  // `read`: das Ziel, das beim Tippen angezeigt war
+  const strike = (e, read) => {
     const pos = dfAt(map, e.p);
     shoot(towersNear(pos)[0] || [map.castle.x + 20, map.castle.y + 30], pos);
     g.coins += DF_HIT_COINS;
     e.hp -= 1;
     e.reveal = 0;
-    // Kanone in Reichweite: der nächste gepanzerte Nachbar verliert einen
-    // Treffer — fällt aber nie davon allein (kein Wort ohne Antwort). Nie das
-    // angetippte Ziel: seine Frage hat man eben gelesen, sonst wechselte sie
-    // die Richtung
-    if (towersNear(pos, 'cannon').length) {
-      const n = g.enemies.filter((x) => x !== e && x !== g.pin && x.kind !== 'boss' && x.hp >= 2 && dfDist(pos, dfAt(map, x.p)) <= DF_RANGE)
-        .sort((a, b) => b.p - a.p)[0];
-      if (n) { n.hp -= 1; if (!fixed) n.item = dfFlip(n.item); shoot(pos, dfAt(map, n.p)); }
-    }
     if (e.hp <= 0) {
       g.enemies = g.enemies.filter((x) => x !== e);
       if (g.pin === e) unpin();
     } else if (e.kind === 'knight' && !fixed) {
       e.item = dfFlip(e.item); // Panzer weg, jetzt die Gegenrichtung
+    }
+    // Kanone in Reichweite: der nächste gepanzerte Nachbar verliert einen
+    // Treffer — fällt aber nie davon allein (kein Wort ohne Antwort). Nie das
+    // Ziel, das eben angezeigt war oder jetzt angezeigt wird (angetippt oder
+    // vorderstes): seine Frage hat man gelesen, sonst wechselte sie die
+    // Richtung. Darum erst nach dem Treffer, wenn das neue Ziel feststeht.
+    if (towersNear(pos, 'cannon').length) {
+      const shown = targetOf();
+      const n = g.enemies.filter((x) => x !== e && x !== read && x !== shown && x.kind !== 'boss' && x.hp >= 2 && dfDist(pos, dfAt(map, x.p)) <= DF_RANGE)
+        .sort((a, b) => b.p - a.p)[0];
+      if (n) { n.hp -= 1; if (!fixed) n.item = dfFlip(n.item); shoot(pos, dfAt(map, n.p)); }
     }
   };
   const fire = () => {
@@ -490,7 +493,7 @@ const DefenseRound = ({ set, opts, words, prog, onDone, onBack, onResult }) => {
     if (hit) {
       score(hit.item, true, typed, hit.r.solution);
       setMissed(null);
-      strike(hit.e);
+      strike(hit.e, target);
     } else if (target) {
       const { item, r } = tries[0];
       score(item, false, typed, r.solution);
