@@ -390,7 +390,9 @@ const DefenseRound = ({ set, opts, words, prog, onDone, onBack, onResult }) => {
     // Gegner weiter, während niemand tippen kann
     const here = document.hasFocus() && document.activeElement === inputRef.current;
     if (here === g.away) { g.away = !here; changed = true; }
-    if (g.away) { redraw(); return; }
+    // Nur beim Wechsel zeichnen: sonst lief die ganze Runde auch in der
+    // Pause 60-mal pro Sekunde
+    if (g.away) { if (changed) redraw(); return; }
     g.time += dt;
     if (!(pace.hold && input.trim() && g.enemies.length)) {
       g.next -= dt;
