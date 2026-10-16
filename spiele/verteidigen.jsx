@@ -60,6 +60,7 @@ const DF_HEARTS = 5, DF_STARS = 3;
 const DF_START_COINS = 60, DF_HIT_COINS = 10;
 const DF_RANGE = 170; // Reichweite der Türme in Karteneinheiten
 const DF_BOSS_WORDS = 5;
+const DF_END_COLOR = { dfHeld: 'gruen', dfEscaped: 'orange', dfFallen: 'rot' }; // Ausgang → Farbe des Endtexts
 const DF_SHOT = 0.25, DF_REVEAL = 2.5; // Sekunden: Schuss sichtbar, Lösung am Gegner
 const DF_MIN_PX = 12; // kleinste Schrift auf dem Bildschirm, auch auf dem Handy mit Tastatur
 // Sekunden für den ganzen Weg und zwischen zwei Gegnern. `hold`: niemand
@@ -270,7 +271,7 @@ const DfField = memoLang(({ g, map, phase, slot, maxHeight, vw, label, act }) =>
       })}
       {phase === 'end' && (
         <text x={map.w / 2} y={map.h / 2} textAnchor="middle" fontSize={fs(48)} fontWeight="700"
-          style={{ ...LABEL_STYLE, strokeWidth: 10, fill: g.text === 'dfHeld' ? 'var(--gruen-text)' : g.stars ? 'var(--orange-text)' : 'var(--rot-text)' }}>{t(g.text)}</text>
+          style={{ ...LABEL_STYLE, strokeWidth: 10, fill: `var(--${DF_END_COLOR[g.text]}-text)` }}>{t(g.text)}</text>
       )}
     </svg>
   );
@@ -457,7 +458,8 @@ const DefenseRound = ({ set, opts, words, prog, onDone, onBack, onResult }) => {
     e.reveal = 0;
     // Kanone in Reichweite: der nächste gepanzerte Nachbar verliert einen
     // Treffer — fällt aber nie davon allein (kein Wort ohne Antwort). Nie das
-    // angetippte Ziel: seine Frage hat man eben gelesen, sie drehte sonst
+    // angetippte Ziel: seine Frage hat man eben gelesen, sonst wechselte sie
+    // die Richtung
     if (towersNear(pos, 'cannon').length) {
       const n = g.enemies.filter((x) => x !== e && x !== g.pin && x.kind !== 'boss' && x.hp >= 2 && dfDist(pos, dfAt(map, x.p)) <= DF_RANGE)
         .sort((a, b) => b.p - a.p)[0];
