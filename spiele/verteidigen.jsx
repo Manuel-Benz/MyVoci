@@ -31,6 +31,7 @@ Object.assign(I18N.de, {
   dfCoins: (n) => `${n} Münzen`,
   dfHeld: 'Burg gehalten',
   dfFallen: 'Die Burg ist gefallen.',
+  dfEscaped: 'Der Boss entkam.',
 });
 Object.assign(I18N.en, {
   dfWave: (i, n) => `Wave ${i} of ${n}`,
@@ -50,6 +51,7 @@ Object.assign(I18N.en, {
   dfCoins: (n) => `${n} coins`,
   dfHeld: 'Castle held',
   dfFallen: 'The castle has fallen.',
+  dfEscaped: 'The boss escaped.',
 });
 
 // ---------- Regeln ----------
@@ -268,7 +270,7 @@ const DfField = memoLang(({ g, map, phase, slot, maxHeight, vw, label, act }) =>
       })}
       {phase === 'end' && (
         <text x={map.w / 2} y={map.h / 2} textAnchor="middle" fontSize={fs(48)} fontWeight="700"
-          style={{ ...LABEL_STYLE, strokeWidth: 10, fill: g.stars ? 'var(--gruen-text)' : 'var(--rot-text)' }}>{t(g.text)}</text>
+          style={{ ...LABEL_STYLE, strokeWidth: 10, fill: g.text === 'dfHeld' ? 'var(--gruen-text)' : g.stars ? 'var(--orange-text)' : 'var(--rot-text)' }}>{t(g.text)}</text>
       )}
     </svg>
   );
@@ -303,7 +305,7 @@ const DefenseRound = ({ set, opts, words, prog, onDone, onBack, onResult }) => {
       waves, wave: 0, boss: false, pending: [...waves[0]], carry: [],
       enemies: [], uid: 0, next: 0, time: 0, away: false,
       hearts: DF_HEARTS, coins: DF_START_COINS, towers: {}, stars: 0, text: '',
-      phase: 'pause', shots: [], shown: null,
+      phase: 'pause', shots: [], shown: null, bossOut: false,
       // pin: der Gegner, für den gerade getippt wird (angetippt oder beim
       // ersten Zeichen festgehalten) — ohne ihn wechselte das Ziel mitten im
       // Wort, sobald ein Pfeil überholt, und die Antwort traf ein anderes
@@ -342,8 +344,9 @@ const DefenseRound = ({ set, opts, words, prog, onDone, onBack, onResult }) => {
   };
   const finish = (held) => {
     g.phase = 'end';
-    g.stars = held ? (g.hearts >= DF_HEARTS ? 3 : g.hearts >= 3 ? 2 : 1) : 0;
-    g.text = held ? 'dfHeld' : 'dfFallen';
+    // Ein durchgebrochener Boss ist kein «gehalten»: höchstens ein Stern
+    g.stars = !held ? 0 : g.bossOut ? 1 : g.hearts >= DF_HEARTS ? 3 : g.hearts >= 3 ? 2 : 1;
+    g.text = !held ? 'dfFallen' : g.bossOut ? 'dfEscaped' : 'dfHeld';
     // `retry`: alle Wörter, die irgendwann schiefgingen — auch nach einer
     // ersten richtigen Antwort (Ritter durchgelassen)
     later(() => onDone({
@@ -417,7 +420,7 @@ const DefenseRound = ({ set, opts, words, prog, onDone, onBack, onResult }) => {
       g.enemies = g.enemies.filter((e) => e.p < 1);
       for (const e of out) {
         if (e === g.pin && !input.trim()) unpin();
-        if (e.kind === 'boss') { g.hearts -= 2; continue; }
+        if (e.kind === 'boss') { g.hearts -= 2; g.bossOut = true; continue; }
         g.hearts -= 1;
         score(e.item, false, '', '');
         g.carry.push(e.item);
@@ -453,9 +456,10 @@ const DefenseRound = ({ set, opts, words, prog, onDone, onBack, onResult }) => {
     e.hp -= 1;
     e.reveal = 0;
     // Kanone in Reichweite: der nächste gepanzerte Nachbar verliert einen
-    // Treffer — fällt aber nie davon allein (kein Wort ohne Antwort)
+    // Treffer — fällt aber nie davon allein (kein Wort ohne Antwort). Nie das
+    // angetippte Ziel: seine Frage hat man eben gelesen, sie drehte sonst
     if (towersNear(pos, 'cannon').length) {
-      const n = g.enemies.filter((x) => x !== e && x.kind !== 'boss' && x.hp >= 2 && dfDist(pos, dfAt(map, x.p)) <= DF_RANGE)
+      const n = g.enemies.filter((x) => x !== e && x !== g.pin && x.kind !== 'boss' && x.hp >= 2 && dfDist(pos, dfAt(map, x.p)) <= DF_RANGE)
         .sort((a, b) => b.p - a.p)[0];
       if (n) { n.hp -= 1; if (!fixed) n.item = dfFlip(n.item); shoot(pos, dfAt(map, n.p)); }
     }
