@@ -4,6 +4,23 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (16.10.2026):** **Verteidigen umgebaut**: jedes Wort ist ein
+Schild (Schleim 1, Ritter 2, Hauptmann 3, Boss bis 5), die Antwort bricht ihn,
+erst entlarvte Gegner nehmen Schaden — von Gewehr, Rakete und der Burg. Kein
+Wort fällt ohne Antwort, keines kommt gleich in der Gegenrichtung; falsche
+laufen ein paar Gegner später nochmals (Wiederkehr). Energie aus richtigen
+Antworten zündet Frostwelle, Überladung und Orbitalschlag. Türme lassen sich
+ausbauen, umbauen und verkaufen, Leuchtturm Stufe 2 zeigt auch den letzten
+Buchstaben und die Länge. Längerer Weg mit sieben Plätzen, «normal»
+langsamer (36 s statt 28 s). Alle Effekte als CSS-Animation, die Energie als
+Akku statt Blitz (zwei Blitze erinnerten an die SS-Runen). Danach Review (max,
+15 Befunde, alle behoben — u. a. verdeckte Schilde nicht mehr als falsch
+gebucht, Beschriftungen bleiben in der Karte, gesperrte Knöpfe halten den
+Fokus, Burg unabhängig von Karte und Tempo) und /simplify (Kaufen über
+`trade`, Kräfte über `POWERS`, Neuzeichnen über Signaturen, wandernde Werte
+direkt gesetzt). Im Browser durchgespielt (iPad quer hell und dunkel, Handy
+hochkant, alle drei Spezialkräfte); auf dem iPad noch nicht.
+
 **Stand (15.10.2026):** Erstes **Spiel** und erste ausgelagerte Datei:
 **Verteidigen** (Tower Defense) in `spiele/verteidigen.jsx`, geladen erst
 beim Wählen des Modus (eigene Funktion, Versionsprüfung `GAME_API`). Wörter
@@ -421,8 +438,12 @@ ab `main`. Lokal: `python3 -m http.server` → http://localhost:8000.
   Abschnitt unten.
 - [x] **7 — Spiele** (15.10.2026): **Verteidigen** (Tower Defense) als erstes
   Spiel in `spiele/`, nachgeladen; Review und /simplify, s. Stand 15.10.
-  Offen: auf dem iPad prüfen (Tastatur, Fokus nach «Feuer» und «Los»), Türme
-  ausbauen (Stufe 2), weitere Spiele aus dem Backlog.
+  16.10.: Schildmodell, schiessende Türme, Energie und Spezialkräfte,
+  Turm-Menü, Wiederkehr, längerer Weg, Animationen; Review und /simplify
+  (s. Stand 16.10.).
+  Offen: auf dem iPad prüfen (Tastatur, Fokus nach «Feuer», «Los» und den
+  Spezialknöpfen, Flüssigkeit der Effekte), Balance mit echten Klassen,
+  weitere Spiele aus dem Backlog.
 
 ## Formen (Phase 6)
 
@@ -619,8 +640,8 @@ Fehlerwörtern einen Sinn) und **4 Duell** (ein iPad für zwei).
 13. **Voci-Dungeon:** Jede Tür ist ein Wort, richtig öffnet, falsch kostet
     Leben; Truhen geben Hinweise, am Ende ein Drache mit den schwersten
     Wörtern. Jede Runde ein neuer Grundriss.
-14. **Tower Defense** → umgesetzt als **Verteidigen**. Offen: Ausbaustufe 2
-    der Türme (grössere Reichweite).
+14. **Tower Defense** → umgesetzt als **Verteidigen** (seit 16.10. mit
+    Schilden, schiessenden Türmen, Ausbau und Spezialkräften).
 15. **Flappy-Papagei:** Der Papagei fliegt, oben das Wort; durch die Lücke mit
     der richtigen Übersetzung fliegen, sonst Bruchlandung.
 16. **Wort-Tetris:** Ein Wort fällt, unten drei Übersetzungen; in die richtige

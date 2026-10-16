@@ -355,53 +355,117 @@ auch Wörter, die erst nach der ersten Antwort schiefgingen. Der Trainer
 reicht das Ergebnis einer Runde ganz an `Summary` durch.
 
 **Verteidigen** (`spiele/verteidigen.jsx`, Tower Defense): Wörter laufen als
-Gegner zur Burg. Eine getippte Übersetzung trifft den Gegner, zu dem sie passt
-(das Ziel zuerst, «richtig» vor «fast richtig»); ein Fehler zählt beim
+Gegner zur Burg, **jedes Wort ist ein Schild** (Schleim 1, Ritter 2,
+Hauptmann 3, Boss bis 5; `dfPack`: Welle 1 nur 1 und 2, ab Welle 2 mit
+mindestens sechs Wörtern als dritter Gegner ein Hauptmann — ein festes Muster,
+die Stufe gibt nur das Tempo: ein Wort ab «kommt langsam» ist ein schneller
+Pfeil). Eine getippte Übersetzung bricht den Schild, zu dem sie passt (das
+Ziel zuerst, «richtig» vor «fast richtig»); ein Fehler zählt beim
 **festgehaltenen** Ziel (`pin`: angetippt oder beim ersten Zeichen gemerkt) —
 das Ziel jedes Bild neu zu bestimmen liess die Antwort beim Überholen eines
-Pfeils ein fremdes Wort treffen und als falsch buchen. Bricht das
-festgehaltene Wort durch, bleibt der Text bei ihm (durchgestrichen) und bucht
-nichts weiter. Am Wellenende wird das Feld geleert. **Kein Wort fällt ohne
-Antwort**: Türme schiessen nicht, sie helfen (Frost halbiert das Tempo,
-Leuchtturm zeigt den ersten Buchstaben ohne Artikel und, wenn eingeschaltet,
-die Hinweise, Kanone nimmt einem gepanzerten Nachbarn einen Treffer, nie den
-letzten und nie dem angezeigten Ziel, weder dem beim Tippen noch dem
-danach — dessen Frage drehte sonst gleich nach dem Lesen). Gegner nach Stufe (`dfKind`): neu = Schleim, nicht
-gewusst/unsicher = Ritter mit zwei Treffern, der zweite in der Gegenrichtung,
-ab «kommt langsam» = schneller Pfeil. Wellen zu 8 Wörtern, Durchgebrochene
-laufen in der nächsten mit, am Ende ein Boss aus den letzten Fehlern (Fehler
-neu einreihen: `Map.set` behielte die Stelle des ersten); bricht er durch,
-heisst es «Der Boss entkam.» mit höchstens einem Stern (`bossOut`), nicht
-«Burg gehalten». Gebaut wird nur in
-der Pause, die Pause zeigt die kommenden Wörter samt Lösung, eine falsche
-Antwort zeigt die ganze Lösung über dem Eingabefeld. Gewertet mit
+Pfeils ein fremdes Wort treffen. Bricht das festgehaltene Wort durch, bleibt
+der Text bei ihm (durchgestrichen). Am Wellenende wird das Feld geleert.
+**Kein Wort fällt ohne Antwort**: ohne Schild ist ein Gegner «entlarvt» (nimmt
+dann keine Tipps mehr an — sein Trefferkreis schluckte sonst den Tipp auf
+einen Gegner dahinter), erst dann schiessen Gewehr und Rakete; Überladung und
+Orbitalschlag machen geschützte Gegner nur mürbe (`hurt` mit `soft`: nie unter
+`DF_ANSWER_DMG`, die letzte Antwort wirft sie dann sicher um). Die **Burg**
+(`DF_CASTLE`) schadet im letzten Fünftel des Wegs nach zurückgelegtem Weg,
+nicht nach Zeit, und schiesst sichtbar nur, wenn sie trifft (je `shot`
+Schaden ein Schuss): ein Ritter, der davor entlarvt ist, fällt so auf beiden
+Karten und in jedem Tempo, Hauptmann und Boss brauchen Türme — mit Reichweite
+und Schaden pro Sekunde kam der Ritter bei «schnell» trotz lauter richtiger
+Antworten durch, hochkant fiel sogar der Boss. Jedes Wort wird genau einmal
+gefragt — die alte Kanone (nahm einen Panzer) und der Ritter in der
+Gegenrichtung fielen weg. **Bricht ein Gegner durch**, gilt nur das angezeigte
+Wort als nicht gewusst; die Wörter unter den übrigen Schilden standen nie da
+und kommen bloss wieder (gebucht verloren sie zwei Stufen, ohne je gefragt zu
+sein). **Wiederkehr** (`comeBack`): ein falsches oder unbeantwortetes Wort
+läuft `DF_RETURN_AFTER` Gegner später nochmals, immer als Schleim und ohne
+Lösung (einmal pro Welle, sonst in die nächste; Zähler «↺» oben).
+**Abschreiben**: `g.seen` merkt pro Wort, wann seine Lösung zuletzt zu sehen
+war (Fehler, zu spät). Solange sie als eben gesehen gilt (`seenRecently`,
+Lösungsdauer plus Abstand), steht sie in der Leiste, eine richtige Antwort
+darauf bringt weder Münzen noch Energie noch Abschussgeld (`bounty`) und die
+Wiederkehr wartet — bei kurzer Warteschlange lief sie sonst sofort los,
+während die Lösung noch dastand. **Energie** (+1 pro richtige Antwort, nicht
+vom Wecker — der belohnte Warten; gezeigt als Akku `DfCell`, **nie als
+Blitz**: zwei Blitze nebeneinander erinnern an die SS-Runen) zündet
+Frostwelle (mit Frost-Turm), Überladung (mit Rakete) und einmal pro Welle
+(`perWave`) den Orbitalschlag; was jede Kraft braucht und tut, steht in
+`POWERS` (`can`/`run`), `ready` prüft dazu das Gemeinsame (Spiel läuft,
+Energie, Turm, Gegner da) — ohne das verschwendete ein Doppeltipp auf die
+Frostwelle Energie. **Knöpfe im Spiel sperrt nur `aria-disabled`, nie
+`disabled`** (Stil in index.html neben `.knopf:disabled`): an einem gesperrten
+Knopf kommt kein `mousedown` an, der Tipp nahm dem Feld den Fokus und hielt das
+Spiel an; `tap` holt den Fokus ausserdem zurück. Türme: Gewehr, Rakete, Frost,
+Leuchtturm (`dfHintShape` — Stufe 1: erster Buchstabe, ab drei Buchstaben;
+Stufe 2: jedes Wort mit seinem ersten Buchstaben, sonst «·», dazu der letzte,
+wenn das letzte Wort mindestens vier hat — `m····n`, `p···· d· t···e` —, nie
+mehr als die Hälfte: «to go» zeigte sonst «go» ganz); in der Pause ein Tipp
+auf einen Turm: ausbauen, umbauen, verkaufen, alles über `trade` (Preis aus
+`priceOf`: Bauen und Umbauen rechnen die Rücknahme `DF_SELL` ein). Was jede
+Welle frisch beginnt, steht in `dfWaveState`. Am Ende ein Boss aus den
+letzten Fehlern (Fehler neu einreihen: `Map.set` behielte die Stelle des
+ersten); bricht er durch, heisst es «Der Boss entkam.» mit höchstens einem
+Stern (`bossOut`). Die Pause zeigt die kommenden Wörter samt Lösung, eine
+falsche Antwort die ganze Lösung über dem Eingabefeld. Gewertet mit
 `checkAnswer` (`otherSolutions`, Toleranz wie beim Schreiben), für den
-Lernstand zählt die erste Antwort pro Wort; ein unbeantwortet durchgebrochenes
-Wort gilt als nicht gewusst. Tempo `ruhig` hält an, solange getippt wird —
-nur mit Gegnern auf dem Feld, sonst käme nie einer. **Gespielt wird nur,
-solange das Eingabefeld den Fokus hat** (`document.hasFocus()` und
-`activeElement`): Rückfrage, Einstellungen, Anleitung, geschlossene Tastatur
-oder ein anderes Fenster halten das Spiel an, ein Hinweis sagt «tippe ins
-Feld». Münzen gelten nur in der Partie, Eingabe nur getippt.
+Lernstand zählt die erste Antwort pro Wort. Tempo `ruhig` hält an, solange
+getippt wird — nur mit geschützten Gegnern auf dem Feld, sonst käme nie
+einer. **Gespielt wird nur, solange das Eingabefeld den Fokus hat**
+(`document.hasFocus()` und `activeElement`): Rückfrage, Einstellungen,
+Anleitung, geschlossene Tastatur oder ein anderes Fenster halten das Spiel
+an, ein Hinweis sagt «tippe ins Feld». Münzen und Energie gelten nur in der
+Partie, Eingabe nur getippt.
+
+**Effekte** (`DF_CSS`, vom Spiel selbst als `<style id="df-css">` gesetzt):
+nur CSS-Keyframes auf `transform`/`opacity`. Ein Effekt ist ein Eintrag in
+`g.fx` mit eigener id; die Dauer steht an einer Stelle (`DF_FX`, für CSS und
+Ablauf, die Klassen dazu in `DF_FX_ANIM`) und läuft in **Spielzeit**
+`g.time`, die mit `.df-halt` stillsteht — nach Wanduhr verschwanden Effekte
+nach einer Pause, während das Spiel noch nachholte. Gezeichnet in einer
+eigenen Ebene (`DfFx`) ohne Zeiger-Ereignisse: ein Schuss alle 0.35 s
+zeichnet so nur sie neu statt aller Gegner. Ausserdem schluckte das Banner
+«Welle geschafft» sonst die Tipps auf die Plätze. Das Beben des Orbitalschlags ist
+ein gewöhnlicher Effekt, seine Klasse sitzt an einem `<g>` um den Inhalt. Die
+Frost-Restzeit kommt aus dem Spielstand (`g.frozen`), nicht aus einem Effekt.
+Einblendungen am Gegner (entlarvt, Eis, Lösung, Fehler-Ruckeln über
+`key={e.misses}`) laufen beim Einhängen einmal ab und **ohne `both`**: eine
+gefüllte Animation auf einer wandernden Gruppe liess Chrome in jedem Bild neu
+malen. Endlos laufen nur Überladung, Frost-Aura und Leuchtturm-Kegel, die
+beiden grossen in Stufen (`steps`), sonst malte WebKit dafür 60-mal pro
+Sekunde neu. Mit `prefers-reduced-motion` blenden die Effekte nur aus
+(Flächen sanfter, `df-soft`), Einblendungen und Beben fallen weg.
 
 Technik: Spielstand in einer Ref; die Schleife ruft immer den `step` des
-letzten Renderns (`stepRef`). Pro Bild zeichnet nur das Feld (`DfField`,
-`act.frame`, über `memoLang`) und nur, wenn sich etwas bewegt hat; die Runde
-zeichnet nur bei Ereignissen. Laufen die Gegner bloss weiter, schiebt
-`act.frame` ihre `<g>` direkt (`setAttribute`), React zeichnet erst, wenn sich
-`look` ändert (Ziel, Treffer, Schuss, Lösung, Leuchtturm, Reihenfolge) —
-gemessen zwei Drittel weniger Rechenzeit. Weg, Burg und Plätze sind
-memoisiert. Gegner laufen auf einem Anteil 0…1
-des Wegs, Türme auf Platznummern — so wechselt die Karte (`DF_MAPS`: quer,
-hochkant unter 640 px) beim Drehen mitten im Spiel. Der Weg beginnt innerhalb
-der Karte und Beschriftungen rücken am Rand ein (`inside`) — sonst war das
-Wort eines neuen Gegners abgeschnitten oder ganz ausserhalb. Die Feldhöhe ist
-Fensterhöhe (`visualViewport` mal `scale`) minus gemessene Anzeige und
-Eingabekarte (die Kopfzeile darf beim Tippen wegscrollen); Schrift nie unter
-`DF_MIN_PX`. **Fokus**: Feld und «Feuer» verhindern `mousedown`, «Los»
-zeichnet per `flushSync` und fokussiert noch im Tipp — iOS öffnet die
-Tastatur nur dann und ein Knopf nahm dem Feld sonst nach jedem Schuss die
-Tastatur. Zeitgeber über `later` (beim Verlassen gelöscht, wie MatchRound).
+letzten Renderns (`stepRef`). Runde, Feld und Effekte zeichnen über
+`useDfRedraw` nur neu, wenn sich ihre Signatur geändert hat (`act.hud`, `look`,
+Effekt-ids) — `step` vergleicht in jedem Bild, keine Merker, die eine Stelle
+vergessen kann. Was beim Laufen wandert — Lage der Gegner, Lebensbalken,
+Einrücken der Beschriftungen am Rand, Frost-Restzeit —, setzt `act.frame`
+direkt (`put`, nur bei Änderung): gemessen zwei Drittel weniger Rechenzeit, und
+am Kartenrand zeichnete React sonst in jedem Bild das ganze Feld neu.
+Gezeichnet wird in fester Reihenfolge, der älteste Gegner zuoberst: nach dem
+Weg sortiert verschob React beim Überholen den Knoten und alle Animationen
+darin starteten neu. Die Turmliste entsteht einmal pro Rendern (`towerList`),
+der Leuchtturm-Hinweis einmal pro Gegner, Schild und Stufe. Weg, Burg und
+Plätze sind memoisiert. Gegner laufen auf einem Anteil 0…1 des Wegs, Türme auf
+Platznummern — so wechselt die Karte (`DF_MAPS`: quer, hochkant unter 640 px,
+je eine Schlange mit sieben Plätzen, die gleich nummeriert sind) beim Drehen
+mitten im Spiel. Der Weg beginnt innerhalb der Karte und Beschriftungen
+rücken am Rand ein, waagrecht (`inside`) wie senkrecht (`rows`: passen die
+Zeilen unter dem Gegner nicht mehr in die Karte, stapeln sie sich über dem
+Wort; oben rückt der Block herein) — die Schildringe (`dfRing`) schoben sonst
+das Wort des Bosses auf der obersten Bahn ganz hinaus und Lösung samt
+Leuchtturm unter die Karte. Die Feldhöhe ist Fensterhöhe (`visualViewport`
+mal `scale`) minus gemessene Anzeige und Eingabekarte (die Kopfzeile darf beim
+Tippen wegscrollen); Schrift nie unter `DF_MIN_PX`. **Fokus**: Feld und Knöpfe
+verhindern `mousedown`, «Los» zeichnet per `flushSync` und fokussiert noch im
+Tipp — iOS öffnet die Tastatur nur dann und ein Knopf nahm dem Feld sonst nach
+jedem Schuss die Tastatur. Zeitpunkte statt Zähler (`revealUntil`, `cds`,
+`hits`), nur `g.next` zählt herunter, weil es bei Frost und «ruhig»
+stillsteht. Zeitgeber über `later` (beim Verlassen gelöscht wie in MatchRound).
 
 ## Modi
 
@@ -671,7 +735,9 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   `BTN_NEUTRAL`, Polster am Aufruf), `kachel` (`CARD`), `kopf` (`LABEL`),
   `feld` (`INPUT`), `symbol` (`IconButton`/`RowTool`), `umschalter`,
   `kuerzel` (Sprach-Badge), `liste-*`, `ablage`. Gesperrte Knöpfe dimmt
-  `.knopf:disabled` — das Attribut `disabled` genügt, keine Klassen-Weiche. `Seg` wählt mit
+  `.knopf:disabled` — das Attribut `disabled` genügt, keine Klassen-Weiche
+  (im Spiel `aria-disabled`, dieselbe Regel, s. Verteidigen; eine ältere
+  App mit neuem Spiel dimmt dort nur nicht). `Seg` wählt mit
   `akzent-weich`, `Choice` mit sekundär/neutral — kein Verlauf mehr, das
   System ist flach.
 - Eigene Variablen heissen **nie** wie Tokens (`--akzent`, `--karte` …), sonst

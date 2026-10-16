@@ -217,7 +217,9 @@
     .knopf-2:hover { background: color-mix(in oklab, var(--akzent) 24%, var(--karte)); }
     .knopf-n { background: transparent; color: var(--text); border: 1px solid var(--linie); }
     .knopf-n:hover { background: var(--hover); }
-    .knopf:disabled { opacity: .45; cursor: not-allowed; }
+    /* aria-disabled: Knöpfe im Spiel, die den Fokus im Eingabefeld halten
+       müssen — an `disabled` kommt kein mousedown an */
+    .knopf:disabled, .knopf[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
     /* Markenzug wie in MyMemory/MyKahoot: Papagei rechts vom Titel, ohne Kachel, als
        Maske in currentColor — dunkel auf Hell, hell auf Dunkel. Datei aus tools/make-logo.py */
     .logo {
