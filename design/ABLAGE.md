@@ -2,7 +2,7 @@
 
 Gilt für MyKahoot, MyVoci, MyMemory, MyTafelfussball: wie Quizzes, Voci-Sets, Memories und Aufgaben-Sets entstehen, heissen, liegen und weitergegeben werden. Der gemeinsame Code steht in `js/my-ablage.js` (Browser: `window.MyAblage`, Node: `require`), Tests: `node --test js/`. Wie `DESIGN.md` wird beides per `./sync.sh` verteilt und in den Apps nie von Hand geändert.
 
-**Entwurf vom 2026-10-21.** Vorlage ist MyVoci, wo nichts anderes steht. Was eine App noch ändern muss, steht am Ende.
+**Stand 2026-10-21, in allen vier Apps umgesetzt.** Vorlage ist MyVoci, wo nichts anderes steht.
 
 ## Begriffe
 - **Set:** eine Datei mit Inhalt (Quiz, Voci-Set, Memory, Aufgaben-Set). Ein Set ohne Inhalt gibt es nicht: Es wird weder geschrieben noch gelesen.
@@ -59,7 +59,7 @@ Zeit: 30
 - **Ort = Ordner + Titel, ohne Gross/Klein** (macOS und Windows kennen keinen Unterschied). Titel sind nur im Ordner eindeutig, nicht in der App: Zwei Klassen dürfen gleiche Titel haben.
 - Ein Platz ist besetzt, wenn **Titel oder Dateiname** gleich sind (`sameSlot`): «Unité 3» und «Unite 3» ergäben dieselbe Datei.
 - Ordnernamen gelten ohne Gross/Klein als gleich. «Verben» → «verben» ist ein Umbenennen, keine Kollision.
-- Bei Kollision: Import und Speichern fragen «ersetzen?», Verschieben und Umbenennen melden den Fehler und tun nichts. Kein stilles Ausweichen auf `titel-2`. Einzige Ausnahme: alte Stände, in denen zwei Sets nach einer früheren Namensregel dieselbe Datei ergeben («Unité 3»/«Unite 3»), werden beim Laden einmal getrennt (`Unite 3 (2).txt`, `resolveSlots`).
+- Bei Kollision: Import und Speichern fragen «ersetzen?», Verschieben und Umbenennen melden den Fehler und tun nichts. Kein stilles Ausweichen auf `titel-2`. Ein **Link** ersetzt ohne Frage: Er ist die neuere Fassung desselben Sets (s. „Weitergeben“), wer ihn öffnet, will ihn. Sicherung einlesen ersetzt nie, sie ergänzt. Einzige Ausnahme vom Ausweichen: alte Stände, in denen zwei Sets nach einer früheren Namensregel dieselbe Datei ergeben («Unité 3»/«Unite 3»), werden beim Laden einmal getrennt (`Unite 3 (2).txt`, `resolveSlots`).
 
 ## Ordner
 - **Beliebig tief.** Die Ordner der Sammlung sind die Ordner auf der Platte.
@@ -87,7 +87,7 @@ Zeit: 30
 7. **Ein Schreibweg** für die Sammlung (`commit`: speichern, zeichnen, spiegeln).
 
 ## Erstellen
-**Ein Weg zum neuen Set:** «+» beim Hauptordner und an jedem Ordner öffnet den Kasten «… erstellen» mit diesem Ordner vorgewählt. Dort stehen alle Wege nebeneinander: KI-Prompt kopieren, Datei ziehen oder wählen, Text einfügen, von Hand (Editor). Eine Datei aufs Fenster gezogen landet im Hauptordner (MyVoci: automatische Ablage).
+**Ein Weg zum neuen Set:** «+» beim Hauptordner und an jedem Ordner öffnet den Kasten «… erstellen» mit diesem Ordner vorgewählt. Dort stehen alle Wege nebeneinander: KI-Prompt kopieren, Text einfügen, Datei ziehen oder wählen, von Hand (Editor). Eine Datei aufs Fenster gezogen landet im Hauptordner (MyVoci: automatische Ablage). In MyKahoot ist der Kasten das aufgeklappte KI-Panel im Editor eines neuen Quiz, die Fragekarten darunter sind die Vorschau.
 
 ### KI-Prompt
 Aufbau im Stil von MyVoci, in jeder App gleich gegliedert, Deutsch und Englisch mit denselben Abschnitten:
@@ -104,7 +104,8 @@ Der Prompt kennt die Ablage: Ändert sich Format, Titel- oder Namensregel, wird 
 
 ### Text einfügen und Vorschau
 - **Ein Feld** für den ganzen Text, kein eigenes Titelfeld: Der Titel kommt aus `# Titel`. Fehlt die Zeile, fragt die Vorschau danach.
-- **Vorschau vor dem Speichern** (aus dem MyKahoot-Editor) für eingefügten Text und eine einzelne Datei: Titel, Zielordner (änderbar), Anzahl, Inhalt so dargestellt wie in der App (Formeln gerendert), dazu Hinweise auf Zeilen, die nicht verstanden wurden. Erst «Speichern» legt das Set an. Bei besetztem Platz fragt sie «ersetzen?».
+- **Vorschau vor dem Speichern** (aus dem MyKahoot-Editor) für eingefügten Text und eine einzelne Datei: Titel, Zielordner (änderbar), Anzahl, Inhalt so dargestellt wie in der App (Formeln gerendert), dazu Hinweise auf Zeilen, die nicht verstanden wurden (`strayLines`, höchstens drei genannt). Erst «In die Sammlung» bzw. «Speichern» legt das Set an. Bei besetztem Platz fragt sie «ersetzen?».
+- Der Titel der Vorschau folgt dem Text, bis man ihn selbst ändert. Ohne `# Titel` bleibt das Feld leer und «In die Sammlung» setzt den Cursor hinein, statt ein Set «Voci»/«Memory» anzulegen.
 - Mehrere Dateien auf einmal: ohne Vorschau, danach eine Meldung, was angekommen ist.
 
 ## Weitergeben
@@ -114,17 +115,17 @@ Der Prompt kennt die Ablage: Ändert sich Format, Titel- oder Namensregel, wird 
 - **MyKahoot** hat keinen Link (Medien, der Empfänger braucht ohnehin den Server). Dafür bleiben Vorschau und **Arbeitsblatt als PDF**.
 - **Sicherung** (Browser-Apps, v. a. für Safari/iPad): eine JSON-Datei `{ app, version, sets, folders, … }` ohne Ordner-Buchführung (`disk`, `file`). Einlesen ergänzt, was fehlt, und ersetzt nichts.
 
-## Was jede App ändern muss (Stand 2026-10-21)
-| App | Offen |
+## Umgesetzt (2026-10-21)
+| App | Was dazukam |
 |---|---|
-| MyKahoot | ~~`.txt` schreiben, Quiz am Inhalt erkennen, `.md` beim Speichern umziehen, Seeds und Fixtures auf `.txt`~~ (erledigt 2026-10-21) · Namensregel statt Slug · Kollision fragen statt `-2` · KI-Prompt: Abschnitt TITEL, Dateiname · Kasten «Quiz erstellen» an jedem Ordner |
-| MyVoci | ~~auf `my-ablage.js` umstellen~~ (erledigt 2026-10-21) · Text einfügen: ein Feld statt Titel + Text, Vorschau vor dem Speichern |
-| MyMemory | ~~Namensregel statt `safeName`, auf `my-ablage.js` umstellen~~ (erledigt 2026-10-21) · KI-Prompt ohne `Memory_`-Präfix, Abschnitt TITEL · Vorschau · Sicherung prüfen · Link als eigenes Memory übernehmen (heute nur abgespielt) |
-| MyTafelfussball | erledigt 2026-10-21: `# Titel` in der Datei, Namensregel, `my-ablage.js`, Ordner ziehen, Link/QR (`#t=`), ZIP, Sicherung, Kasten «Set erstellen» mit Vorschau, KI-Prompt nach dem Aufbau oben |
+| MyKahoot | `.txt` schreiben, `.md` lesen und beim Speichern umziehen, Quiz am Inhalt erkennen · Dateiname = Titel nach `plainName` (alte Slugs ziehen beim Umbenennen mit) · gleicher Platz: Editor fragt «ersetzen?», Verschieben lehnt ab · neue Ordner nach der Namensregel · KI-Prompt mit Dateiname und TITEL · KI-Panel beim neuen Quiz offen, mit «Datei wählen» und Hinweis auf unverstandene Zeilen. Der Server lädt `public/design/js/my-ablage.js`. |
+| MyVoci | `my-ablage.js` · ein Einfügefeld mit Vorschau |
+| MyMemory | `my-ablage.js`, Namensregel · ein Einfügefeld mit Vorschau, «+» an jedem Ordner öffnet den Kasten · «ersetzen?» beim Import · KI-Prompt ohne `Memory_`, mit TITEL · Sicherung · Link wird ein eigenes Memory (Link trägt jetzt auch die Sprache, alte Links gelten weiter) |
+| MyTafelfussball | `# Titel` in der Datei, Namensregel, `my-ablage.js`, Ordner ziehen, Link/QR (`#t=`), ZIP, Sicherung, Kasten «Set erstellen» mit Vorschau, KI-Prompt nach dem Aufbau oben |
 
 ## my-ablage.js
 Welche Namen es gibt, steht im `return` am Ende der Datei. Gruppen:
-- **Überall** (Browser und Node): Namen, Ordnerpfade, Ort, Kopf (`titleFromFile` nimmt das alte KI-Präfix der App als Argument), Link.
+- **Überall** (Browser und Node): Namen, Ordnerpfade, Ort, Kopf (`titleFromFile` nimmt das alte KI-Präfix der App als Argument), `strayLines(text, known)` für die Vorschau, Link. Der MyKahoot-Server nutzt `plainName`, `cleanFolderName` und `strayLines`.
 - **Browser:** Skripte laden mit Zeitlimit (`loadOnce`, `loadScript`), Herunterladen, ZIP, Ordner auf der Platte (`handleStore(app)`, `pickDir(app)`, `queue`).
 - **`sammlung({ list, items, toFile, parseFile, merge, fallback })`** bindet das an das Set-Format einer App (`list`: Schlüssel der Sets, MyMemory `memories`): Dateiname, Platz, `readDir` (mit Cache), `mirrorDir`, `fromDisk(prev, disk, keepAll, root)` (was `mirrorDir` in `root` geschrieben hat, zählt wie `disk`, aus MyMemory; `forget(root)` beim Trennen), `prepareSave` (neue id, `dropAutoFile`), `resolveSlots` (beim Laden), ZIP, Sicherung (`backupFile`, `restoreBackup`: ergänzt über `sameSlot` und `merge`, liefert `idMap` für App-Eigenes wie den Lernstand), dazu die Ordner-Helfer an `list` gebunden (`ablage.allFolders(store)`, `ablage.renameFolderTarget(…)`, `ablage.resolveFolderPath(store, eingabe)` und `ablage.renamePathTarget(store, von, eingabe)` für ganze Pfade usw.).
 - Bleibt pro App: Parser und `toFile` des Inhalts, Baum, Vorschau, React-Zustand (`mirrored`, `commit`).

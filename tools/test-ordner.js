@@ -116,6 +116,33 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   check(await hasFiles(`${linked ? linked.dir + '/' : ''}Im Restaurant.txt`).then(() => true, () => false),
     `Link-Set liegt im Ordner (${linked && linked.dir})`);
 
+  // Erstellen: ein Feld, Vorschau, Titel aus «# Titel»; eine eigene Eingabe bleibt beim Weitertippen
+  await page.goto(base);
+  await page.click('#create > button');
+  const box = page.locator('#create textarea');
+  const words = '# Unité 4 – Les vêtements\nSprachen: de → fr\n\nF: das Hemd\nA: la chemise\n---\nKatze\n';
+  await box.fill(words);
+  const title = page.locator('#previewTitle');
+  check(await title.inputValue() === 'Unité 4 – Les vêtements', 'Vorschau übernimmt den Titel aus «# Titel»');
+  check((await page.locator('#create .vorschau').innerText()).includes('Katze'), 'Vorschau meldet die unverstandene Zeile');
+  await title.fill('Unité 4 – Kleider');
+  await box.fill(words + 'F: der Rock\nA: la jupe\n---\n');
+  check(await title.inputValue() === 'Unité 4 – Kleider', 'eigener Titel bleibt beim Weitertippen');
+  check((await page.locator('#create .vorschau ol li').count()) === 2, 'Vorschau zeigt beide Wörter');
+  await page.click('#create .vorschau .knopf-1');
+  await storeHas('Unité 4 – Kleider');
+  check(await hasFiles('Französisch/Klasse 2/Unite 4 - Kleider.txt').then(() => true, () => false),
+    'gespeichert nach Sprache abgelegt, Dateiname nach der Namensregel');
+  check(!(await page.locator('#create .vorschau').count()) && !(await box.inputValue()), 'nach dem Speichern ist der Kasten leer');
+  // ohne «# Titel» fragt die Vorschau danach, statt ein «Voci» anzulegen
+  await box.fill('F: rot\nA: rouge\n---\n');
+  check(await title.inputValue() === '', 'ohne «# Titel» bleibt das Titelfeld leer');
+  const before = (await store()).sets.length;
+  await page.click('#create .vorschau .knopf-1');
+  await wait(300);
+  check((await store()).sets.length === before && await page.evaluate(() => document.activeElement.id) === 'previewTitle',
+    'ohne Titel wird nichts gespeichert, das Titelfeld hat den Fokus');
+
   check(errors.length === 0, `keine Fehler in der Konsole${errors.length ? ': ' + errors.join(' | ') : ''}`);
   await browser.close();
   const ok = results.every(Boolean);

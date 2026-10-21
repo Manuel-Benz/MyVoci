@@ -11,8 +11,10 @@ Komplett clientseitig (wie MyMemory): kein Backend, keine Inhalte auf GitHub.
 Das **+** bei «Meine Voci» oder an einem Ordner öffnet den Kasten **«Voci-Set
 erstellen»** (mit diesem Ordner als Ziel). Dort: KI-Prompt kopieren, in
 Claude/ChatGPT den Block zuoberst ausfüllen (Thema oder Buchseite, Sprachen,
-Anzahl), die gelieferte `.txt` in den Kasten ziehen — oder Text einfügen, eine
-Datei wählen oder **von Hand** im Editor anlegen.
+Anzahl), die Antwort ins Feld einfügen oder die gelieferte `.txt` in den Kasten
+ziehen bzw. wählen — oder **von Hand** im Editor anlegen. Die **Vorschau** zeigt
+Titel (aus `# Titel`), Ordner, die erkannten Wörter und Zeilen, die nicht
+verstanden wurden; erst «In die Sammlung» legt das Set an.
 
 Format (kompatibel mit MyMemory/MyTafelfussball – dieselbe `F:/A:`-Datei läuft
 in allen Apps, die Zusatzzeilen überlesen die anderen):

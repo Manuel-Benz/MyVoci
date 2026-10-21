@@ -170,6 +170,14 @@
     const base = String(filename || '').replace(SET_EXT, '');
     return (prefix ? base.replace(prefix, '') || base : base).replace(/_/g, ' ').trim();
   };
+  // Zeilen, die das Format nicht kennt, für den Hinweis in der Vorschau: ohne
+  // Leerzeilen, «# Titel», Code-Zäune (```) und was `known(zeile)` kennt.
+  // `known` läuft der Reihe nach über die übrigen Zeilen und darf sich darum
+  // merken, wo es steht (Folgezeilen in MyTafelfussball).
+  // Liefert [{ n, line }], n = Zeilennummer ab 1.
+  const strayLines = (text, known) => String(text).split(/\r?\n/)
+    .map((raw, i) => ({ n: i + 1, line: stripBold(raw) }))
+    .filter(({ line }) => line && !/^#\s/.test(line) && !line.startsWith('```') && !known(line));
   // Kopf schreiben: «# Titel», die Kopfzeilen, eine Leerzeile. Leere Werte fallen weg.
   const fileHead = (title, lines = []) => `# ${title}\n` + lines.filter(Boolean).map((l) => `${l}\n`).join('') + '\n';
 
@@ -602,7 +610,7 @@
     dirName, parentDir, inside, sameFolder, collate, byTitle, allFolders, remapDir, folderTaken,
     resolveFolderPath, newFolderPath, renameFolderTarget, renamePathTarget, moveFolderTarget,
     setPlace, samePlace,
-    stripBold, langCode, langInFile, titleFromFile, fileHead,
+    stripBold, langCode, langInFile, titleFromFile, fileHead, strayLines,
     b64urlEncode, b64urlDecode, packLink, unpackLink,
     download, loadOnce, loadScript, loadJsZip,
     dirSupported, handleStore, pickDir, queue,

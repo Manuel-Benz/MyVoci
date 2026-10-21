@@ -4,6 +4,12 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (21.10.2026, später):** **Erstellen wie in den anderen Apps**: ein
+Einfügefeld ohne Titelfeld, darunter die Vorschau (Titel aus `# Titel`, Ordner,
+Wörter, nicht verstandene Zeilen), erst «In die Sammlung» legt das Set an. Eine
+einzelne Datei über den Kasten kommt ins Feld. Headless-Test um Vorschau, eigenen
+Titel und «ohne Titel» erweitert.
+
 **Stand (21.10.2026):** **Gemeinsame Ablage**: Namen, Ordnerpfade, Ort,
 Ordner-Abgleich (`readDir`/`mirrorDir`/`fromDisk`), ZIP, Download, Link-Kodierung
 und der Skript-Lader kommen jetzt aus `design/js/my-ablage.js` (MySuite, Regeln in
@@ -16,8 +22,8 @@ Neuer Headless-Test `tools/test-ordner.js` (OPFS als Ordner), vorher und nachher
 grün. Danach (gleicher Tag): Ordner-Aktionen und Speichern über das Modul, ein im
 Finder gelöschtes, eben gespeichertes Set kommt nicht mehr zurück, zwei alte Sets in
 einer Datei werden beim Laden getrennt; im Test wartete `waitForFunction` mit einer
-async-Funktion nie (jetzt selbst abgefragt). Offen: Text einfügen in einem Feld mit Vorschau (ABLAGE.md). Im echten
-Ordner am Mac noch nicht von Hand ausprobiert.
+async-Funktion nie (jetzt selbst abgefragt). Im echten Ordner am Mac noch nicht
+von Hand ausprobiert.
 
 **Stand (16.10.2026):** **Verteidigen umgebaut**: jedes Wort ist ein
 Schild (Schleim 1, Ritter 2, Hauptmann 3, Boss bis 5), die Antwort bricht ihn,

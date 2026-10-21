@@ -90,6 +90,14 @@ durch. Die Titelzeile des Kastens heisst Hauptebene (setzt `target` zurück);
 Umbenennen/Verschieben nimmt die Wahl mit (`followMove`), ein Import klappt
 seinen Ordner auf (`openTo`), und `FolderSelect` teilt sich die Ordnerliste
 mit dem Editor.
+**Einfügen mit Vorschau** (ABLAGE.md): ein Feld für die ganze KI-Antwort, kein
+Titelfeld. Sobald Wörter erkannt sind, zeigt `CreateBox` die Vorschau: Titel aus
+`# Titel` (folgt dem Text, bis man ihn selbst ändert: `title` ist `null`, solange
+er automatisch ist), Ordner (`into` oder `placeFor`), die Wörter und bis zu drei
+Zeilen, die `knownLine` nicht kennt (`MyAblage.strayLines`). «In die Sammlung»
+geht über `addSet` (dort «ersetzen?»); ohne Titel bekommt das Feld den Fokus statt
+eines Sets «Voci». Eine einzelne Datei über den Kasten landet im Feld (sichtbar,
+änderbar, ihr Name als Ersatztitel), mehrere gehen direkt in die Sammlung.
 
 Seiten-Komponenten: `Selection` (Übersicht) · `SetEditor` · `SetPage`
 (Rundeneinstellungen + Lernstand + Teilen) · `Practice` (alle Modi ausser
