@@ -146,6 +146,7 @@
       },
     };
   </script>
+  <script defer src="design/js/my-ablage.js"></script>
   <script defer src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
   <script defer crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
   <script defer crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
@@ -1261,38 +1262,10 @@
     const sideName = (set, side) => (set.langs && set.langs[side] ? langName(set.langs[side]) : t(side === 0 ? 'sideA' : 'sideB'));
     const TTS_LOCALE = { de: 'de-DE', fr: 'fr-FR', en: 'en-GB', it: 'it-IT', es: 'es-ES', pt: 'pt-PT' };
 
-    // Erst holen, was jemand braucht (Bibliothek, Spiel), und jedes nur
-    // einmal. `get` liefert das Ergebnis; kommt trotz Erfolg keins an (Captive
-    // Portal, Werbeblocker, Fehlerseite mit Status 200), gilt das als
-    // Fehlschlag — sonst bliebe die gemerkte Promise für die ganze Sitzung auf
-    // `undefined` stehen und kein späterer Versuch lüde je nach. Ein hängendes
-    // Schulnetz meldet sich nie (WebKit wartet ewig): nach LOAD_TIMEOUT bricht
-    // `start` ab (`signal`) — sonst fiele iink nie auf die Fläche ohne
-    // Erkennung zurück und der Scanner nie auf «geht nicht».
-    const LOAD_TIMEOUT = 30000;
-    const loadCache = {};
-    const loadOnce = (key, get, start) => {
-      const there = get();
-      if (there) return Promise.resolve(there);
-      if (!loadCache[key]) {
-        const stop = new AbortController();
-        const timer = setTimeout(() => stop.abort(), LOAD_TIMEOUT);
-        loadCache[key] = start(stop.signal)
-          .then(() => { const got = get(); if (!got) throw new Error(key); return got; })
-          .catch((e) => { loadCache[key] = null; throw e; })
-          .finally(() => clearTimeout(timer));
-      }
-      return loadCache[key];
-    };
-    const loadScript = (url, get) => loadOnce(url, get, (signal) => new Promise((ok, fail) => {
-      const el = document.createElement('script');
-      el.src = url;
-      const giveUp = () => { el.remove(); fail(new Error(url)); };
-      el.onload = () => (get() ? ok() : giveUp());
-      el.onerror = giveUp;
-      signal.addEventListener('abort', giveUp);
-      document.head.appendChild(el);
-    }));
+    // Bibliotheken und Spiele einmal holen, mit Zeitlimit fürs hängende Schulnetz
+    // (sonst fiele iink nie auf die Fläche ohne Erkennung zurück und der Scanner
+    // nie auf «geht nicht»): MyAblage.loadOnce/loadScript, Begründung dort.
+    const { loadOnce, loadScript } = MyAblage;
 
     // ---------- Handschrift-Erkennung (MyScript iink, Cloud) ----------
     // Optional: mit den zwei Schlüsseln aus developer.myscript.com erkennt der
@@ -1829,23 +1802,13 @@
     };
 
     // «Sprache: en» (Einzahl!) ist wie in MyMemory die Sprache der Oberfläche.
-    const langInFile = (text) => {
-      const m = text.match(/^(?:sprache|language)\s*:\s*([a-z]+)/im);
-      const word = m && m[1].toLowerCase();
-      if (!word) return undefined;
-      if (word.startsWith('de') || word.startsWith('ge')) return 'de';
-      if (word.startsWith('en')) return 'en';
-      return undefined;
-    };
 
     const parseFile = (text, filename) => {
       // Frühere KI-Prompts verlangten «Voci_Thema.txt»: Präfix weg, «_» zu Leerzeichen.
-      const fromName = filename.replace(/\.(txt|md)$/i, '').replace(/^(voci|memory)_+(?=.)/i, '').replace(/_/g, ' ').trim();
-      const inFile = text.match(/^#\s+(.+)$/m);
       const lang = langInFile(text);
       const langs = langsInFile(text);
       return {
-        title: (inFile && inFile[1].trim()) || fromName,
+        title: MyAblage.titleFromFile(text, filename, /^(voci|memory)_+(?=.)/i),
         words: parseFA(text),
         ...(lang ? { lang } : {}), ...(langs ? { langs } : {}),
       };
@@ -1870,52 +1833,11 @@
         (w.all ? 'W: alle\n' : '') + formLines(w.f) + '---'
       ).join('\n') + '\n';
 
-    const safeName = (title) => title.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'Voci';
-    const safeDir = (dir) => dir.split('/').map(safeName).join('/');
-    // Neue Datei- und Ordnernamen ohne Sonderzeichen: Umlaute ausgeschrieben,
-    // Akzente weg, alles andere ausser Buchstaben, Ziffern, Leerzeichen und
-    // ( ) , . ' - wird zu «-» (auch der Halbgeviertstrich im Titel). Der Titel
-    // in der Datei bleibt, wie er ist. Bestehende Ordner laufen weiter über
-    // safeDir — sonst schriebe mirrorDir in einen zweiten Ordner daneben.
-    const UMLAUT = { ä: 'ae', ö: 'oe', ü: 'ue', Ä: 'Ae', Ö: 'Oe', Ü: 'Ue', ß: 'ss', æ: 'ae', œ: 'oe', Æ: 'Ae', Œ: 'Oe' };
-    const plainName = (title) => {
-      const ascii = title.normalize('NFC').replace(/[äöüÄÖÜßæœÆŒ]/g, (c) => UMLAUT[c])
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^A-Za-z0-9 (),.'-]+/g, '-').replace(/\s+/g, ' ').replace(/-+/g, '-')
-        .replace(/^[\s.-]+|[\s.-]+$/g, '');
-      // Ganz ohne lateinische Buchstaben (griechischer Titel) bliebe nur «Voci»
-      // oder eine Ziffer übrig — und zwei solche Sets teilten sich eine Datei.
-      return /[A-Za-z]/.test(ascii) ? ascii : safeName(title);
-    };
-
-    const loadJsZip = () => loadScript('https://unpkg.com/jszip@3.10.1/dist/jszip.min.js', () => window.JSZip);
-
-    const zipBlob = async (sets, folders) => {
-      const JSZipLib = await loadJsZip();
-      const zip = new JSZipLib();
-      const used = new Set();
-      for (const folder of folders) zip.folder(safeDir(folder));
-      for (const set of sets) {
-        const base = `${set.dir ? safeDir(set.dir) + '/' : ''}${plainName(set.title)}`;
-        let name = `${base}.txt`;
-        for (let i = 2; used.has(name); i++) name = `${base} (${i}).txt`;
-        used.add(name);
-        zip.file(name, toFile(set));
-      }
-      return zip.generateAsync({ type: 'blob' });
-    };
-
-    const download = (name, data) => {
-      const blob = data instanceof Blob ? data : new Blob([data], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    };
+    // Namen, Ordnerpfade, Ort, Ordner-Abgleich, ZIP und Link teilt MyVoci mit den
+    // anderen My-Apps: design/js/my-ablage.js, Regeln in design/ABLAGE.md (beides
+    // aus ~/MySuite, nie hier ändern). Begründungen stehen dort.
+    const plainName = (title) => MyAblage.plainName(title, 'Voci');
+    const { download, langInFile } = MyAblage;
 
     // ---------- Eigene Sets im Browser ----------
     const STORAGE_KEY = 'myvoci';
@@ -1926,30 +1848,9 @@
     const saveStore = (store) => writeLocal(STORAGE_KEY, store);
 
     // ---------- Ordner (wie MyMemory) ----------
-    const dirName = (dir) => dir.split('/').pop();
-    const parentDir = (dir) => (dir.includes('/') ? dir.slice(0, dir.lastIndexOf('/')) : '');
-    const inside = (dir, ancestor) => dir === ancestor || dir.startsWith(ancestor + '/');
-    const byTitle = (a, b) => a.title.localeCompare(b.title, 'de');
-    // Dasselbe Set heisst: gleicher Titel im gleichen Ordner. Zwei Kinder
-    // haben dieselben Set-Titel, der Titel allein taugt also nicht als
-    // Schlüssel — Editor, Import, Sicherung und Ordner fragen hier nach.
-    const setPlace = (s) => `${s.dir || ''}\u0001${s.title}`;
-    const samePlace = (a, b) => setPlace(a) === setPlace(b);
-    // Gleiche Datei: «Unité 3» und «Unite 3» (oder nur in Gross/Klein
-    // verschieden) landen im selben Ordner in derselben Datei — mirrorDir
-    // schriebe beide dorthin, und beim Nachlesen fiele eines weg. Darum gilt
-    // das beim Anlegen als besetzt und beim Import als dasselbe Set.
-    const samePath = (a, b) => (a.dir || '') === (b.dir || '') && fileName(a).toLowerCase() === fileName(b).toLowerCase();
-    const sameSlot = (a, b) => samePlace(a, b) || samePath(a, b);
-    const allFolders = ({ sets, folders }) => {
-      const all = new Set(folders);
-      for (const s of sets) for (let d = s.dir || ''; d; d = parentDir(d)) all.add(d);
-      return [...all].sort((a, b) => a.localeCompare(b, 'de'));
-    };
-    const remapDir = (store, from, to) => {
-      const move = (d) => (inside(d, from) ? to + d.slice(from.length) : d);
-      return { sets: store.sets.map((s) => ({ ...s, dir: move(s.dir || '') })), folders: [...new Set(store.folders.map(move))] };
-    };
+    // byTitle aus dem Modul (natürlich sortiert: «Lektion 2» vor «Lektion 10»):
+    // fromDisk sortiert genauso, sonst sähe jedes Nachlesen eine andere Reihenfolge.
+    const { dirName, parentDir, inside, byTitle, samePlace, sameFolder, allFolders, remapDir } = MyAblage;
     const OPEN_KEY = 'myvoci_open_dirs';
     // Die Beispiele bleiben für neue Nutzer der Einstieg; wer eigene Sets hat,
     // blendet sie hier aus (Gerät für Gerät, wie die Sprache).
@@ -1977,7 +1878,7 @@
       const root = folders.find((f) => !f.includes('/') && langCode(f) === code)
         || plainName(LANG_NAMES[code] ? langName(code) : code.charAt(0).toUpperCase() + code.slice(1));
       const classes = folders.filter((f) => parentDir(f) === root && CLASS_DIR.test(dirName(f)))
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        .sort(MyAblage.collate);
       return classes.length ? classes[classes.length - 1] : root;
     };
     // Wohin ein Set ohne gewählten Ordner kommt: liegt schon genau ein Set mit
@@ -1997,166 +1898,19 @@
     // localStorage ist nur noch Zwischenspeicher — die Liste steht sofort,
     // auch bevor der Browser den Zugriff wieder freigegeben hat. Der
     // Ordner-Handle überlebt nur in IndexedDB, nicht in localStorage.
-    const dirSupported = typeof window.showDirectoryPicker === 'function';
-    const openDb = () => new Promise((resolve, reject) => {
-      const req = indexedDB.open('myvoci', 1);
-      req.onupgradeneeded = () => req.result.createObjectStore('kv');
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
+    const dirSupported = MyAblage.dirSupported();
+    const { load: loadDirHandle, save: saveDirHandle } = MyAblage.handleStore('myvoci');
+    // Das Set-Format von MyVoci für den gemeinsamen Ordner-Abgleich.
+    const ablage = MyAblage.sammlung({
+      items: 'words',
+      fallback: 'Voci',
+      toFile, parseFile, newId,
+      // Beim Verbinden werden Wörter vereint, nicht ersetzt — sonst verschluckte
+      // eine ältere Datei die im Browser ergänzten Wörter. Pfeil: mergeWords
+      // steht erst weiter unten.
+      merge: (fromFile, fromBrowser) => mergeWords(fromFile, fromBrowser),
     });
-    const dbRun = async (mode, act) => {
-      const db = await openDb();
-      return new Promise((resolve, reject) => {
-        const req = act(db.transaction('kv', mode).objectStore('kv'));
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    };
-    const loadDirHandle = () => dbRun('readonly', (kv) => kv.get('dir')).catch(() => undefined);
-    const saveDirHandle = (h) => dbRun('readwrite', (kv) => (h ? kv.put(h, 'dir') : kv.delete('dir'))).catch(() => {});
-
-    const isVociFile = (name) => /\.(txt|md)$/i.test(name) && !name.startsWith('.');
-    // Liest den ganzen Ordner: Sets noch ohne id (die vergibt fromDisk),
-    // Ordnerpfade wie im Store («Unité 3/Verben»).
-    const readDir = async (root) => {
-      const files = [], folders = [];
-      // Erst den Baum ablaufen, dann alle Dateien auf einmal lesen: einzeln
-      // abgewartet kostet jede Datei eine eigene Runde ins Dateisystem.
-      // Promise.all erhält die Reihenfolge, auf die sich fromDisk verlässt.
-      const walk = async (handle, dir) => {
-        for await (const [name, entry] of handle.entries()) {
-          if (name.startsWith('.')) continue;
-          if (entry.kind === 'directory') {
-            const path = dir ? `${dir}/${name}` : name;
-            folders.push(path);
-            await walk(entry, path);
-          } else if (isVociFile(name)) files.push({ name, dir, entry });
-        }
-      };
-      await walk(root, '');
-      const read = await Promise.all(files.map(async ({ name, dir, entry }) => {
-        const parsed = parseFile(await (await entry.getFile()).text(), name);
-        // `file` merkt sich den echten Dateinamen — aber nur, wenn er vom
-        // Titel abweicht (von Hand angelegt, «Fremd.txt» mit «# Von Hand»):
-        // dann schreibt die App weiter dorthin, statt eine zweite anzulegen.
-        // Heisst die Datei wie der Titel, bleibt `file` leer, damit ein
-        // Umbenennen in der App die Datei mitnimmt statt Name und Titel
-        // auseinanderlaufen zu lassen. `disk` heisst «lag schon einmal im
-        // Ordner» — daran hängt, ob ein Set, das dort fehlt, im Finder
-        // gelöscht wurde oder nur noch nie geschrieben werden konnte.
-        return { ...parsed, dir, disk: true, ...(name === fileName(parsed) ? {} : { file: name }) };
-      }));
-      return { sets: read.filter((s) => s.words.length), folders };
-    };
-
-    const fileName = (set) => set.file || `${plainName(set.title)}.txt`;
-    const setPath = (set) => `${set.dir ? safeDir(set.dir) + '/' : ''}${fileName(set)}`;
-    const dirOf = async (root, path, create) => {
-      let h = root;
-      for (const part of path.split('/').filter(Boolean)) h = await h.getDirectoryHandle(part, { create });
-      return h;
-    };
-    const splitPath = (path) => [parentDir(path), dirName(path)];
-    const writeFile = async (root, path, text) => {
-      const [dir, name] = splitPath(path);
-      const fh = await (await dirOf(root, dir, true)).getFileHandle(name, { create: true });
-      const w = await fh.createWritable();
-      await w.write(text);
-      await w.close();
-    };
-    const removeFile = async (root, path) => {
-      const [dir, name] = splitPath(path);
-      try { await (await dirOf(root, dir, false)).removeEntry(name); } catch {}
-    };
-    const removeEmptyDir = async (root, path) => {
-      try {
-        for await (const _ of (await dirOf(root, path, false)).keys()) return; // nicht leer → bleibt stehen
-        const [dir, name] = splitPath(path);
-        await (await dirOf(root, dir, false)).removeEntry(name);
-      } catch {}
-    };
-
-    // Schreibt nur, was sich geändert hat: Diff über die id, verglichen werden
-    // Pfad und Dateiinhalt. Gelöscht → Datei weg; umbenannt/verschoben → alte
-    // Datei weg, neue hin; leer gewordene Ordner werden mitgeräumt.
-    const mirrorDir = async (root, prev, next) => {
-      const before = new Map(prev.sets.map((s) => [s.id, s]));
-      const after = new Set(next.sets.map((s) => s.id));
-      const prevFolders = allFolders(prev), nextFolders = allFolders(next);
-      for (const f of nextFolders) if (!prevFolders.includes(f)) await dirOf(root, safeDir(f), true);
-      // Ein Set pro Auftrag (alte Datei weg, dann die neue hin), die Aufträge
-      // nebeneinander: beim Verbinden oder beim Verschieben eines Ordners
-      // sind das sonst Dutzende Schreibvorgänge streng nacheinander.
-      const jobs = [];
-      for (const s of next.sets) {
-        const old = before.get(s.id);
-        if (old === s) continue; // unverändert — spart das Serialisieren
-        const path = setPath(s), text = toFile(s);
-        if (old && setPath(old) === path && toFile(old) === text) continue;
-        jobs.push((async () => {
-          if (old && setPath(old) !== path) await removeFile(root, setPath(old));
-          await writeFile(root, path, text);
-        })());
-      }
-      for (const s of prev.sets) if (!after.has(s.id)) jobs.push(removeFile(root, setPath(s)));
-      await Promise.all(jobs);
-      // Ordner erst danach und von innen nach aussen: ein Ordner ist nur leer,
-      // wenn seine Dateien schon weg sind.
-      const gone = prevFolders.filter((f) => !nextFolders.includes(f)).sort((a, b) => b.length - a.length);
-      for (const f of gone) await removeEmptyDir(root, safeDir(f));
-    };
-
-    // Vom Ordner in den Store. Die id trägt den Lernstand, sie soll also am
-    // richtigen Set kleben bleiben. `keepAll` gilt nur beim ausdrücklichen
-    // Verbinden: dann bleibt auch mit, was schon einmal auf der Platte lag
-    // (Ordnerwechsel). Sonst bleiben nur Sets ohne `disk`-Merkmal — was dort
-    // fehlt und dort schon lag, wurde im Finder gelöscht.
-    // Zurück kommt neben dem neuen Stand auch `onDisk`: der reine Inhalt des
-    // Ordners, gegen den mirrorDir seine Differenz bildet.
-    const fromDisk = (prev, disk, keepAll) => {
-      const byPlace = new Map(prev.sets.map((s) => [setPlace(s), s]));
-      const used = new Set();
-      const take = (d, old) => {
-        used.add(old.id);
-        // Beim Verbinden darf die Datei die im Browser bearbeitete Fassung
-        // nicht verschlucken: fehlende Wörter kommen hinten dazu, wie beim
-        // Einlesen einer Sicherung. Beim Nachlesen gilt die Datei.
-        return { ...d, id: old.id, ...(keepAll ? { words: mergeWords(d.words, old.words) } : {}) };
-      };
-      // Erst der sichere Treffer: gleicher Ordner, gleicher Titel.
-      const first = disk.sets.map((d) => {
-        const old = byPlace.get(setPlace(d));
-        return old && !used.has(old.id) ? take(d, old) : { ...d, id: null };
-      });
-      // Dann verschoben oder umbenannt. Dafür kommen nur Sets in Frage, die
-      // schon einmal im Ordner lagen (`disk`) und deren Titel auf beiden
-      // Seiten genau einmal vorkommt: sonst erbte die Datei des einen Kindes
-      // den Lernstand des gleichnamigen Sets des anderen, das nur im Browser
-      // liegt — und verschwände damit aus der Liste.
-      const free = new Map();
-      for (const s of prev.sets) if (!used.has(s.id) && s.disk) free.set(s.title, free.has(s.title) ? null : s);
-      const want = {};
-      for (const d of first) if (!d.id) want[d.title] = (want[d.title] || 0) + 1;
-      const sets = first.map((d) => {
-        // `free` enthält nur unbenutzte Sets und jeder Titel wird höchstens
-        // einmal beansprucht — ein zweiter Zugriff kann hier nicht auftreten.
-        const old = d.id ? null : want[d.title] === 1 ? free.get(d.title) : null;
-        return d.id ? d : old ? take(d, old) : { ...d, id: newId() };
-      });
-      // Was mirrorDir im Ordner vorfindet: die Dateien, mit den ids, die wir
-      // eben vergeben haben. Bewusst nicht aus `sets` abgeleitet — dort
-      // stecken beim Verbinden schon die ergänzten Wörter, und die soll
-      // mirrorDir ja gerade noch schreiben.
-      const onDisk = { sets: disk.sets.map((d, i) => ({ ...d, id: sets[i].id })).sort(byTitle), folders: disk.folders };
-      const local = prev.sets.filter((s) => !used.has(s.id) && (keepAll || !s.disk));
-      const next = {
-        sets: [...sets, ...local].sort(byTitle),
-        // Beim Nachlesen gilt der Ordner: Ordner mit Inhalt stehen ohnehin in
-        // den `dir`-Feldern (allFolders), leere legt mirrorDir dort an.
-        folders: [...new Set([...disk.folders, ...(keepAll ? prev.folders : [])])],
-      };
-      return { next, onDisk };
-    };
+    const { fileName, sameSlot, slotTaken, readDir, mirrorDir, fromDisk } = ablage;
 
     // ---------- Lernstand ----------
     // Pro Set und Wort: richtig/falsch-Zähler, Stufe 1–5 (`box`), letzter Versuch,
@@ -2201,36 +1955,19 @@
     });
 
     // ---------- Direktlinks: Set komprimiert im URL-Fragment ----------
-    const b64urlEncode = (bytes) => {
-      let bin = '';
-      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    };
-    const b64urlDecode = (str) =>
-      Uint8Array.from(atob(str.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+    const { b64urlEncode, b64urlDecode } = MyAblage;
 
-    const encodeSet = async (set) => {
-      const json = new TextEncoder().encode(JSON.stringify([
+    const encodeSet = (set) => MyAblage.packLink([
         set.title, set.langs || 0, set.words.map((w) => {
           // Neue Felder hinten; was fehlt, fällt weg — alte Links bleiben gültig und kurz
           const row = [w.a, w.b, w.s && w.s.length ? w.s : 0, w.h || 0, w.ha || 0, w.hb || 0, w.all ? 1 : 0, w.f ? [w.f.r, w.f.c, w.f.t] : 0];
           while (row.length > 2 && !row[row.length - 1]) row.pop();
           return row;
         }),
-      ]));
-      if (window.CompressionStream) {
-        const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('deflate-raw'));
-        return '1.' + b64urlEncode(new Uint8Array(await new Response(stream).arrayBuffer()));
-      }
-      return '0.' + b64urlEncode(json);
-    };
+      ]);
 
     const decodeSet = async (data) => {
-      const bytes = b64urlDecode(data.slice(2));
-      const json = data.slice(0, 1) === '1'
-        ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()
-        : new TextDecoder().decode(bytes);
-      const [title, langs, words] = JSON.parse(json);
+      const [title, langs, words] = await MyAblage.unpackLink(data);
       return {
         title, ...(langs ? { langs } : {}),
         words: words.map(([a, b, s, h, ha, hb, all, f]) => cleanWord({ a, b, s: s || [], h, ha, hb, all, f: f && { r: f[0], c: f[1], t: f[2] } })),
@@ -3439,10 +3176,10 @@
         else { showToast(t('copyFailed')); setQr({ title: set.title, url: await directLink(set) }); }
       };
       const showQr = async (set) => setQr({ title: set.title, url: await directLink(set) });
-      const exportOne = (set) => { download(`${plainName(set.title)}.txt`, toFile(set)); showToast(t('downloadedOne', set.title)); };
+      const exportOne = (set) => { download(fileName(set), toFile(set)); showToast(t('downloadedOne', set.title)); };
       const exportAll = async () => {
         if (!own.length) { showToast(t('noOwnSets')); return; }
-        try { download('MyVoci.zip', await zipBlob(own, folders)); }
+        try { download('MyVoci.zip', await ablage.zipBlob({ sets: own, folders })); }
         catch { showToast(t('zipFailed')); return; }
         showToast(t('downloadedAll', own.length));
       };
@@ -3834,7 +3571,7 @@
         // Nur im selben Ordner: seit die Sets in Ordnern liegen, tragen zwei
         // Kinder gut denselben Set-Titel — global geprüft liess sich so ein
         // Set gar nicht mehr speichern.
-        if (sets.some((s) => s.id !== set.id && sameSlot(s, { dir, title: name }))) return setError(t('errTitleTaken'));
+        if (slotTaken(sets, { dir, title: name }, set.id)) return setError(t('errTitleTaken'));
         if (!clean.length) return setError(t('errNoWord'));
         if (clean.some((w) => !w.a || !w.b)) return setError(t('errHalfWord'));
         const a = langCode(langA), b = langCode(langB);
@@ -5730,10 +5467,9 @@
       // zurückgeschrieben — sonst bügelte die App jede von Hand geschriebene
       // Datei in ihr eigenes Format.
       const mirrored = useRef(null);
-      // Alle Ordner-Zugriffe laufen hintereinander: ein Nachlesen darf nicht
-      // in ein halb geschriebenes Set hineinlesen.
-      const queue = useRef(Promise.resolve());
-      const enqueue = (job) => (queue.current = queue.current.then(job).catch((e) => {
+      // Alle Ordner-Zugriffe laufen hintereinander (MyAblage.queue): ein
+      // Nachlesen darf nicht in ein halb geschriebenes Set hineinlesen.
+      const [enqueue] = useState(() => MyAblage.queue((e) => {
         console.error(e);
         if (wanted.current) setDir((d) => ({ ...d, status: 'error' })); // nach dem Trennen schweigen
       }));
@@ -5779,7 +5515,7 @@
       }, [dir.status, dir.handle]);
       const connectDir = async () => {
         let handle;
-        try { handle = await window.showDirectoryPicker({ mode: 'readwrite', id: 'myvoci' }); }
+        try { handle = await MyAblage.pickDir('myvoci'); }
         catch { return; } // abgebrochen
         await saveDirHandle(handle);
         takeDisk(handle, true);
@@ -5811,7 +5547,7 @@
         // `disk`/`file` sind Buchführung des Ordners, kein Inhalt: in einer
         // Sicherung stünde sonst auf einem fremden Gerät «lag schon im Ordner».
         save: () => download('MyVoci-Sicherung.json', JSON.stringify(
-          { app: 'myvoci', version: 1, ...store, sets: store.sets.map(({ disk, file, ...s }) => s), progress }, null, 1)),
+          { app: 'myvoci', version: 1, ...store, sets: ablage.backupSets(store.sets), progress }, null, 1)),
         restore: (text) => {
           let data;
           try { data = JSON.parse(text); } catch { return null; }
@@ -5861,9 +5597,9 @@
         // Früher benannte die App Dateien mit Umlaut und «–» nach dem Titel;
         // solche Dateien tragen seither `file`. Beim Umbenennen in der App
         // ziehen sie mit und heissen dann nach der neuen Regel — sonst klebte
-        // der alte Name fest (s. readDir).
+        // der alte Name fest (s. readDir in design/js/my-ablage.js).
         const old = storeRef.current.sets.find((s) => s.id === saved.id);
-        if (old && old.file && old.title !== saved.title && old.file.normalize('NFC') === `${safeName(old.title)}.txt`.normalize('NFC')) {
+        if (old && old.file && old.title !== saved.title && old.file.normalize('NFC') === `${MyAblage.safeName(old.title, 'Voci')}.txt`.normalize('NFC')) {
           const { file, ...rest } = saved;
           saved = rest;
         }
@@ -5909,8 +5645,8 @@
         setRoute(getRoute());
       };
 
-      // Neue Ordner ohne Sonderzeichen, wie die Dateien (plainName).
-      const cleanName = (name) => ((name || '').trim() ? plainName(name.trim()) : '');
+      // Neue Ordner ohne Sonderzeichen, wie die Dateien; Unterordner mit «/».
+      const cleanName = MyAblage.cleanFolderName;
       const makeFolder = (parent, rawName) => {
         const name = cleanName(rawName);
         if (!name) return null;
@@ -5924,9 +5660,8 @@
       // die Prüfung verschmölzen die beiden stillschweigend zu einem, und der
       // Weg zurück fehlt (remapDir schreibt die Pfade um und dedupliziert).
       // Gross/klein zählt nicht: auf macOS und Windows ist es dasselbe Verzeichnis
-      // (wie `samePath` bei den Dateien). `self` ist der Ordner, der selbst umzieht.
-      const sameFolder = (a, b) => a.toLowerCase() === b.toLowerCase();
-      const folderTaken = (target, self) => allFolders(store).some((f) => f !== self && sameFolder(f, target));
+      // (wie bei den Dateien, s. sameSlot in design/js/my-ablage.js). `self` ist der Ordner, der selbst umzieht.
+      const folderTaken = (target, self) => MyAblage.folderTaken(store, target, self);
       const renameFolder = (dir, rawName) => {
         // Vorgabe unverändert bestätigt: nichts tun — sonst würde ein alter
         // Ordner «Französisch» still zu «Franzoesisch» samt allen Dateien.
@@ -5951,7 +5686,7 @@
       const moveSet = (id, dir) => {
         const set = store.sets.find((s) => s.id === id);
         if (!set) return null;
-        if (store.sets.some((s) => s.id !== id && sameSlot(s, { ...set, dir }))) return false;
+        if (slotTaken(store.sets, { ...set, dir }, id)) return false;
         updateStore((prev) => ({ ...prev, sets: prev.sets.map((s) => (s.id === id ? { ...s, dir } : s)) }));
         return true;
       };

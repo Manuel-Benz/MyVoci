@@ -4,6 +4,18 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (21.10.2026):** **Gemeinsame Ablage**: Namen, Ordnerpfade, Ort,
+Ordner-Abgleich (`readDir`/`mirrorDir`/`fromDisk`), ZIP, Download, Link-Kodierung
+und der Skript-Lader kommen jetzt aus `design/js/my-ablage.js` (MySuite, Regeln in
+`design/ABLAGE.md`), dieselben Regeln wie MyKahoot, MyMemory und MyTafelfussball.
+Folgen: Ort ohne Gross/Klein, natürliche Sortierung («Lektion 2» vor «Lektion 10»),
+Ordner-Wähler startet in «Dokumente», unveränderte Dateien werden beim Fokus nicht
+neu gelesen, `mirrorDir` vergleicht pro Datei (gelöscht + auf denselben Namen
+umbenannt geht nicht mehr verloren), Einzel-Export heisst wie die Datei im Ordner.
+Neuer Headless-Test `tools/test-ordner.js` (OPFS als Ordner), vorher und nachher
+grün. Offen: Text einfügen in einem Feld mit Vorschau (ABLAGE.md). Im echten
+Ordner am Mac noch nicht von Hand ausprobiert.
+
 **Stand (16.10.2026):** **Verteidigen umgebaut**: jedes Wort ist ein
 Schild (Schleim 1, Ritter 2, Hauptmann 3, Boss bis 5), die Antwort bricht ihn,
 erst entlarvte Gegner nehmen Schaden — von Gewehr, Rakete und der Burg. Kein

@@ -9,6 +9,7 @@ Sprache im Code, in Kommentaren und in Commits: **Deutsch**.
 
 ```bash
 python3 -m http.server   # lokal testen, dann http://localhost:8000
+node tools/test-ordner.js   # Ordner-Weg headless (nach jedem sync.sh voci; braucht Playwright, PLAYWRIGHT=<Pfad>)
 ```
 Datei direkt im Browser öffnen geht nicht (Clipboard, `fetch`).
 
@@ -166,6 +167,15 @@ mit ` | ` getrennt (`A: 1. petere | 2. appetere`): MyMemory liest nur die erste
 anders, ein neues `F:` beginnt ein neues Wort. Gelesen werden auch mehrere
 `A:`-Zeilen mit Zeichen. `|` trennt nur, wenn Listenzeichen drinstehen.
 `Sprache:` (Einzahl) ist wie dort die Oberflächensprache — nicht verwechseln.
+
+**Gemeinsamer Code** (seit 2026-10-21): Namen (`plainName`, `safeName`,
+`safeDir`), Ordnerpfade, Ort (`setPlace`/`samePlace`, ohne Gross/Klein),
+`sameSlot`, `readDir`/`mirrorDir`/`fromDisk`, ZIP, Download und die
+Link-Kodierung (`packLink`/`unpackLink`) kommen aus `design/js/my-ablage.js`,
+Regeln in `design/ABLAGE.md` — beides aus `~/MySuite` (`sync.sh voci`), nie hier
+ändern. Hier steht nur das Set-Format dafür (`ablage = MyAblage.sammlung({ items:
+'words', … })`) und was React braucht (`mirrored`, `enqueue`, `commit`). Die
+Begründungen unten gelten weiter, der Code dazu steht jetzt dort.
 
 **Ordner auf der Platte** (wie `quizzes/` in MyKahoot, Abschnitt «Ordner auf
 der Platte»): In Chrome/Edge am Computer öffnet die File System Access API
