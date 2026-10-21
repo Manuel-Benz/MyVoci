@@ -161,6 +161,13 @@
     return (m && langCode(m[1])) || undefined;
   };
   const SET_EXT = /\.(txt|md)$/i;
+  // Hiess eine Datei (`base`, ohne Endung) automatisch nach `title`, nach heutiger
+  // Regel (plainName) oder der früheren (safeName)? Dann zieht sie beim
+  // Umbenennen mit. Ohne Gross/Klein, Umlaute in beiden Schreibweisen (NFC).
+  const isAutoName = (base, title, fallback = 'Set') => {
+    const b = String(base).normalize('NFC').toLowerCase();
+    return [safeName(title, fallback), plainName(title, fallback)].some((n) => n.normalize('NFC').toLowerCase() === b);
+  };
   // Titel aus «# Titel», sonst aus dem Dateinamen: ohne Endung, ohne das alte
   // KI-Präfix der App (`prefix`, z. B. /^memory_+/i für «Memory_Thema.txt»),
   // «_» wird Leerzeichen. Nur so überlebt ein Titel den Weg Export → Import.
@@ -171,13 +178,16 @@
     return (prefix ? base.replace(prefix, '') || base : base).replace(/_/g, ' ').trim();
   };
   // Zeilen, die das Format nicht kennt, für den Hinweis in der Vorschau: ohne
-  // Leerzeilen, «# Titel», Code-Zäune (```) und was `known(zeile)` kennt.
-  // `known` läuft der Reihe nach über die übrigen Zeilen und darf sich darum
-  // merken, wo es steht (Folgezeilen in MyTafelfussball).
+  // Leerzeilen, «# Titel», Code-Zäune (```), die Sprache:-Zeile und was
+  // `known(zeile)` kennt. `known` läuft der Reihe nach über die übrigen Zeilen
+  // und darf sich darum merken, wo es steht (Folgezeilen in MyTafelfussball).
   // Liefert [{ n, line }], n = Zeilennummer ab 1.
+  const LANG_LINE = /^(?:sprache|language)\s*:/i;
   const strayLines = (text, known) => String(text).split(/\r?\n/)
     .map((raw, i) => ({ n: i + 1, line: stripBold(raw) }))
-    .filter(({ line }) => line && !/^#\s/.test(line) && !line.startsWith('```') && !known(line));
+    .filter(({ line }) => line && !/^#\s/.test(line) && !line.startsWith('```') && !LANG_LINE.test(line) && !known(line));
+  // Die ersten drei davon für den Hinweis: «7: «Quatsch» · 9: «…»»
+  const strayText = (strays, max = 3) => strays.slice(0, max).map((x) => `${x.n}: «${x.line}»`).join(' · ');
   // Kopf schreiben: «# Titel», die Kopfzeilen, eine Leerzeile. Leere Werte fallen weg.
   const fileHead = (title, lines = []) => `# ${title}\n` + lines.filter(Boolean).map((l) => `${l}\n`).join('') + '\n';
 
@@ -517,9 +527,7 @@
     // benannte Dateien (`Fremd.txt`) behalten ihren Namen.
     const dropAutoFile = (old, saved) => {
       if (!old || !old.file || old.title === saved.title || !saved.file) return saved;
-      const auto = [safeName(old.title, fallback), plainName(old.title, fallback)].map((n) => n.normalize('NFC').toLowerCase());
-      const base = old.file.normalize('NFC').replace(SET_EXT, '').toLowerCase();
-      if (!auto.includes(base)) return saved;
+      if (!isAutoName(old.file.replace(SET_EXT, ''), old.title, fallback)) return saved;
       const { file, ...rest } = saved;
       return rest;
     };
@@ -610,7 +618,7 @@
     dirName, parentDir, inside, sameFolder, collate, byTitle, allFolders, remapDir, folderTaken,
     resolveFolderPath, newFolderPath, renameFolderTarget, renamePathTarget, moveFolderTarget,
     setPlace, samePlace,
-    stripBold, langCode, langInFile, titleFromFile, fileHead, strayLines,
+    stripBold, langCode, langInFile, titleFromFile, fileHead, isAutoName, strayLines, strayText,
     b64urlEncode, b64urlDecode, packLink, unpackLink,
     download, loadOnce, loadScript, loadJsZip,
     dirSupported, handleStore, pickDir, queue,

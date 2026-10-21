@@ -129,6 +129,11 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await box.fill(words + 'F: der Rock\nA: la jupe\n---\n');
   check(await title.inputValue() === 'Unité 4 – Kleider', 'eigener Titel bleibt beim Weitertippen');
   check((await page.locator('#create .vorschau ol li').count()) === 2, 'Vorschau zeigt beide Wörter');
+  // eine ganz andere KI-Antwort bringt ihren eigenen Titel mit
+  await box.fill('# Lektion 9\nSprachen: de → la\n\nF: Hund\nA: canis\n---\n');
+  check(await title.inputValue() === 'Lektion 9', 'neuer Text mit anderem «# Titel»: der eigene Titel weicht');
+  await box.fill(words + 'F: der Rock\nA: la jupe\n---\n');
+  await title.fill('Unité 4 – Kleider');
   await page.click('#create .vorschau .knopf-1');
   await storeHas('Unité 4 – Kleider');
   check(await hasFiles('Französisch/Klasse 2/Unite 4 - Kleider.txt').then(() => true, () => false),

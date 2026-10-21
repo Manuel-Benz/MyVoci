@@ -59,7 +59,7 @@ Zeit: 30
 - **Ort = Ordner + Titel, ohne Gross/Klein** (macOS und Windows kennen keinen Unterschied). Titel sind nur im Ordner eindeutig, nicht in der App: Zwei Klassen dürfen gleiche Titel haben.
 - Ein Platz ist besetzt, wenn **Titel oder Dateiname** gleich sind (`sameSlot`): «Unité 3» und «Unite 3» ergäben dieselbe Datei.
 - Ordnernamen gelten ohne Gross/Klein als gleich. «Verben» → «verben» ist ein Umbenennen, keine Kollision.
-- Bei Kollision: Import und Speichern fragen «ersetzen?», Verschieben und Umbenennen melden den Fehler und tun nichts. Kein stilles Ausweichen auf `titel-2`. Ein **Link** ersetzt ohne Frage: Er ist die neuere Fassung desselben Sets (s. „Weitergeben“), wer ihn öffnet, will ihn. Sicherung einlesen ersetzt nie, sie ergänzt. Einzige Ausnahme vom Ausweichen: alte Stände, in denen zwei Sets nach einer früheren Namensregel dieselbe Datei ergeben («Unité 3»/«Unite 3»), werden beim Laden einmal getrennt (`Unite 3 (2).txt`, `resolveSlots`).
+- Bei Kollision: Import und Speichern fragen «ersetzen?», Verschieben und Umbenennen melden den Fehler und tun nichts. Kein stilles Ausweichen auf `titel-2`. Ein **Link** ersetzt ohne Frage: Er ist die neuere Fassung desselben Sets (s. „Weitergeben“), wer ihn öffnet, will ihn. Sicherung einlesen ersetzt nie, sie ergänzt. Liegt unter dem Dateinamen eine Datei, die kein Set dieser App ist (in MyKahoot z. B. ein Memory), wird sie nie ersetzt: Das Speichern meldet den Fehler. Einzige Ausnahme vom Ausweichen: alte Stände, in denen zwei Sets nach einer früheren Namensregel dieselbe Datei ergeben («Unité 3»/«Unite 3»), werden beim Laden einmal getrennt (`Unite 3 (2).txt`, `resolveSlots`).
 
 ## Ordner
 - **Beliebig tief.** Die Ordner der Sammlung sind die Ordner auf der Platte.
