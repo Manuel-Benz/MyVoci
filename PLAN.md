@@ -13,7 +13,10 @@ Ordner-Wähler startet in «Dokumente», unveränderte Dateien werden beim Fokus
 neu gelesen, `mirrorDir` vergleicht pro Datei (gelöscht + auf denselben Namen
 umbenannt geht nicht mehr verloren), Einzel-Export heisst wie die Datei im Ordner.
 Neuer Headless-Test `tools/test-ordner.js` (OPFS als Ordner), vorher und nachher
-grün. Offen: Text einfügen in einem Feld mit Vorschau (ABLAGE.md). Im echten
+grün. Danach (gleicher Tag): Ordner-Aktionen und Speichern über das Modul, ein im
+Finder gelöschtes, eben gespeichertes Set kommt nicht mehr zurück, zwei alte Sets in
+einer Datei werden beim Laden getrennt; im Test wartete `waitForFunction` mit einer
+async-Funktion nie (jetzt selbst abgefragt). Offen: Text einfügen in einem Feld mit Vorschau (ABLAGE.md). Im echten
 Ordner am Mac noch nicht von Hand ausprobiert.
 
 **Stand (16.10.2026):** **Verteidigen umgebaut**: jedes Wort ist ein

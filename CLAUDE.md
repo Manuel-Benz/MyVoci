@@ -174,7 +174,11 @@ anders, ein neues `F:` beginnt ein neues Wort. Gelesen werden auch mehrere
 Link-Kodierung (`packLink`/`unpackLink`) kommen aus `design/js/my-ablage.js`,
 Regeln in `design/ABLAGE.md` — beides aus `~/MySuite` (`sync.sh voci`), nie hier
 ändern. Hier steht nur das Set-Format dafür (`ablage = MyAblage.sammlung({ items:
-'words', … })`) und was React braucht (`mirrored`, `enqueue`, `commit`). Die
+'words', … })`) und was React braucht (`mirrored`, `enqueue`, `commit`). Auch aus dem
+Modul: Ordner-Aktionen samt Wächtern (`newFolderPath`, `renameFolderTarget`,
+`moveFolderTarget`: Vorgabe unverändert tut nichts, belegtes Ziel = `false`),
+`prepareSave` (neue id, Datei zieht beim Umbenennen mit), `resolveSlots` beim Laden
+und welche Sets `mirrorDir` geschrieben hat (`fromDisk(…, handle)`, `forget` beim Trennen). Die
 Begründungen unten gelten weiter, der Code dazu steht jetzt dort.
 
 **Ordner auf der Platte** (wie `quizzes/` in MyKahoot, Abschnitt «Ordner auf

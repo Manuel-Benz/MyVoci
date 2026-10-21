@@ -52,14 +52,14 @@ Zeit: 30
 - **Datei- und neue Ordnernamen ohne Sonderzeichen** (`plainName`): Umlaute ausgeschrieben (ä → ae, ß → ss), Akzente weg, Leerzeichen bleiben, alles ausser Buchstaben, Ziffern, Leerzeichen und `( ) , . ' -` wird `-`, mehrfache `-` und Leerzeichen zusammengezogen, an den Enden weg. `Unité 3 – La maison` → `Unite 3 - La maison.txt`.
 - Bleibt dabei kein lateinischer Buchstabe übrig (griechischer Titel), werden nur die vom Dateisystem verbotenen Zeichen ersetzt (`safeName`), sonst hiessen alle solchen Sets gleich.
 - **Bestehende Ordner** werden nicht umbenannt: Neben `Französisch/` entsteht nie ein zweites `Franzoesisch/` (`safeDir` für vorhandene Ordner).
-- **Von Hand benannte Dateien** behalten ihren Namen: Weicht der Dateiname vom Automatiknamen ab, merkt ihn das Set (`file`). Benennt man das Set in der App um, fällt `file` weg und die Datei heisst danach wie der Titel.
+- **Von Hand benannte Dateien** behalten ihren Namen: Weicht der Dateiname vom Automatiknamen ab, merkt ihn das Set (`file`). Benennt man ein Set in der App um, dessen Datei bisher automatisch nach dem alten Titel hiess (auch nach einer früheren Regel, z. B. mit Umlaut), fällt `file` weg und die Datei heisst danach wie der neue Titel. Eine von Hand benannte Datei (`Fremd.txt`) behält ihren Namen.
 - Keine App-Präfixe (`Memory_…`) und keine Slugs (`hauptstaedte-europas.md`) mehr.
 
 ## Dasselbe Set
 - **Ort = Ordner + Titel, ohne Gross/Klein** (macOS und Windows kennen keinen Unterschied). Titel sind nur im Ordner eindeutig, nicht in der App: Zwei Klassen dürfen gleiche Titel haben.
 - Ein Platz ist besetzt, wenn **Titel oder Dateiname** gleich sind (`sameSlot`): «Unité 3» und «Unite 3» ergäben dieselbe Datei.
 - Ordnernamen gelten ohne Gross/Klein als gleich. «Verben» → «verben» ist ein Umbenennen, keine Kollision.
-- Bei Kollision: Import und Speichern fragen «ersetzen?», Verschieben und Umbenennen melden den Fehler und tun nichts. Kein stilles Ausweichen auf `titel-2`.
+- Bei Kollision: Import und Speichern fragen «ersetzen?», Verschieben und Umbenennen melden den Fehler und tun nichts. Kein stilles Ausweichen auf `titel-2`. Einzige Ausnahme: alte Stände, in denen zwei Sets nach einer früheren Namensregel dieselbe Datei ergeben («Unité 3»/«Unite 3»), werden beim Laden einmal getrennt (`Unite 3 (2).txt`, `resolveSlots`).
 
 ## Ordner
 - **Beliebig tief.** Die Ordner der Sammlung sind die Ordner auf der Platte.
@@ -118,14 +118,14 @@ Der Prompt kennt die Ablage: Ändert sich Format, Titel- oder Namensregel, wird 
 | App | Offen |
 |---|---|
 | MyKahoot | ~~`.txt` schreiben, Quiz am Inhalt erkennen, `.md` beim Speichern umziehen, Seeds und Fixtures auf `.txt`~~ (erledigt 2026-10-21) · Namensregel statt Slug · Kollision fragen statt `-2` · KI-Prompt: Abschnitt TITEL, Dateiname · Kasten «Quiz erstellen» an jedem Ordner |
-| MyVoci | Text einfügen: ein Feld statt Titel + Text, Vorschau vor dem Speichern · auf `my-ablage.js` umstellen |
-| MyMemory | Namensregel statt `safeName` · KI-Prompt ohne `Memory_`-Präfix, Abschnitt TITEL · Vorschau · Sicherung prüfen · auf `my-ablage.js` umstellen |
-| MyTafelfussball | `# Titel` und `Sprache:` in die Datei · Namensregel · Ordner ziehen · Link/QR (`#t=`) · ZIP · KI-Prompt nach dem Aufbau oben · Kasten «Set erstellen» mit Vorschau · Sicherung · Grundsatz «alles in einer `index.html`» lockern (lädt `design/js/my-ablage.js`) |
+| MyVoci | ~~auf `my-ablage.js` umstellen~~ (erledigt 2026-10-21) · Text einfügen: ein Feld statt Titel + Text, Vorschau vor dem Speichern |
+| MyMemory | ~~Namensregel statt `safeName`, auf `my-ablage.js` umstellen~~ (erledigt 2026-10-21) · KI-Prompt ohne `Memory_`-Präfix, Abschnitt TITEL · Vorschau · Sicherung prüfen · Link als eigenes Memory übernehmen (heute nur abgespielt) |
+| MyTafelfussball | erledigt 2026-10-21: `# Titel` in der Datei, Namensregel, `my-ablage.js`, Ordner ziehen, Link/QR (`#t=`), ZIP, Sicherung, Kasten «Set erstellen» mit Vorschau, KI-Prompt nach dem Aufbau oben |
 
 ## my-ablage.js
 Welche Namen es gibt, steht im `return` am Ende der Datei. Gruppen:
 - **Überall** (Browser und Node): Namen, Ordnerpfade, Ort, Kopf (`titleFromFile` nimmt das alte KI-Präfix der App als Argument), Link.
 - **Browser:** Skripte laden mit Zeitlimit (`loadOnce`, `loadScript`), Herunterladen, ZIP, Ordner auf der Platte (`handleStore(app)`, `pickDir(app)`, `queue`).
-- **`sammlung({ items, toFile, parseFile, merge, fallback })`** bindet das an das Set-Format einer App: Dateiname, Platz, `readDir` (mit Cache), `mirrorDir`, `fromDisk`, ZIP, Sicherung.
+- **`sammlung({ list, items, toFile, parseFile, merge, fallback })`** bindet das an das Set-Format einer App (`list`: Schlüssel der Sets, MyMemory `memories`): Dateiname, Platz, `readDir` (mit Cache), `mirrorDir`, `fromDisk(prev, disk, keepAll, root)` (was `mirrorDir` in `root` geschrieben hat, zählt wie `disk`, aus MyMemory; `forget(root)` beim Trennen), `prepareSave` (neue id, `dropAutoFile`), `resolveSlots` (beim Laden), ZIP, Sicherung (`backupFile`, `restoreBackup`: ergänzt über `sameSlot` und `merge`, liefert `idMap` für App-Eigenes wie den Lernstand), dazu die Ordner-Helfer an `list` gebunden (`ablage.allFolders(store)`, `ablage.renameFolderTarget(…)`, `ablage.resolveFolderPath(store, eingabe)` für ganze Pfade usw.).
 - Bleibt pro App: Parser und `toFile` des Inhalts, Baum, Vorschau, React-Zustand (`mirrored`, `commit`).
 - Abweichungen von MyVoci: `setPlace` ohne Gross/Klein (wie oben verlangt). Ein Ordner mit nur `.DS_Store`/`._*` gilt als leer. `mirrorDir` vergleicht pro Datei statt pro Set und löscht erst, bevor es schreibt (vorher gingen «gelöscht + auf denselben Namen umbenannt» und ein Namenstausch verloren). `queue` lehnt nie ab, Fehler gehen nur an `onError`.

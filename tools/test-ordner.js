@@ -47,8 +47,13 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     return out.sort();
   });
   const store = () => page.evaluate(() => JSON.parse(localStorage.getItem('myvoci')));
-  // Warten auf den Zustand statt fester Pausen; `until` läuft im Browser
-  const until = (fn, arg) => page.waitForFunction(fn, arg, { timeout: 15000 });
+  // Warten auf den Zustand statt fester Pausen: `fn` läuft im Browser, bis es
+  // wahr liefert. Selbst abgefragt, weil page.waitForFunction eine async-Funktion
+  // sofort als erfüllt nimmt (ein Promise ist «wahr»).
+  const until = async (fn, arg, ms = 15000) => {
+    for (const end = Date.now() + ms; Date.now() < end; await wait(100)) if (await page.evaluate(fn, arg)) return true;
+    throw new Error('Zeitlimit');
+  };
   // fertig geschrieben = vorhanden und nicht leer
   const hasFiles = (...paths) => until(async (paths) => {
     const root = await navigator.storage.getDirectory();

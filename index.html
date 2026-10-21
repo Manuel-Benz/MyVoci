@@ -1841,16 +1841,17 @@
 
     // ---------- Eigene Sets im Browser ----------
     const STORAGE_KEY = 'myvoci';
+    // resolveSlots: alte Stände mit zwei Sets in einer Datei (frühere Namensregel) trennen
     const loadStore = () => {
       const raw = readLocal(STORAGE_KEY, {}) || {};
-      return { sets: (raw.sets || []).map((s) => ({ dir: '', ...s })), folders: raw.folders || [] };
+      return ablage.resolveSlots({ sets: (raw.sets || []).map((s) => ({ dir: '', ...s })), folders: raw.folders || [] });
     };
     const saveStore = (store) => writeLocal(STORAGE_KEY, store);
 
     // ---------- Ordner (wie MyMemory) ----------
     // byTitle aus dem Modul (natürlich sortiert: «Lektion 2» vor «Lektion 10»):
     // fromDisk sortiert genauso, sonst sähe jedes Nachlesen eine andere Reihenfolge.
-    const { dirName, parentDir, inside, byTitle, samePlace, sameFolder, allFolders, remapDir } = MyAblage;
+    const { dirName, parentDir, inside, byTitle, samePlace, allFolders, remapDir } = MyAblage;
     const OPEN_KEY = 'myvoci_open_dirs';
     // Die Beispiele bleiben für neue Nutzer der Einstieg; wer eigene Sets hat,
     // blendet sie hier aus (Gerät für Gerät, wie die Sprache).
@@ -5478,7 +5479,7 @@
         return enqueue(async () => {
           const disk = await readDir(handle);
           if (wanted.current !== handle) return;
-          const { next, onDisk } = fromDisk(storeRef.current, disk, keepAll);
+          const { next, onDisk } = fromDisk(storeRef.current, disk, keepAll, handle);
           mirrored.current = onDisk;
           // Der Fokus-Effekt liest bei jedem Fenster-Wechsel nach; hat sich im
           // Ordner nichts getan, sollen weder localStorage noch die Liste
@@ -5502,8 +5503,10 @@
         // Nicht geschrieben heisst nicht gespiegelt: bleibt der neue Stand
         // nach einem Fehler stehen, holt ihn kein späterer Lauf mehr nach und
         // «Neu laden» verwürfe die Änderung auch im Browser.
-        enqueue(() => (wanted.current !== dir.handle ? null : mirrorDir(dir.handle, base, store))
-          .catch((e) => { mirrored.current = base; throw e; }));
+        enqueue(async () => {
+          if (wanted.current !== dir.handle) return; // Ordner inzwischen gewechselt oder getrennt
+          try { await mirrorDir(dir.handle, base, store); } catch (e) { mirrored.current = base; throw e; }
+        });
       }, [store, dir]);
       // Im Finder abgelegte oder gelöschte Dateien erscheinen beim Wechsel
       // zurück ins Fenster — MyKahoot liest seine Quizzes ebenso live.
@@ -5527,7 +5530,7 @@
           if ((await dir.handle.requestPermission({ mode: 'readwrite' })) === 'granted') takeDisk(dir.handle, false);
         } catch { setDir((d) => ({ ...d, status: 'error' })); }
       };
-      const disconnectDir = () => { wanted.current = null; saveDirHandle(null); mirrored.current = null; setDir({ handle: null, status: 'none' }); };
+      const disconnectDir = () => { if (dir.handle) ablage.forget(dir.handle); wanted.current = null; saveDirHandle(null); mirrored.current = null; setDir({ handle: null, status: 'none' }); };
       const dirApi = {
         status: dir.status, name: dir.handle ? dir.handle.name : '',
         connect: connectDir, reconnect: reconnectDir, disconnect: disconnectDir, refresh: () => takeDisk(dir.handle, false),
@@ -5593,16 +5596,10 @@
       };
 
       const saveSet = (set) => {
-        let saved = set.id ? set : { ...set, id: newId() };
         // Früher benannte die App Dateien mit Umlaut und «–» nach dem Titel;
         // solche Dateien tragen seither `file`. Beim Umbenennen in der App
-        // ziehen sie mit und heissen dann nach der neuen Regel — sonst klebte
-        // der alte Name fest (s. readDir in design/js/my-ablage.js).
-        const old = storeRef.current.sets.find((s) => s.id === saved.id);
-        if (old && old.file && old.title !== saved.title && old.file.normalize('NFC') === `${MyAblage.safeName(old.title, 'Voci')}.txt`.normalize('NFC')) {
-          const { file, ...rest } = saved;
-          saved = rest;
-        }
+        // ziehen sie mit und heissen dann nach der neuen Regel (dropAutoFile).
+        const saved = ablage.prepareSave(storeRef.current, set);
         updateStore((prev) => insertSet(prev, saved, (s) => s.id !== saved.id));
         back();
       };
@@ -5645,41 +5642,19 @@
         setRoute(getRoute());
       };
 
-      // Neue Ordner ohne Sonderzeichen, wie die Dateien; Unterordner mit «/».
-      const cleanName = MyAblage.cleanFolderName;
+      // Ziele und Wächter (Vorgabe unverändert, Ziel belegt, Gross/Klein) kommen aus
+      // dem Modul: zurück kommt der Pfad, null = nichts tun, false = Ziel belegt.
       const makeFolder = (parent, rawName) => {
-        const name = cleanName(rawName);
-        if (!name) return null;
-        const wanted = parent ? `${parent}/${name}` : name;
-        // Schreibt sich nur die Gross-/Kleinschreibung anders, ist es derselbe Ordner.
-        const path = allFolders(store).find((f) => sameFolder(f, wanted)) || wanted;
-        updateStore((prev) => (prev.folders.includes(path) ? prev : { ...prev, folders: [...prev.folders, path] }));
+        const path = MyAblage.newFolderPath(store, parent, rawName);
+        if (path) updateStore((prev) => (prev.folders.includes(path) ? prev : { ...prev, folders: [...prev.folders, path] }));
         return path;
       };
-      // `false` heisst «am Ziel liegt schon ein Ordner dieses Namens» — ohne
-      // die Prüfung verschmölzen die beiden stillschweigend zu einem, und der
-      // Weg zurück fehlt (remapDir schreibt die Pfade um und dedupliziert).
-      // Gross/klein zählt nicht: auf macOS und Windows ist es dasselbe Verzeichnis
-      // (wie bei den Dateien, s. sameSlot in design/js/my-ablage.js). `self` ist der Ordner, der selbst umzieht.
-      const folderTaken = (target, self) => MyAblage.folderTaken(store, target, self);
-      const renameFolder = (dir, rawName) => {
-        // Vorgabe unverändert bestätigt: nichts tun — sonst würde ein alter
-        // Ordner «Französisch» still zu «Franzoesisch» samt allen Dateien.
-        if ((rawName || '').trim() === dirName(dir)) return null;
-        const name = cleanName(rawName);
-        if (!name) return null;
-        const target = parentDir(dir) ? `${parentDir(dir)}/${name}` : name;
-        if (target === dir) return null;
-        if (folderTaken(target, dir)) return false;
-        updateStore((prev) => remapDir(prev, dir, target));
+      const applyMove = (dir, target) => {
+        if (target) updateStore((prev) => remapDir(prev, dir, target));
         return target;
       };
-      const moveFolder = (dir, parent) => {
-        const target = parent ? `${parent}/${dirName(dir)}` : dirName(dir);
-        if (folderTaken(target, dir)) return false;
-        updateStore((prev) => remapDir(prev, dir, target));
-        return target;
-      };
+      const renameFolder = (dir, rawName) => applyMove(dir, MyAblage.renameFolderTarget(store, dir, rawName));
+      const moveFolder = (dir, parent) => applyMove(dir, MyAblage.moveFolderTarget(store, dir, parent));
       const removeFolder = (dir) => updateStore((prev) => ({ ...prev, folders: prev.folders.filter((f) => f !== dir) }));
       // `false` heisst «am Ziel liegt schon ein Set dieses Titels (oder Dateinamens)»:
       // zwei Sets am selben Ort teilten sich die Datei, mirrorDir überschriebe eine.

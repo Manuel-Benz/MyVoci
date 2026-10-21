@@ -48,25 +48,73 @@
   const sameFolder = (a, b) => a.toLowerCase() === b.toLowerCase();
   const collate = (a, b) => a.localeCompare(b, 'de', { numeric: true, sensitivity: 'base' });
   const byTitle = (a, b) => collate(a.title, b.title);
+  // Eine Sammlung ist { <list>: [Sets], folders: [Pfade] }; `list` heisst meist
+  // 'sets', in MyMemory 'memories'.
   // Alle Ordner: die gemerkten (auch leere) plus jeder Pfad samt Eltern, in dem ein Set liegt
-  const allFolders = ({ sets, folders }) => {
-    const all = new Set(folders);
-    for (const s of sets) for (let d = s.dir || ''; d; d = parentDir(d)) all.add(d);
+  const allFolders = (store, list = 'sets') => {
+    const all = new Set(store.folders);
+    for (const s of store[list]) for (let d = s.dir || ''; d; d = parentDir(d)) all.add(d);
     return [...all].sort(collate);
   };
   // Ordner umbenennen/verschieben: alle Pfade darunter mitnehmen
-  const remapDir = (store, from, to) => {
+  const remapDir = (store, from, to, list = 'sets') => {
     const move = (d) => (inside(d, from) ? to + d.slice(from.length) : d);
-    return { ...store, sets: store.sets.map((s) => ({ ...s, dir: move(s.dir || '') })), folders: [...new Set(store.folders.map(move))] };
+    return { ...store, [list]: store[list].map((s) => ({ ...s, dir: move(s.dir || '') })), folders: [...new Set(store.folders.map(move))] };
   };
   // Liegt am Ziel schon ein Ordner dieses Namens? `self` ist der Ordner, der
   // selbst umzieht — sonst ginge «Verben» → «verben» nicht.
-  const folderTaken = (store, target, self) => allFolders(store).some((f) => f !== self && sameFolder(f, target));
+  const folderTaken = (store, target, self, list = 'sets') => allFolders(store, list).some((f) => f !== self && sameFolder(f, target));
+
+  // Ziele der Ordner-Aktionen (die App wendet sie mit remapDir bzw. folders an).
+  // Zurück kommt der Zielpfad, `null` = nichts zu tun, `false` = am Ziel liegt
+  // schon ein Ordner (ABLAGE.md: melden und nichts tun, sonst verschmölzen beide
+  // still und der Weg zurück fehlte).
+  // Neuer Ordner: Unterordner mit «/»; schreibt sich nur Gross/Klein anders, ist
+  // es derselbe Ordner.
+  // Ein eingegebener ganzer Pfad («Französisch/Klasse 3»): Teil für Teil gegen die
+  // bestehenden Ordner aufgelöst. Was es schon gibt (ohne Gross/Klein), behält seinen
+  // Namen — sonst entstünde neben «Französisch» ein zweites «Franzoesisch» —, nur neue
+  // Teile gehen durch plainName. '' heisst abgebrochen.
+  const resolveFolderPath = (store, raw, list = 'sets') => {
+    const folders = allFolders(store, list);
+    let path = '';
+    for (const part of String(raw || '').split('/').map((p) => p.trim()).filter(Boolean)) {
+      const wanted = path ? `${path}/${part}` : part;
+      const there = folders.find((f) => sameFolder(f, wanted));
+      const name = there ? dirName(there) : plainName(part, '');
+      if (!name) continue;
+      path = path ? `${path}/${name}` : name;
+    }
+    return path;
+  };
+  const newFolderPath = (store, parent, raw, list = 'sets') => {
+    if (!cleanFolderName(raw)) return null;
+    return resolveFolderPath(store, parent ? `${parent}/${raw}` : raw, list);
+  };
+  // Umbenennen ändert nur den letzten Namen («/» wird «-»). Die Vorgabe
+  // unverändert bestätigt heisst nichts tun — sonst würde ein alter Ordner
+  // «Französisch» still zu «Franzoesisch» samt allen Dateien.
+  const renameFolderTarget = (store, dir, raw, list = 'sets') => {
+    const input = String(raw || '').trim();
+    if (input === dirName(dir)) return null;
+    const name = input ? plainName(input, '') : '';
+    if (!name) return null;
+    const target = parentDir(dir) ? `${parentDir(dir)}/${name}` : name;
+    if (target === dir) return null;
+    return folderTaken(store, target, dir, list) ? false : target;
+  };
+  const moveFolderTarget = (store, dir, parent, list = 'sets') => {
+    const target = parent ? `${parent}/${dirName(dir)}` : dirName(dir);
+    if (target === dir) return null;
+    return folderTaken(store, target, dir, list) ? false : target;
+  };
 
   // ---------- Dasselbe Set ----------
   // Ort = Ordner + Titel, ohne Gross/Klein. Titel sind nur im Ordner eindeutig:
   // zwei Klassen dürfen gleiche Titel haben.
-  const setPlace = (s) => `${s.dir || ''}\u0001${s.title}`.toLowerCase();
+  // Der Ordner geht über safeDir, wie mirrorDir ihn auf die Platte schreibt: ein
+  // alter Ordner «Kap. 1: Zellen» heisst dort «Kap. 1- Zellen» und bleibt derselbe (aus MyMemory).
+  const setPlace = (s) => `${safeDir(s.dir)}\u0001${s.title}`.toLowerCase();
   const samePlace = (a, b) => setPlace(a) === setPlace(b);
 
   // ---------- Datei: Kopf ----------
@@ -261,6 +309,7 @@
 
   // ---------- Eine Sammlung ----------
   // Bindet die Regeln an das Set-Format einer App:
+  //   list       Schlüssel der Sets in der Sammlung (Standard 'sets')
   //   items      Schlüssel des Inhalts ('words', 'pairs', 'tasks', 'questions');
   //              ein Set ohne Inhalt gibt es nicht
   //   toFile     (set) → Dateitext, Gegenstück zu parseFile
@@ -270,8 +319,12 @@
   //   fallback   Dateiname, wenn vom Titel nichts übrig bleibt ('Voci', 'Memory' …)
   //   newId      () → neue id
   const sammlung = (cfg) => {
-    const { items, toFile, parseFile, merge, fallback = 'Set' } = cfg;
-    const caches = new WeakMap(); // Lese-Cache je Ordner-Handle (readDir)
+    const { items, toFile, parseFile, merge, fallback = 'Set', list = 'sets' } = cfg;
+    // Je Ordner-Handle: Lese-Cache (readDir) und `known` = ids, die mirrorDir dort
+    // geschrieben hat (fromDisk). `forget(root)` beim Trennen.
+    const caches = new WeakMap(), knowns = new WeakMap();
+    const knownFor = (root) => knowns.get(root) || knowns.set(root, new Set()).get(root);
+    const forget = (root) => { caches.delete(root); knowns.delete(root); };
     const newId = cfg.newId || (() => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)));
     const hasContent = (s) => Array.isArray(s[items]) && s[items].length > 0;
 
@@ -324,7 +377,7 @@
       // jedem Umbenennen weiter, solange das Fenster offen ist.
       const seen = new Set(files.map(({ name, dir }) => `${dir}/${name}`));
       for (const key of cache.keys()) if (!seen.has(key)) cache.delete(key);
-      return { sets: read.filter(hasContent), folders };
+      return { [list]: read.filter(hasContent), folders };
     };
 
     // Schreibt nur, was sich geändert hat: Diff über die id, verglichen werden
@@ -332,8 +385,8 @@
     // Datei weg, neue hin; leer gewordene Ordner werden mitgeräumt. `prev` ist
     // der Stand, den der Ordner zuletzt sah (`mirrored`), nicht der letzte im Browser.
     const mirrorDir = async (root, prev, next) => {
-      const before = new Map(prev.sets.map((s) => [s.id, s]));
-      const prevFolders = allFolders(prev), nextFolders = allFolders(next);
+      const before = new Map(prev[list].map((s) => [s.id, s]));
+      const prevFolders = allFolders(prev, list), nextFolders = allFolders(next, list);
       for (const f of nextFolders) if (!prevFolders.includes(f)) await dirOf(root, safeDir(f), true);
       // Verglichen wird pro Datei, nicht pro Set: weg kommt jeder alte Pfad, den
       // kein Set mehr hat, geschrieben wird, was neu ist oder sich geändert hat.
@@ -341,10 +394,10 @@
       // Verschieben eines Ordners sind das sonst Dutzende Vorgänge nacheinander).
       // So fallen «Brüche» gelöscht + «Bruch» → «Brüche» und ein Namenstausch von
       // selbst richtig aus, und «brüche» → «Brüche» nimmt die Schreibweise mit.
-      const nextPaths = new Set(next.sets.map(setPath));
-      const drops = [...new Set(prev.sets.map(setPath))].filter((p) => !nextPaths.has(p));
+      const nextPaths = new Set(next[list].map(setPath));
+      const drops = [...new Set(prev[list].map(setPath))].filter((p) => !nextPaths.has(p));
       const writes = [];
-      for (const s of next.sets) {
+      for (const s of next[list]) {
         const old = before.get(s.id);
         if (old === s) continue; // unverändert — spart das Serialisieren
         const path = setPath(s), text = toFile(s);
@@ -352,6 +405,7 @@
       }
       await Promise.all(drops.map((p) => removeFile(root, p)));
       await Promise.all(writes.map((w) => writeFile(root, w.path, w.text)));
+      for (const s of next[list]) knownFor(root).add(s.id);
       // Ordner erst danach und von innen nach aussen: leer ist er erst ohne Dateien
       const gone = prevFolders.filter((f) => !nextFolders.includes(f)).sort((a, b) => b.length - a.length);
       for (const f of gone) await removeEmptyDir(root, safeDir(f));
@@ -361,14 +415,18 @@
     // (Lernstand, geladenes Set), sie soll also am richtigen Set kleben bleiben.
     // `keepAll` nur beim ausdrücklichen Verbinden: dann bleiben auch Sets, die
     // schon einmal im Ordner lagen (Ordnerwechsel), und gleiche Sets werden
-    // vereint. Sonst gilt der Ordner allein.
+    // vereint. Sonst gilt der Ordner allein. Was mirrorDir in `root` geschrieben
+    // hat, zählt wie `disk` (aus MyMemory) — sonst käme ein eben gespeichertes und
+    // dann im Finder gelöschtes Set beim nächsten Fokus zurück.
     // Zurück kommt neben `next` auch `onDisk`: der reine Inhalt des Ordners, gegen
     // den mirrorDir seine Differenz bildet (also der neue `mirrored`).
-    const fromDisk = (prev, disk, keepAll) => {
+    const fromDisk = (prev, disk, keepAll, root) => {
+      const known = root ? knownFor(root) : new Set();
+      const wasOnDisk = (s) => s.disk || known.has(s.id);
       // Ein Ort kann in alten Ständen doppelt vorkommen (früher zählte Gross/Klein):
       // dann bekommt jede Datei das nächste noch freie Set dieses Orts.
       const byPlace = new Map();
-      for (const s of prev.sets) {
+      for (const s of prev[list]) {
         const k = setPlace(s);
         (byPlace.get(k) || byPlace.set(k, []).get(k)).push(s);
       }
@@ -378,7 +436,7 @@
         return { ...d, id: old.id, ...(keepAll && merge ? { [items]: merge(d[items], old[items]) } : {}) };
       };
       // Erst der sichere Treffer: gleicher Ort.
-      const first = disk.sets.map((d) => {
+      const first = disk[list].map((d) => {
         const old = (byPlace.get(setPlace(d)) || []).find((s) => !used.has(s.id));
         return old ? take(d, old) : { ...d, id: null };
       });
@@ -387,7 +445,7 @@
       // erbte die Datei der einen Klasse das gleichnamige Set der anderen.
       const titleKey = (s) => s.title.toLowerCase(); // wie setPlace
       const free = new Map();
-      for (const s of prev.sets) if (!used.has(s.id) && s.disk) free.set(titleKey(s), free.has(titleKey(s)) ? null : s);
+      for (const s of prev[list]) if (!used.has(s.id) && wasOnDisk(s)) free.set(titleKey(s), free.has(titleKey(s)) ? null : s);
       const want = {};
       for (const d of first) if (!d.id) want[titleKey(d)] = (want[titleKey(d)] || 0) + 1;
       const sets = first.map((d) => {
@@ -399,11 +457,11 @@
       // und genau das soll mirrorDir noch in die Datei schreiben.
       // Ohne Vereinen dasselbe Objekt wie in `next`: dann greift in mirrorDir
       // `old === s`, und das nächste Spiegeln serialisiert nichts neu.
-      const onDisk = { sets: disk.sets.map((d, i) => (sets[i][items] === d[items] ? sets[i] : { ...d, id: sets[i].id })).sort(byTitle), folders: disk.folders };
-      const local = prev.sets.filter((s) => !used.has(s.id) && (keepAll || !s.disk));
+      const onDisk = { [list]: disk[list].map((d, i) => (sets[i][items] === d[items] ? sets[i] : { ...d, id: sets[i].id })).sort(byTitle), folders: disk.folders };
+      const local = prev[list].filter((s) => !used.has(s.id) && (keepAll || !wasOnDisk(s)));
       const next = {
         ...prev,
-        sets: [...sets, ...local].sort(byTitle),
+        [list]: [...sets, ...local].sort(byTitle),
         folders: [...new Set([...disk.folders, ...(keepAll ? prev.folders : [])])],
       };
       return { next, onDisk };
@@ -411,7 +469,7 @@
 
     // Alle Sets samt Ordnern (auch leeren) in einem ZIP. Gleiche Dateinamen im
     // selben Ordner bekommen eine Nummer, damit keiner den anderen überschreibt.
-    const zipBlob = async ({ sets, folders }) => {
+    const zipBlob = async ({ [list]: sets, folders }) => {
       const JSZip = await loadJsZip();
       const zip = new JSZip();
       const used = new Set();
@@ -426,16 +484,97 @@
       return zip.generateAsync({ type: 'blob' });
     };
 
+    // Umbenannt in der App: Hiess die Datei bisher automatisch nach dem alten
+    // Titel (alte Regel `safeName` oder `plainName`), fällt `file` weg und die
+    // Datei zieht mit dem Titel um — sonst klebte der alte Name fest. Von Hand
+    // benannte Dateien (`Fremd.txt`) behalten ihren Namen.
+    const dropAutoFile = (old, saved) => {
+      if (!old || !old.file || old.title === saved.title || !saved.file) return saved;
+      const auto = [safeName(old.title, fallback), plainName(old.title, fallback)].map((n) => n.normalize('NFC').toLowerCase());
+      const base = old.file.normalize('NFC').replace(SET_EXT, '').toLowerCase();
+      if (!auto.includes(base)) return saved;
+      const { file, ...rest } = saved;
+      return rest;
+    };
+
+    // Speichern aus dem Editor: neues Set bekommt eine id, ein umbenanntes nimmt
+    // seine automatisch benannte Datei mit (dropAutoFile gegen den alten Stand).
+    const prepareSave = (store, set) => (set.id
+      ? dropAutoFile(store[list].find((s) => s.id === set.id), set)
+      : { ...set, id: newId() });
+
+    // Alte Stände mit einer früheren Namensregel können zwei Sets haben, die
+    // dieselbe Datei ergeben («Unité 3»/«Unite 3»): mirrorDir schriebe beide
+    // dorthin, beim Nachlesen fiele eines weg. Einmal beim Laden aufrufen, dann
+    // bekommt das zweite einen eigenen Dateinamen («Unite 3 (2).txt») — die
+    // einzige Stelle, an der ausgewichen wird (sonst verhindert slotTaken das).
+    const resolveSlots = (store) => {
+      const taken = new Set();
+      let changed = false;
+      const sets = store[list].map((s) => {
+        const f = fileName(s), ext = f.match(SET_EXT)[0], base = f.slice(0, -ext.length);
+        for (let i = 2; taken.has(setPath(s).toLowerCase()); i++) { s = { ...s, file: `${base} (${i})${ext}` }; changed = true; }
+        taken.add(setPath(s).toLowerCase());
+        return s;
+      });
+      return changed ? { ...store, [list]: sets } : store;
+    };
+
     // Sicherung: Ordner-Buchführung (`disk`, `file`) ist kein Inhalt — auf einem
     // fremden Gerät stünde sonst «lag schon im Ordner».
     const backupSets = (sets) => sets.map(({ disk, file, ...s }) => s);
+    const backupFile = (store, app, extra = {}) =>
+      JSON.stringify({ app, version: 1, ...extra, [list]: backupSets(store[list]), folders: store.folders }, null, 1);
+    // Sicherung einlesen ergänzt, was fehlt, und ersetzt nichts: ein Set am selben
+    // Platz (sameSlot) bekommt nur, was ihm fehlt (cfg.merge), neue kommen dazu.
+    // Zurück: der neue Stand, wie viele Sets kamen, und welche ids der Sicherung
+    // auf welche hier zeigen (für App-eigenes wie den Lernstand). null = keine
+    // Sicherung dieser App.
+    const restoreBackup = (store, data, app) => {
+      if (!data || data.app !== app || !Array.isArray(data[list])) return null;
+      const next = [...store[list]];
+      const byPlace = new Map(), byPath = new Map();
+      const index = (s, i) => { byPlace.set(setPlace(s), i); byPath.set(setPath(s).toLowerCase(), i); };
+      next.forEach(index);
+      const idMap = {};
+      let count = 0;
+      for (const s of data[list]) {
+        if (!s || typeof s.title !== 'string' || !hasContent(s)) continue;
+        const incoming = { ...s, dir: typeof s.dir === 'string' ? s.dir : '' };
+        const i = byPlace.get(setPlace(incoming)) ?? byPath.get(setPath(incoming).toLowerCase());
+        if (i !== undefined) {
+          next[i] = { ...next[i], [items]: merge ? merge(next[i][items], incoming[items]) : next[i][items] };
+          idMap[s.id] = next[i].id;
+        } else {
+          const added = { ...incoming, id: newId() };
+          next.push(added);
+          index(added, next.length - 1);
+          idMap[s.id] = added.id;
+        }
+        count++;
+      }
+      const folders = [...new Set([...store.folders, ...(Array.isArray(data.folders) ? data.folders.filter((f) => typeof f === 'string' && f) : [])])];
+      return { next: { ...store, [list]: next.sort(byTitle), folders }, count, idMap };
+    };
 
-    return { fileName, setPath, sameSlot, slotTaken, readDir, mirrorDir, fromDisk, zipBlob, backupSets };
+    return {
+      fileName, setPath, sameSlot, slotTaken, readDir, mirrorDir, fromDisk, forget, zipBlob, backupSets, backupFile, restoreBackup,
+      dropAutoFile, prepareSave, resolveSlots,
+      // die Ordner-Helfer, an den Listen-Schlüssel dieser Sammlung gebunden
+      allFolders: (store) => allFolders(store, list),
+      remapDir: (store, from, to) => remapDir(store, from, to, list),
+      folderTaken: (store, target, self) => folderTaken(store, target, self, list),
+      resolveFolderPath: (store, raw) => resolveFolderPath(store, raw, list),
+      newFolderPath: (store, parent, raw) => newFolderPath(store, parent, raw, list),
+      renameFolderTarget: (store, dir, raw) => renameFolderTarget(store, dir, raw, list),
+      moveFolderTarget: (store, dir, parent) => moveFolderTarget(store, dir, parent, list),
+    };
   };
 
   return {
     safeName, safeDir, plainName, cleanFolderName,
     dirName, parentDir, inside, sameFolder, collate, byTitle, allFolders, remapDir, folderTaken,
+    resolveFolderPath, newFolderPath, renameFolderTarget, moveFolderTarget,
     setPlace, samePlace,
     stripBold, langCode, langInFile, titleFromFile, fileHead,
     b64urlEncode, b64urlDecode, packLink, unpackLink,
