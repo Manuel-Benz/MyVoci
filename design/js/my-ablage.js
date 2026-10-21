@@ -46,7 +46,8 @@
   const inside = (dir, ancestor) => dir === ancestor || dir.startsWith(ancestor + '/');
   // Gross/Klein zählt nicht: auf macOS und Windows ist es dasselbe Verzeichnis
   const sameFolder = (a, b) => a.toLowerCase() === b.toLowerCase();
-  const collate = (a, b) => a.localeCompare(b, 'de', { numeric: true, sensitivity: 'base' });
+  const collator = new Intl.Collator('de', { numeric: true, sensitivity: 'base' }); // einmal, nicht pro Vergleich
+  const collate = (a, b) => collator.compare(a, b);
   const byTitle = (a, b) => collate(a.title, b.title);
   // Eine Sammlung ist { <list>: [Sets], folders: [Pfade] }; `list` heisst meist
   // 'sets', in MyMemory 'memories'.
@@ -56,10 +57,12 @@
     for (const s of store[list]) for (let d = s.dir || ''; d; d = parentDir(d)) all.add(d);
     return [...all].sort(collate);
   };
-  // Ordner umbenennen/verschieben: alle Pfade darunter mitnehmen
+  // Ordner umbenennen/verschieben: alle Pfade darunter mitnehmen. Ausgangspunkt sind alle
+  // Ordner (auch die nur über Sets bekannten): ein Elternordner, aus dem der letzte
+  // Unterordner wegzieht, bleibt so als leerer Ordner stehen, statt still zu verschwinden.
   const remapDir = (store, from, to, list = 'sets') => {
     const move = (d) => (inside(d, from) ? to + d.slice(from.length) : d);
-    return { ...store, [list]: store[list].map((s) => ({ ...s, dir: move(s.dir || '') })), folders: [...new Set(store.folders.map(move))] };
+    return { ...store, [list]: store[list].map((s) => ({ ...s, dir: move(s.dir || '') })), folders: [...new Set(allFolders(store, list).map(move))] };
   };
   // Liegt am Ziel schon ein Ordner dieses Namens? `self` ist der Ordner, der
   // selbst umzieht — sonst ginge «Verben» → «verben» nicht.
@@ -78,10 +81,14 @@
   const resolveFolderPath = (store, raw, list = 'sets') => {
     const folders = allFolders(store, list);
     let path = '';
+    // Vergleich über den Dateinamen ohne Gross/Klein: so trifft auch «Franzoesisch»
+    // (ohne Umlaut getippt) den bestehenden Ordner «Französisch»
+    const key = (n) => plainName(n, '').toLowerCase();
+    const known = folders.map((f) => ({ f, parent: parentDir(f), key: key(dirName(f)) }));
     for (const part of String(raw || '').split('/').map((p) => p.trim()).filter(Boolean)) {
-      const wanted = path ? `${path}/${part}` : part;
-      const there = folders.find((f) => sameFolder(f, wanted));
-      const name = there ? dirName(there) : plainName(part, '');
+      const plain = plainName(part, '');
+      const there = known.find((k) => k.parent === path && k.key === plain.toLowerCase());
+      const name = there ? dirName(there.f) : plain;
       if (!name) continue;
       path = path ? `${path}/${name}` : name;
     }
@@ -102,6 +109,18 @@
     const target = parentDir(dir) ? `${parentDir(dir)}/${name}` : name;
     if (target === dir) return null;
     return folderTaken(store, target, dir, list) ? false : target;
+  };
+  // Umbenennen mit ganzem Pfad (MyTafelfussball): Ziel, null = nichts tun, false = belegt.
+  // Nur Gross/Klein anders («verben» → «Verben») behält den getippten Namen; sonst gilt
+  // resolveFolderPath (bestehende Teile bleiben, neue ohne Sonderzeichen).
+  const renamePathTarget = (store, from, raw, list = 'sets') => {
+    const input = String(raw || '').trim();
+    if (!input || input === from) return null; // Vorgabe unverändert bestätigt
+    const to = sameFolder(input, from)
+      ? from.slice(0, from.lastIndexOf('/') + 1) + safeName(dirName(input), '')
+      : resolveFolderPath(store, input, list);
+    if (!to || to === from || inside(to, from)) return null; // nicht in sich selbst
+    return folderTaken(store, to, from, list) ? false : to;
   };
   const moveFolderTarget = (store, dir, parent, list = 'sets') => {
     const target = parent ? `${parent}/${dirName(dir)}` : dirName(dir);
@@ -522,12 +541,13 @@
 
     // Sicherung: Ordner-Buchführung (`disk`, `file`) ist kein Inhalt — auf einem
     // fremden Gerät stünde sonst «lag schon im Ordner».
-    const backupSets = (sets) => sets.map(({ disk, file, ...s }) => s);
+    const contentOf = ({ disk, file, ...s }) => s; // ohne Ordner-Buchführung, für beide Richtungen
+    const backupSets = (sets) => sets.map(contentOf);
     const backupFile = (store, app, extra = {}) =>
       JSON.stringify({ app, version: 1, ...extra, [list]: backupSets(store[list]), folders: store.folders }, null, 1);
     // Sicherung einlesen ergänzt, was fehlt, und ersetzt nichts: ein Set am selben
     // Platz (sameSlot) bekommt nur, was ihm fehlt (cfg.merge), neue kommen dazu.
-    // Zurück: der neue Stand, wie viele Sets kamen, und welche ids der Sicherung
+    // Zurück: der neue Stand, wie viele Sets neu sind oder etwas dazubekamen, und welche ids der Sicherung
     // auf welche hier zeigen (für App-eigenes wie den Lernstand). null = keine
     // Sicherung dieser App.
     const restoreBackup = (store, data, app) => {
@@ -540,11 +560,16 @@
       let count = 0;
       for (const s of data[list]) {
         if (!s || typeof s.title !== 'string' || !hasContent(s)) continue;
-        const incoming = { ...s, dir: typeof s.dir === 'string' ? s.dir : '' };
+        // Ordner-Buchführung einer fremden Sicherung gilt hier nicht (sonst gälte das Set
+        // als «lag schon im Ordner» und verschwände beim nächsten Nachlesen); den Ordner
+        // so, wie mirrorDir ihn auf die Platte schriebe
+        const incoming = { ...contentOf(s), dir: safeDir(typeof s.dir === 'string' ? s.dir : '') };
         const i = byPlace.get(setPlace(incoming)) ?? byPath.get(setPath(incoming).toLowerCase());
         if (i !== undefined) {
-          next[i] = { ...next[i], [items]: merge ? merge(next[i][items], incoming[items]) : next[i][items] };
           idMap[s.id] = next[i].id;
+          const merged = merge ? merge(next[i][items], incoming[items]) : next[i][items];
+          if (merged.length === next[i][items].length) continue; // nichts dazu: unverändert, nicht gezählt
+          next[i] = { ...next[i], [items]: merged };
         } else {
           const added = { ...incoming, id: newId() };
           next.push(added);
@@ -553,7 +578,7 @@
         }
         count++;
       }
-      const folders = [...new Set([...store.folders, ...(Array.isArray(data.folders) ? data.folders.filter((f) => typeof f === 'string' && f) : [])])];
+      const folders = [...new Set([...store.folders, ...(Array.isArray(data.folders) ? data.folders.filter((f) => typeof f === 'string').map(safeDir).filter(Boolean) : [])])];
       return { next: { ...store, [list]: next.sort(byTitle), folders }, count, idMap };
     };
 
@@ -567,6 +592,7 @@
       resolveFolderPath: (store, raw) => resolveFolderPath(store, raw, list),
       newFolderPath: (store, parent, raw) => newFolderPath(store, parent, raw, list),
       renameFolderTarget: (store, dir, raw) => renameFolderTarget(store, dir, raw, list),
+      renamePathTarget: (store, from, raw) => renamePathTarget(store, from, raw, list),
       moveFolderTarget: (store, dir, parent) => moveFolderTarget(store, dir, parent, list),
     };
   };
@@ -574,7 +600,7 @@
   return {
     safeName, safeDir, plainName, cleanFolderName,
     dirName, parentDir, inside, sameFolder, collate, byTitle, allFolders, remapDir, folderTaken,
-    resolveFolderPath, newFolderPath, renameFolderTarget, moveFolderTarget,
+    resolveFolderPath, newFolderPath, renameFolderTarget, renamePathTarget, moveFolderTarget,
     setPlace, samePlace,
     stripBold, langCode, langInFile, titleFromFile, fileHead,
     b64urlEncode, b64urlDecode, packLink, unpackLink,
