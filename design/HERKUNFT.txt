@@ -1,1 +1,1 @@
-Kopie aus MySuite (eee32e6 2026-10-22) – nicht hier ändern, sondern in ~/MySuite und ./sync.sh voci
+Kopie aus MySuite (157fee0 2026-10-22) – nicht hier ändern, sondern in ~/MySuite und ./sync.sh voci
