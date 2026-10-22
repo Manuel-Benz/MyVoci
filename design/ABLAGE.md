@@ -87,7 +87,17 @@ Zeit: 30
 7. **Ein Schreibweg** für die Sammlung (`commit`: speichern, zeichnen, spiegeln).
 
 ## Erstellen
-**Ein Weg zum neuen Set:** «+» beim Hauptordner und an jedem Ordner öffnet den Kasten «… erstellen» mit diesem Ordner vorgewählt. Dort stehen alle Wege nebeneinander: KI-Prompt kopieren, Text einfügen, Datei ziehen oder wählen, von Hand (Editor). Eine Datei aufs Fenster gezogen landet im Hauptordner (MyVoci: automatische Ablage). In MyKahoot ist der Kasten das aufgeklappte KI-Panel im Editor eines neuen Quiz, die Fragekarten darunter sind die Vorschau.
+**Ein Kasten auf der Startseite, in allen vier Apps gleich** (Vorbild MyVoci): «Voci-Set erstellen», «Memory erstellen», «Kahoot erstellen», «Tafelfussball erstellen». Zu ist er eine Zeile mit Pfeil über der Sammlung, offen steht darin von oben nach unten:
+1. **Speichern in** (Ordnerwahl).
+2. Die vier Schritte.
+3. **«KI-Prompt kopieren»** als breiter Hauptknopf.
+4. **Ein Feld** für Text *oder* Datei: einfügen oder die Datei hineinziehen. Kein Knopf «Datei wählen», keine eigene Ablagefläche.
+5. Die Vorschau (unten).
+6. **«oder von Hand»** und **«Leeres … von Hand anlegen»**: MyVoci und MyMemory öffnen ihren Editor, MyKahoot den Editor-Tab, MyTafelfussball eine leere Liste im Lehrer:innen-Fenster.
+
+«+» im Kopf der Sammlung und an jedem Ordner öffnet den Kasten mit diesem Ordner. Eine einzelne Datei, aufs Fenster gezogen, kommt ebenfalls in den Kasten, auf einen Ordner gezogen mit diesem Ordner (MyKahoot nimmt Dateien auf der Liste an, MyTafelfussball kennt keine Ordner als Ziel). Mehrere Dateien gehen ohne Vorschau direkt in die Sammlung. Der Editor selbst hat keinen KI-Weg mehr.
+
+**MyTafelfussball:** Kasten und Sammlung stehen auf der Startseite, nicht mehr im Lehrer:innen-Fenster. Die grosse Kachel einer Set-Zeile ist zweigeteilt: **Beamer** und **Lehrer:in** laden das Set und öffnen je ihr Fenster (in MyKahoot startet die eine Kachel das Quiz). Das Lehrer:innen-Fenster behält die aktuelle Liste mit «Speichern»; beide Fenster teilen die Sammlung.
 
 ### KI-Prompt
 Aufbau im Stil von MyVoci, in jeder App gleich gegliedert, Deutsch und Englisch mit denselben Abschnitten:
@@ -104,7 +114,7 @@ Der Prompt kennt die Ablage: Ändert sich Format, Titel- oder Namensregel, wird 
 
 ### Text einfügen und Vorschau
 - **Ein Feld** für den ganzen Text, kein eigenes Titelfeld: Der Titel kommt aus `# Titel`. Fehlt die Zeile, fragt die Vorschau danach.
-- **Vorschau vor dem Speichern** (aus dem MyKahoot-Editor) für eingefügten Text und eine einzelne Datei: Titel, Zielordner (änderbar), Anzahl, Inhalt so dargestellt wie in der App (Formeln gerendert), dazu Hinweise auf Zeilen, die nicht verstanden wurden (`strayLines`, höchstens drei genannt). Erst «In die Sammlung» bzw. «Speichern» legt das Set an. Bei besetztem Platz fragt sie «ersetzen?».
+- **Vorschau vor dem Speichern** für eingefügten Text und eine einzelne Datei (die Datei steht dann sichtbar im Feld): Titel, Zielordner, Anzahl, Inhalt so dargestellt wie in der App (Formeln gerendert), dazu Hinweise auf Zeilen, die nicht verstanden wurden (`strayLines`, höchstens drei genannt). Erst «In die Sammlung» bzw. «Speichern» legt das Set an. Bei besetztem Platz fragt sie «ersetzen?».
 - Der Titel der Vorschau folgt dem Text, bis man ihn selbst ändert. Ohne `# Titel` bleibt das Feld leer und «In die Sammlung» setzt den Cursor hinein, statt ein Set «Voci»/«Memory» anzulegen.
 - Mehrere Dateien auf einmal: ohne Vorschau, danach eine Meldung, was angekommen ist.
 
@@ -115,13 +125,13 @@ Der Prompt kennt die Ablage: Ändert sich Format, Titel- oder Namensregel, wird 
 - **MyKahoot** hat keinen Link (Medien, der Empfänger braucht ohnehin den Server). Dafür bleiben Vorschau und **Arbeitsblatt als PDF**.
 - **Sicherung** (Browser-Apps, v. a. für Safari/iPad): eine JSON-Datei `{ app, version, sets, folders, … }` ohne Ordner-Buchführung (`disk`, `file`). Einlesen ergänzt, was fehlt, und ersetzt nichts.
 
-## Umgesetzt (2026-10-21)
+## Umgesetzt (2026-10-21, Kasten angeglichen 2026-10-22)
 | App | Was dazukam |
 |---|---|
-| MyKahoot | `.txt` schreiben, `.md` lesen und beim Speichern umziehen, Quiz am Inhalt erkennen · Dateiname = Titel nach `plainName` (alte Slugs ziehen beim Umbenennen mit) · gleicher Platz: Editor fragt «ersetzen?», Verschieben lehnt ab · neue Ordner nach der Namensregel · KI-Prompt mit Dateiname und TITEL · KI-Panel beim neuen Quiz offen, mit «Datei wählen» und Hinweis auf unverstandene Zeilen. Der Server lädt `public/design/js/my-ablage.js`. |
-| MyVoci | `my-ablage.js` · ein Einfügefeld mit Vorschau |
-| MyMemory | `my-ablage.js`, Namensregel · ein Einfügefeld mit Vorschau, «+» an jedem Ordner öffnet den Kasten · «ersetzen?» beim Import · KI-Prompt ohne `Memory_`, mit TITEL · Sicherung · Link wird ein eigenes Memory (Link trägt jetzt auch die Sprache, alte Links gelten weiter) |
-| MyTafelfussball | `# Titel` in der Datei, Namensregel, `my-ablage.js`, Ordner ziehen, Link/QR (`#t=`), ZIP, Sicherung, Kasten «Set erstellen» mit Vorschau, KI-Prompt nach dem Aufbau oben |
+| MyKahoot | `.txt` schreiben, `.md` lesen und beim Speichern umziehen, Quiz am Inhalt erkennen · Dateiname = Titel nach `plainName` (alte Slugs ziehen beim Umbenennen mit) · gleicher Platz: Editor fragt «ersetzen?», Verschieben lehnt ab · neue Ordner nach der Namensregel · KI-Prompt mit Dateiname und TITEL · Kasten «Kahoot erstellen» auf der Startseite (Vorschau, «In die Sammlung», Hinweis auf unverstandene Zeilen), der Editor ist nur noch zum Bearbeiten und für «von Hand» · Kopf «Meine Kahoots» mit ＋ und Ordner. Der Server lädt `public/design/js/my-ablage.js`. |
+| MyVoci | `my-ablage.js` · ein Feld für Text oder Datei, mit Vorschau |
+| MyMemory | `my-ablage.js`, Namensregel · ein Feld für Text oder Datei, mit Vorschau, «+» an jedem Ordner öffnet den Kasten · «ersetzen?» beim Import · KI-Prompt ohne `Memory_`, mit TITEL · Sicherung · Link wird ein eigenes Memory (Link trägt jetzt auch die Sprache, alte Links gelten weiter) |
+| MyTafelfussball | `# Titel` in der Datei, Namensregel, `my-ablage.js`, Ordner ziehen, Link/QR (`#t=`), ZIP, Sicherung, KI-Prompt nach dem Aufbau oben · Startseite mit Kasten «Tafelfussball erstellen» und Sammlung, Kacheln Beamer/Lehrer:in |
 
 ## my-ablage.js
 Welche Namen es gibt, steht im `return` am Ende der Datei. Gruppen:

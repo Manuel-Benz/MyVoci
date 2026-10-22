@@ -253,6 +253,7 @@
     .feld { padding: 8px 12px; border: 1px solid var(--linie); border-radius: var(--radius); background: var(--karte); color: var(--text); }
     .feld:focus { outline: none; border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-weich); }
     .feld::placeholder { color: var(--text-3); }
+    .feld.ziehen { border-color: var(--akzent); border-style: dashed; background: var(--akzent-weich); }
     .kuerzel { padding: 0 6px; border-radius: var(--radius-s); background: var(--hover); color: var(--text-2);
       font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
     /* Kompakte Liste (DESIGN.md, Listen): keine Fläche, nur Hover */
@@ -388,18 +389,16 @@
             <li>Kopiere den KI-Prompt (Button unten) in ein KI-Tool wie <b>Claude</b> oder <b>ChatGPT</b>.</li>
             <li>Fülle dort <b>den Block zuoberst</b> aus: Thema <i>oder</i> Material (Buchseite, PDF, Liste anhängen), die beiden Sprachen, Klasse, Anzahl Wörter … Alles darunter unverändert lassen.</li>
             <li>Du erhältst eine .txt-Datei <i>und</i> denselben Text zum Kopieren (Format {code('F:')} / {code('A:')} / {code('S:')} / {code('---')}).</li>
-            <li>Den Text unten einfügen oder die Datei auf die Fläche darunter ziehen. Die Vorschau zeigt, was erkannt wurde — «In die Sammlung» legt das Set an.</li>
+            <li>Den Text unten einfügen oder die Datei ins Feld ziehen. Die Vorschau zeigt, was erkannt wurde — «In die Sammlung» legt das Set an.</li>
           </>
         ),
         copyPrompt: 'KI-Prompt kopieren',
         promptCopied: 'KI-Prompt kopiert!',
-        dropTitle: '… oder Datei hierher ziehen',
-        dropHint: 'oder klicken zum Auswählen (.txt im F:/A:/---‑Format, auch aus MyMemory)',
         orByHand: 'oder von Hand',
         byHand: 'Leeres Set von Hand anlegen',
         createIn: 'Speichern in',
         pasteLabel: 'Antwort der KI',
-        pastePh: '# Unité 3 – La maison\nSprachen: de → fr\n\nF: das Haus\nA: la maison\nS: J\'habite dans une grande maison.\nH: f.\n---',
+        pastePh: 'KI-Antwort hier einfügen — oder die .txt-Datei hierher ziehen (auch aus MyMemory)\n\n# Unité 3 – La maison\nSprachen: de → fr\n\nF: das Haus\nA: la maison\nS: J\'habite dans une grande maison.\nH: f.\n---',
         previewTitle: 'Titel',
         previewTitleMissing: 'Titel fehlt — bitte eintragen',
         previewFolder: (dir) => `Ordner: ${dir || t('rootFolder')}`,
@@ -828,18 +827,16 @@
             <li>Copy the AI prompt (button below) into an AI tool such as <b>Claude</b> or <b>ChatGPT</b>.</li>
             <li>Fill in <b>the block at the top</b>: topic <i>or</i> material (attach the book page, PDF or list), the two languages, class, number of words … Leave everything below unchanged.</li>
             <li>You get a .txt file <i>and</i> the same text to copy (format {code('F:')} / {code('A:')} / {code('S:')} / {code('---')}).</li>
-            <li>Paste the text below or drag the file onto the area underneath. The preview shows what was recognised — “Add to collection” creates the set.</li>
+            <li>Paste the text below or drag the file into the box. The preview shows what was recognised — “Add to collection” creates the set.</li>
           </>
         ),
         copyPrompt: 'Copy AI prompt',
         promptCopied: 'AI prompt copied!',
-        dropTitle: '… or drag a file here',
-        dropHint: 'or click to choose one (.txt in F:/A:/--- format, MyMemory files work too)',
         orByHand: 'or by hand',
         byHand: 'Create an empty set by hand',
         createIn: 'Save in',
         pasteLabel: 'Answer from the AI',
-        pastePh: '# Unit 3 – At home\nLanguages: de → en\n\nF: das Haus\nA: the house\nS: I live in a big house.\n---',
+        pastePh: 'Paste the AI answer here — or drag the .txt file here (MyMemory files work too)\n\n# Unit 3 – At home\nLanguages: de → en\n\nF: das Haus\nA: the house\nS: I live in a big house.\n---',
         previewTitle: 'Title',
         previewTitleMissing: 'Title missing — please enter one',
         previewFolder: (dir) => `Folder: ${dir || t('rootFolder')}`,
@@ -2492,9 +2489,6 @@
     const SettingsIcon = () => (
       <Icon><path d="M4 8h10M18 8h2M4 16h4M12 16h8" /><circle cx="16" cy="8" r="2" /><circle cx="10" cy="16" r="2" /></Icon>
     );
-    const InboxIcon = () => (
-      <Icon><path d="M12 3v9" /><path d="M8 8.5 12 12.5l4-4" /><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" /></Icon>
-    );
     const DownloadIcon = () => <Icon><path d="M12 3v12" /><path d="M7.5 10.5 12 15l4.5-4.5" /><path d="M4 20h16" /></Icon>;
     const PlusIcon = () => <Icon><path d="M12 5v14" /><path d="M5 12h14" /></Icon>;
     const FolderIcon = () => <Icon><path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" /></Icon>;
@@ -3030,13 +3024,13 @@
     // getippte Zeichen die ganze Liste neu. Eingefügter Text und eine einzelne
     // Datei kommen erst in die Vorschau (ABLAGE.md, «Text einfügen und
     // Vorschau»); mehrere Dateien gehen direkt in den gewählten Ordner `into`.
-    const CreateBox = ({ open, onToggle, into, onPick, folders, hint, onFiles, onSave, placeOf, onNew, onCopyPrompt }) => {
+    const CreateBox = ({ open, onToggle, into, onPick, folders, hint, onFiles, takeRef, onSave, placeOf, onNew, onCopyPrompt }) => {
       const [pasted, setPasted] = useState('');
       const [fileName, setFileName] = useState(''); // Datei im Feld: ihr Name ist der Ersatztitel
       // Eigener Titel als { value, auto }: gilt, solange der Text denselben «# Titel»
       // bringt wie beim Ändern — eine ganz andere KI-Antwort bringt ihren eigenen mit
       const [title, setTitle] = useState(null);
-      const fileInput = useRef(null);
+      const [dragging, setDragging] = useState(false);
       const titleInput = useRef(null);
       const parsed = useMemo(() => (pasted.trim() ? parseFile(pasted, fileName) : null), [pasted, fileName]);
       const strays = useMemo(() => (parsed ? MyAblage.strayLines(pasted, knownLine) : []), [pasted, parsed]);
@@ -3045,22 +3039,26 @@
       const shownTitle = title && title.auto === auto ? title.value : auto;
       const clear = () => { setPasted(''); setFileName(''); setTitle(null); };
       const typed = (text) => { setPasted(text); if (!text.trim()) { setFileName(''); setTitle(null); } };
-      // Eine Datei kommt ins Feld (sichtbar und änderbar), mehrere direkt in die Sammlung
+      // Eine Datei kommt ins Feld (sichtbar und änderbar), mehrere direkt in die Sammlung.
+      // Auch eine aufs Fenster oder einen Ordner gezogene Datei kommt hierher (takeRef).
       const takeFiles = (files) => {
         if (files.length !== 1 || /\.json$/i.test(files[0].name)) { onFiles(files); return; }
         const file = files[0];
         file.text().then((text) => { setPasted(text); setFileName(file.name); setTitle(null); });
       };
+      takeRef.current = takeFiles;
       const save = () => {
         const name = shownTitle.trim();
         if (!name) { titleInput.current.focus(); return; }
         onSave({ ...parsed, title: name }, clear);
       };
-      // Die Fläche braucht ein eigenes onDrop: sonst fiele die Datei zum
-      // Fenster-Listener durch — der kennt nur die Hauptebene.
+      // Das Feld nimmt Text und Dateien. Es braucht ein eigenes onDrop: sonst
+      // fiele die Datei zum Fenster-Listener durch — der kennt nur die Hauptebene.
+      // Gezogener Text bleibt beim Browser (er fügt ihn ins Feld ein).
       const hereDrop = {
-        onDragOver: (e) => { e.preventDefault(); e.stopPropagation(); },
-        onDrop: (e) => { if (!e.dataTransfer.files.length) return; e.preventDefault(); e.stopPropagation(); takeFiles([...e.dataTransfer.files]); },
+        onDragOver: (e) => { if (![...e.dataTransfer.types].includes('Files')) return; e.preventDefault(); e.stopPropagation(); setDragging(true); },
+        onDragLeave: () => setDragging(false),
+        onDrop: (e) => { setDragging(false); if (!e.dataTransfer.files.length) return; e.preventDefault(); e.stopPropagation(); takeFiles([...e.dataTransfer.files]); },
       };
       return (
         <Collapsible id="create" title={t('createTitle')} open={open} onToggle={onToggle}>
@@ -3074,15 +3072,8 @@
           <button onClick={onCopyPrompt} className={`w-full ${BTN_PRIMARY} px-4 py-2 mb-6`}>
             {t('copyPrompt')}
           </button>
-          <textarea value={pasted} onChange={(e) => typed(e.target.value)} rows={6} placeholder={t('pastePh')}
-            aria-label={t('pasteLabel')} className={`w-full ${INPUT} text-sm font-mono`} />
-          <div onClick={() => fileInput.current.click()} {...hereDrop}
-            className="mt-2 border-2 border-dashed border-linie rounded-lg p-4 text-center text-text-2 cursor-pointer hover:border-akzent hover:text-text hover:bg-akzent-weich transition-all">
-            <span className="flex items-center justify-center gap-2 font-bold"><InboxIcon /> {t('dropTitle')}</span>
-            <span className="block text-sm text-text-3">{t('dropHint')}</span>
-          </div>
-          <input ref={fileInput} type="file" accept=".txt,.md" multiple className="hidden"
-            onChange={(e) => { takeFiles([...e.target.files]); e.target.value = ''; }} />
+          <textarea value={pasted} onChange={(e) => typed(e.target.value)} {...hereDrop} rows={8} placeholder={t('pastePh')}
+            aria-label={t('pasteLabel')} className={`w-full ${INPUT} ${dragging ? 'ziehen' : ''} text-sm font-mono`} />
           {pasted.trim() && !words.length && <p className="text-sm text-rot mt-2">{fileName ? t('noWordsInFile', fileName) : t('noWordsFound')}</p>}
           {words.length > 0 && (
             <div className="vorschau mt-4 rounded-lg border border-linie p-4">
@@ -3207,6 +3198,13 @@
       // umbenannter oder gelöschter Ordner fällt auf die Hauptebene zurück.
       const [target, setTarget] = useState('');
       const into = folders.includes(target) ? target : '';
+      // Eine gezogene Datei kommt in den Kasten (Vorschau wie im Feld), mehrere direkt in die
+      // Sammlung. `dir` wie bei importFiles: auf einen Ordner gezogen dieser, aufs Fenster keiner.
+      const takeFile = useRef(null); // setzt CreateBox
+      const dropFiles = (files, dir) => {
+        if (files.length === 1 && !/\.json$/i.test(files[0].name)) { create(dir || ''); takeFile.current([...files]); }
+        else importFiles(files, dir);
+      };
       const create = (dir) => {
         setTarget(dir);
         setCreateOpen(true);
@@ -3270,7 +3268,7 @@
 
       useEffect(() => {
         const over = (e) => { if ([...e.dataTransfer.types].includes('Files')) e.preventDefault(); };
-        const drop = (e) => { if (!e.dataTransfer.files.length) return; e.preventDefault(); importFiles(e.dataTransfer.files); };
+        const drop = (e) => { if (!e.dataTransfer.files.length) return; e.preventDefault(); dropFiles(e.dataTransfer.files); };
         window.addEventListener('dragover', over);
         window.addEventListener('drop', drop);
         return () => { window.removeEventListener('dragover', over); window.removeEventListener('drop', drop); };
@@ -3320,7 +3318,7 @@
         onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDropDir((cur) => (cur === dir ? null : cur)); },
         onDrop: (e) => {
           e.stopPropagation();
-          if (e.dataTransfer.files.length) { e.preventDefault(); setDropDir(null); importFiles(e.dataTransfer.files, dir); return; }
+          if (e.dataTransfer.files.length) { e.preventDefault(); setDropDir(null); dropFiles(e.dataTransfer.files, dir); return; }
           const item = dragged.current;
           if (!item || !canDrop(dir)) return;
           e.preventDefault();
@@ -3419,7 +3417,7 @@
             <CreateBox open={createOpen} onToggle={() => { setTarget(''); setCreateOpen((v) => !v); }}
               into={into} onPick={setTarget} folders={folders} onNew={() => onNew(into)}
               hint={dir.status === 'ok' ? t('importHintDir', dir.name) : t('importHint')}
-              onFiles={(files) => importFiles(files, into)}
+              onFiles={(files) => importFiles(files, into)} takeRef={takeFile}
               onSave={(parsed, done) => addSet(parsed, into, done)}
               placeOf={(parsed) => placeFor(parsed, own, folders)}
               onCopyPrompt={() => copyText(kiPrompt(), t('promptCopied'))} />

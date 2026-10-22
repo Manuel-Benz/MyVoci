@@ -4,6 +4,12 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (22.10.2026):** **Ein Feld für Text oder Datei**: Einfügefeld und
+Ablagefläche sind eins (die Datei wird ins Feld gezogen, kein «Datei wählen»
+mehr), wie jetzt in allen vier Apps (ABLAGE.md «Erstellen»). Eine einzelne Datei,
+aufs Fenster oder einen Ordner gezogen, kommt ebenfalls in den Kasten (mit diesem
+Ordner) statt direkt in die Sammlung; mehrere gehen weiter direkt hinein.
+
 **Stand (21.10.2026, später):** **Erstellen wie in den anderen Apps**: ein
 Einfügefeld ohne Titelfeld, darunter die Vorschau (Titel aus `# Titel`, Ordner,
 Wörter, nicht verstandene Zeilen), erst «In die Sammlung» legt das Set an. Eine

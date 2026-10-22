@@ -147,6 +147,22 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   await wait(300);
   check((await store()).sets.length === before && await page.evaluate(() => document.activeElement.id) === 'previewTitle',
     'ohne Titel wird nichts gespeichert, das Titelfeld hat den Fokus');
+  check(!(await page.locator('#create input[type=file]').count()), 'ein Feld für Text und Datei, kein «Datei wählen»');
+  // Eine Datei ins Feld oder aufs Fenster gezogen: Text sichtbar im Feld, Vorschau
+  const dropFile = (sel, name, text) => page.evaluate(([sel, name, text]) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([text], name, { type: 'text/plain' }));
+    document.querySelector(sel).dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+  }, [sel, name, text]);
+  await box.fill('');
+  await dropFile('#create textarea', 'Feld.txt', '# Ins Feld\n\nF: blau\nA: bleu\n---\n');
+  await page.locator('#create .vorschau').waitFor();
+  check(await title.inputValue() === 'Ins Feld' && (await box.inputValue()).includes('F: blau'), 'Datei ins Feld gezogen: Text im Feld, Vorschau');
+  await box.fill('');
+  await page.evaluate(() => document.querySelector('#create button').click()); // Kasten zu
+  await dropFile('body', 'Fenster.txt', 'F: grün\nA: vert\n---\n');
+  await page.locator('#create .vorschau').waitFor();
+  check(await title.inputValue() === 'Fenster' && (await box.inputValue()).includes('F: grün'), 'Datei aufs Fenster gezogen: Kasten geht auf, Titel aus dem Dateinamen');
 
   check(errors.length === 0, `keine Fehler in der Konsole${errors.length ? ': ' + errors.join(' | ') : ''}`);
   await browser.close();

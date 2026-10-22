@@ -83,10 +83,11 @@ den Kasten «Voci-Set erstellen» (`create(dir)`) mit dem Ordner vorgewählt
 (`target`). Dort stehen alle Wege nebeneinander: KI-Prompt, Datei, Text
 einfügen, «von Hand» (`onNew(into)` → Editor). Das `+` führte früher direkt
 in den Editor, der Kasten kannte nur die Hauptebene — je nach Einstieg fehlte
-die Hälfte. Ein Ziehen aufs Fenster landet weiterhin auf der Hauptebene, aufs
-Ordner-Feld im Ordner. Die Ablage-Fläche im Kasten hat dafür ein
-eigenes `onDrop` (in `CreateBox`, über `onFiles`), sonst fiele die Datei zum Fenster-Listener
-durch. Die Titelzeile des Kastens heisst Hauptebene (setzt `target` zurück);
+die Hälfte. Text und Datei teilen sich **ein Feld** (die Textarea nimmt den Drop,
+eigenes `onDrop` in `CreateBox`, sonst fiele die Datei zum Fenster-Listener
+durch). Eine einzelne Datei, aufs Fenster oder ein Ordner-Feld gezogen, kommt
+über `dropFiles` → `create(dir)` + `takeFile` (Ref, setzt `CreateBox`) ebenfalls
+in den Kasten; mehrere gehen über `importFiles` direkt in die Sammlung. Die Titelzeile des Kastens heisst Hauptebene (setzt `target` zurück);
 Umbenennen/Verschieben nimmt die Wahl mit (`followMove`), ein Import klappt
 seinen Ordner auf (`openTo`), und `FolderSelect` teilt sich die Ordnerliste
 mit dem Editor.
