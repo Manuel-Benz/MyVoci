@@ -431,6 +431,7 @@
         downloadedOne: (title) => `«${title}» heruntergeladen`,
         downloadedAll: (n) => `${n} ${n === 1 ? 'Set' : 'Sets'} heruntergeladen`,
         noOwnSets: 'Noch keine eigenen Sets da',
+        nSets: (n) => `${n} ${n === 1 ? 'Set' : 'Sets'}`,
         zipFailed: 'Der ZIP-Export hat nicht geklappt.',
         imported: (title, n) => `«${title}» importiert (${t('nWords', n)})`,
         noWordsInFile: (name) => `«${name}»: keine Wörter gefunden (Format F:/A:/---)`,
@@ -869,6 +870,7 @@
         downloadedOne: (title) => `“${title}” downloaded`,
         downloadedAll: (n) => `${n} ${n === 1 ? 'set' : 'sets'} downloaded`,
         noOwnSets: 'No sets of your own yet',
+        nSets: (n) => `${n} ${n === 1 ? 'set' : 'sets'}`,
         zipFailed: 'The ZIP export did not work.',
         imported: (title, n) => `“${title}” imported (${t('nWords', n)})`,
         noWordsInFile: (name) => `“${name}”: no words found (format F:/A:/---)`,
@@ -3368,13 +3370,17 @@
 
       const folderBox = (dir) => {
         const isOpen = openDirs.includes(dir);
+        const count = own.filter((s) => inside(s.dir || '', dir)).length; // samt Unterordnern
         return (
           <div key={dir} {...dropProps(dir)} className={`ablage ${dropDir === dir ? 'ziel' : ''}`}>
             <div {...dragProps({ kind: 'dir', id: dir })} onClick={() => toggleDir(dir)}
               className="liste-zeile cursor-pointer select-none">
-              <span className={`shrink-0 text-text-3 transition-transform ${isOpen ? 'rotate-90' : ''}`}><ChevronIcon /></span>
-              <span className="shrink-0 text-text-3 mx-1.5"><FolderIcon /></span>
-              <span className="flex-1 min-w-0 truncate font-semibold">{dirName(dir)}</span>
+              <span className="liste-name flex items-center">
+                <span className={`shrink-0 text-text-3 transition-transform ${isOpen ? 'rotate-90' : ''}`}><ChevronIcon /></span>
+                <span className="shrink-0 text-text-3 mx-1.5"><FolderIcon /></span>
+                <span className="min-w-0 truncate">{dirName(dir)}</span>
+              </span>
+              <span className="liste-zahl">{t('nSets', count)}</span>
               <RowTool onClick={() => create(dir)} title={t('newSetHere')}><PlusIcon /></RowTool>
               <RowTool onClick={() => newFolder(dir)} title={t('newSubfolder')}><FolderIcon /></RowTool>
               <RowTool onClick={() => renameFolder(dir)} title={t('renameFolder')}><PenIcon /></RowTool>

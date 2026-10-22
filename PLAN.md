@@ -4,6 +4,8 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (22.10.2026, später):** Ordnerzeilen zeigen die Anzahl Sets darin (samt Unterordnern), wie in MyMemory, MyKahoot und MyTafelfussball (DESIGN.md «Sammlung auf der Startseite»).
+
 **Stand (22.10.2026):** **Ein Feld für Text oder Datei**: Einfügefeld und
 Ablagefläche sind eins (die Datei wird ins Feld gezogen, kein «Datei wählen»
 mehr), wie jetzt in allen vier Apps (ABLAGE.md «Erstellen»). Eine einzelne Datei,

@@ -1,6 +1,6 @@
 # My-Designsystem – Regeln
 
-Gilt für MySchool, MyVoci, MyMemory, MyKahoot, MyTafelfussball, MySound, MyLab. Die Werte stehen in `css/my-tokens.css` und `css/my-schemen.css`. Die visuelle Referenz ist `referenz/My Designsystem.dc.html`.
+Gilt für MySchool, MyVoci, MyMemory, MyKahoot, MyTafelfussball, MySound, MyLab, MySlide. Die Werte stehen in `css/my-tokens.css` und `css/my-schemen.css`. Die visuelle Referenz ist `referenz/My Designsystem.dc.html`.
 
 ## Gemeinsam (in jeder App gleich)
 - **Schrift:** Systemschrift (SF Pro). Titel 700, Laufweite -0.02em. Fliesstext 16–17px, Zeilenhöhe 1.55. Kleine Überschriften 13px, 650, Grossbuchstaben, Laufweite .08em.
@@ -17,6 +17,18 @@ Gilt für MySchool, MyVoci, MyMemory, MyKahoot, MyTafelfussball, MySound, MyLab.
 Jede App wählt pro Liste die passende Form. Radius, Hover-Fläche, Schrift und Abstände sind bei beiden gleich.
 - **Kartenzeilen** für wenige Einträge mit zwei Zeilen Inhalt, Pillen oder Aktionen. Zum Beispiel Schüler, Termine, Notizen. Jede Zeile: Fläche --zeile, Rand 1px --zeile-linie, Radius 10px, Padding 9px 12px, Abstand 6px.
 - **Kompakte Liste** (aus MyKahoot) für viele gleichartige Einträge mit einer Zeile, oft in Ordnern. Zum Beispiel Quizze, Vokabellisten, Memory-Sets. Keine Fläche, nur beim Darüberfahren --hover. Padding 5–6px 10px, Radius 10px, Abstand 2px. Name in fester Spalte (`flex: 0 1 19rem`, kürzt mit Ellipse), Anzahl direkt dahinter in --text-3, damit die Zahlen untereinander stehen. Werkzeuge als quadratische Symbolknöpfe (30–35px, transparent, Hover --hover) in gleicher Spalte. Ordner: aufklappbar mit Chevron, Inhalt eingerückt (14px Abstand + 10–12px Polster) an einer 2px-Linie in --linie.
+
+## Sammlung auf der Startseite
+Gleich in MyVoci, MyMemory, MyKahoot und MyTafelfussball (Ablage-Regeln: ABLAGE.md).
+- **Aufbau:** oben der Kasten «… erstellen» (ABLAGE.md, «Erstellen»), darunter die Karte «Meine …» als kompakte Liste. Der Kopf ist eine kleine Überschrift, rechts die Symbolknöpfe **＋** (Kasten auf, Hauptordner), **Ordner** (neuer Ordner) und **⤓** (alle als ZIP).
+- **Ordnerzeile:** Chevron, Ordnersymbol, Name in der Namensspalte, Anzahl der Sets darin samt Unterordnern in --text-3 («3 Sets»), dann ＋ (Kasten mit diesem Ordner), Unterordner, ✎, 🗑, soweit die App sie hat.
+- **Set-Zeile:** Name, Anzahl, die Hauptaktion der App (MyKahoot: die Zeile startet das Quiz, MyTafelfussball: zwei Kacheln Beamer und Lehrer:in), dann die Werkzeuge in derselben Reihenfolge: ⤓ herunterladen, 🔗 teilen (MyVoci und MyMemory dazu QR), ✎, 🗑.
+- **Symbole:** Strichzeichnungen im 24er-Raster, `stroke="currentColor"`, Breite 1.6–2, runde Enden und Ecken, nie Emoji. Formen wie in MyVoci: ＋ `M12 5v14 M5 12h14` · Ordner `M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z` · ⤓ `M12 3v12 M7.5 10.5 12 15l4.5-4.5 M4 20h16` · ✎ `M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z` · 🗑 `M4 7h16 M9 7V5h6v2 M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12` · Chevron `M9 6l6 6-6 6`.
+- **Ordner auf dem Computer und Sicherung** stehen im Einstellungs-Kästchen, als Abschnitte «Ordner auf dem Computer» und «Sicherung». Braucht der Ordner eine Freigabe oder ist er nicht erreichbar, steht zusätzlich ein Streifen über der Liste. MyKahoot: Die Quizzes liegen ohnehin in einem Ordner (Einstellungen → App → Datenordner), ⤓ holt das ZIP vom Server, eine Sicherung braucht es nicht.
+
+## Rückfragen und Texte
+- **Dialoge:** Rückfragen, Eingaben und Hinweise in einem eigenen Dialog der App (Karte, Esc und Klick daneben brechen ab, ⏎ bestätigt), nie `confirm`, `prompt` oder `alert` des Browsers. Ein gefährlicher Knopf («Löschen», «Ersetzen») sagt, was er tut, statt «OK».
+- **Anführungszeichen:** im Deutschen «…» (Schweizer Schreibweise), im Englischen “…”.
 
 ## Farbschemen
 Fünf Schemen: Fox, Budapest und Moonrise aus MySchool (`Farbpalette.swift`), Zissou und Isle of Dogs aus MyKahoot. Jedes Schema liefert Akzent, 9 Töne, 4 Signalfarben, 8 Glücksradfarben, 4 Spielfarben und 2 Bühnenfarben, jeweils für Hell und Dunkel (Spiel, Rad und Bühne sind in beiden gleich).
@@ -52,7 +64,8 @@ Alle Schemen stehen allen Apps offen, auch als Einstellung für die Nutzer. Jede
 | MyKahoot | The Life Aquatic | Akzent (#E1AF00 / #EBCC2A) | kompakt | Gepard, Kachel #A98404 |
 | MyTafelfussball | Moonrise Kingdom | Tanne (#17603F / #2D9C69) | karten | Zebra, Kachel #17603F |
 | MySound | The Life Aquatic | Tiefsee (#1B3F5C / #6A8FE8) | karten | Wal, Kachel #1B3F5C |
-| MyLab | Grand Budapest Hotel | Himbeere (#A81B47 / #E35A83) | karten | Axolotl, Kachel #A81B47 |
+| MyLab | Grand Budapest Hotel | Magenta (#B02F8C / #D35FB2) | karten | Axolotl, Kachel #B02F8C |
+| MySlide | Fantastic Mr. Fox | Moos-Oliv (#556E1E / #74952C) | kompakt | Pfau, Kachel #556E1E |
 
 ## Anpassungen pro App
 Das System ist ein Rahmen, kein Korsett: Eine App darf von Hand abweichen, wenn es zum Werkzeug passt. Die Abweichung steht dann in der CLAUDE.md der App. Beispiele aus MyKahoot:
