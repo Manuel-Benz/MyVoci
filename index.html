@@ -264,7 +264,7 @@
       border-radius: var(--radius); transition: background .15s;
       content-visibility: auto; contain-intrinsic-block-size: auto 34px; }
     .liste-zeile:hover { background: var(--hover); }
-    .wortkarte { content-visibility: auto; contain-intrinsic-block-size: auto 430px; }
+    .wortkarte { content-visibility: auto; contain-intrinsic-block-size: auto 510px; }
     .wortliste > li { content-visibility: auto; contain-intrinsic-block-size: auto 20px; }
     .liste-name { flex: 0 1 19rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       font-weight: 600; text-align: left; }
@@ -280,7 +280,7 @@
       .liste-zahl .kuerzel { display: none; }
       .liste-ordner { margin-left: 6px; padding-left: 6px; }
       .liste-zeile { contain-intrinsic-block-size: auto 30px; }
-      .wortkarte { contain-intrinsic-block-size: auto 600px; }
+      .wortkarte { contain-intrinsic-block-size: auto 680px; }
     }
     .ablage { border-radius: var(--radius); outline: 2px dashed transparent; outline-offset: -2px; transition: background .15s, outline-color .15s; }
     .ablage.ziel { background: var(--akzent-weich); outline-color: var(--akzent); }
@@ -386,13 +386,14 @@
         createTitle: 'Voci-Set erstellen',
         steps: (
           <>
-            <li>Kopiere den KI-Prompt (Button unten) in ein KI-Tool wie <b>Claude</b> oder <b>ChatGPT</b>.</li>
-            <li>Fülle dort <b>den Block zuoberst</b> aus: Thema <i>oder</i> Material (Buchseite, PDF, Liste anhängen), die beiden Sprachen, Klasse, Anzahl Wörter … Alles darunter unverändert lassen.</li>
+            <li>Kopiere einen KI-Prompt (Buttons unten: Vokabeln oder Fachbegriffe wie in Biologie) in ein KI-Tool wie <b>Claude</b> oder <b>ChatGPT</b>.</li>
+            <li>Fülle dort <b>den Block zuoberst</b> aus: Thema <i>oder</i> Material (Buchseite, PDF, Liste anhängen), die Sprachen bzw. das Fach, Klasse, Anzahl Wörter … Alles darunter unverändert lassen.</li>
             <li>Du erhältst eine .txt-Datei <i>und</i> denselben Text zum Kopieren (Format {code('F:')} / {code('A:')} / {code('S:')} / {code('---')}).</li>
             <li>Den Text unten einfügen oder die Datei ins Feld ziehen. Die Vorschau zeigt, was erkannt wurde — «In die Sammlung» legt das Set an.</li>
           </>
         ),
-        copyPrompt: 'KI-Prompt kopieren',
+        copyPrompt: 'KI-Prompt Vokabeln',
+        copyPromptTerms: 'KI-Prompt Fachbegriffe',
         promptCopied: 'KI-Prompt kopiert!',
         orByHand: 'oder von Hand',
         byHand: 'Leeres Set von Hand anlegen',
@@ -475,7 +476,7 @@
         helpNamesSteps: (
           <>
             <li><b>Titel</b> wie im Buch: {code('Lektion 12')}, {code('Unité 3 – La maison')}; ohne Buch das Thema: {code('Im Restaurant')}. Zusatz nur, wenn es nicht einfach Wörter sind: {code('– Sätze')}, {code('– Verben (présent)')}. Nicht in den Titel: Sprache, Klasse, Datum. Der KI-Prompt hält sich schon daran.</li>
-            <li><b>Ablage</b>: Ein importiertes Set (KI-Datei, eingefügter Text, Link oder QR-Code) kommt ohne Ordnerwahl in den Ordner seiner Fremdsprache ({code('Franzoesisch')}, {code('Latein')} …) — gibt es darin Klassenordner, in den höchsten ({code('Klasse 3')} vor {code('Klasse 2')}). Einmal im Jahr den neuen Klassenordner anlegen genügt. Eine neue Fassung eines Sets, das schon irgendwo liegt, ersetzt es dort (nach Rückfrage). Von Hand angelegte Sets kommen in den Ordner, den du im Editor wählst.</li>
+            <li><b>Ablage</b>: Ein importiertes Set (KI-Datei, eingefügter Text, Link oder QR-Code) kommt ohne Ordnerwahl in den Ordner seiner Fremdsprache ({code('Franzoesisch')}, {code('Latein')} …), Fachbegriffe mit {code('Fach: Biologie')} in den Ordner des Fachs — gibt es darin Klassenordner, in den höchsten ({code('Klasse 3')} vor {code('Klasse 2')}). Einmal im Jahr den neuen Klassenordner anlegen genügt. Eine neue Fassung eines Sets, das schon irgendwo liegt, ersetzt es dort (nach Rückfrage). Von Hand angelegte Sets kommen in den Ordner, den du im Editor wählst.</li>
             <li><b>Dateien und Ordner</b> heissen ohne Umlaute, Akzente und Sonderzeichen: {code('Unite 3 - La maison.txt')}. Der Titel in der App behält sie.</li>
             <li>Den Titel in der App ändern oder das Set verschieben behält den Lernstand; den Titel von Hand in der Datei ändern setzt ihn zurück.</li>
           </>
@@ -512,7 +513,7 @@
         titlePh: 'Titel des Sets',
         folderLabel: 'Ordner',
         rootFolder: 'Hauptordner',
-        autoFolder: 'automatisch (nach Sprache)',
+        autoFolder: 'automatisch (nach Sprache oder Fach)',
         makeFolder: 'Ordner anlegen',
         langA: 'Sprache A (Vorderseite)',
         langB: 'Sprache B (Rückseite)',
@@ -527,6 +528,15 @@
         deleteWord: 'Wort löschen',
         sideA: 'Sprache A',
         sideB: 'Sprache B',
+        sideDef: 'Erklärung',
+        sideTerm: 'Begriff',
+        subjectLabel: 'Fach (statt Fremdsprache)',
+        subjectPh: 'z.B. Biologie',
+        subjectHint: 'Nur für Fachbegriffe: Das Set kommt beim Import in den Ordner des Fachs. Beide Sprachen dann auf «de».',
+        imgLabel: 'Bild (Adresse, optional)',
+        imgPh: 'https://commons.wikimedia.org/wiki/File:…',
+        imgNoHttps: 'Nur Adressen mit https:// — sonst wird das Bild nicht gespeichert.',
+        imgBroken: 'Bild lädt nicht',
         sideAPh: 'z.B. das Haus',
         sideBPh: 'z.B. la maison',
         sentences: 'Anwendungssätze (einer pro Zeile)',
@@ -825,13 +835,14 @@
         createTitle: 'Create a vocabulary set',
         steps: (
           <>
-            <li>Copy the AI prompt (button below) into an AI tool such as <b>Claude</b> or <b>ChatGPT</b>.</li>
-            <li>Fill in <b>the block at the top</b>: topic <i>or</i> material (attach the book page, PDF or list), the two languages, class, number of words … Leave everything below unchanged.</li>
+            <li>Copy an AI prompt (buttons below: vocabulary, or subject terms as in biology) into an AI tool such as <b>Claude</b> or <b>ChatGPT</b>.</li>
+            <li>Fill in <b>the block at the top</b>: topic <i>or</i> material (attach the book page, PDF or list), the languages or the subject, class, number of words … Leave everything below unchanged.</li>
             <li>You get a .txt file <i>and</i> the same text to copy (format {code('F:')} / {code('A:')} / {code('S:')} / {code('---')}).</li>
             <li>Paste the text below or drag the file into the box. The preview shows what was recognised — “Add to collection” creates the set.</li>
           </>
         ),
-        copyPrompt: 'Copy AI prompt',
+        copyPrompt: 'AI prompt: vocabulary',
+        copyPromptTerms: 'AI prompt: subject terms',
         promptCopied: 'AI prompt copied!',
         orByHand: 'or by hand',
         byHand: 'Create an empty set by hand',
@@ -912,7 +923,7 @@
         helpNamesSteps: (
           <>
             <li><b>Title</b> as in the book: {code('Unit 12')}, {code('Unit 3 – At home')}; without a book the topic: {code('At the restaurant')}. Add something only if it is not simply words: {code('– Sentences')}, {code('– Verbs (present)')}. Not in the title: language, class, date. The AI prompt already follows this.</li>
-            <li><b>Filing</b>: An imported set (AI file, pasted text, link or QR code) without a chosen folder goes into the folder of its foreign language ({code('French')}, {code('Latin')} …) — if it has class folders, into the highest one ({code('Class 3')} before {code('Class 2')}). Creating the new class folder once a year is enough. A new version of a set that already exists somewhere replaces it there (after asking). Sets created by hand go into the folder you choose in the editor.</li>
+            <li><b>Filing</b>: An imported set (AI file, pasted text, link or QR code) without a chosen folder goes into the folder of its foreign language ({code('French')}, {code('Latin')} …), subject terms with {code('Subject: Biology')} into the subject's folder — if it has class folders, into the highest one ({code('Class 3')} before {code('Class 2')}). Creating the new class folder once a year is enough. A new version of a set that already exists somewhere replaces it there (after asking). Sets created by hand go into the folder you choose in the editor.</li>
             <li><b>Files and folders</b> are named without umlauts, accents and special characters: {code('Unite 3 - La maison.txt')}. The title in the app keeps them.</li>
             <li>Renaming a set in the app or moving it keeps its progress; changing the title by hand in the file resets it.</li>
           </>
@@ -947,7 +958,7 @@
         titlePh: 'Title of the set',
         folderLabel: 'Folder',
         rootFolder: 'Main folder',
-        autoFolder: 'automatic (by language)',
+        autoFolder: 'automatic (by language or subject)',
         makeFolder: 'Create folder',
         langA: 'Language A (front)',
         langB: 'Language B (back)',
@@ -962,6 +973,15 @@
         deleteWord: 'Delete word',
         sideA: 'Language A',
         sideB: 'Language B',
+        sideDef: 'Definition',
+        sideTerm: 'Term',
+        subjectLabel: 'Subject (instead of a language)',
+        subjectPh: 'e.g. Biology',
+        subjectHint: 'Only for subject terms: on import the set goes into the subject\'s folder. Set both languages to the same one.',
+        imgLabel: 'Image (address, optional)',
+        imgPh: 'https://commons.wikimedia.org/wiki/File:…',
+        imgNoHttps: 'Only addresses with https:// — otherwise the image is not saved.',
+        imgBroken: 'Image does not load',
         sideAPh: 'e.g. das Haus',
         sideBPh: 'e.g. the house',
         sentences: 'Example sentences (one per line)',
@@ -1268,7 +1288,13 @@
       return LANG_NAMES[w] ? w : (NAME_TO_CODE[w] || w.slice(0, 12));
     };
     const langName = (code) => (code ? (LANG_NAMES[code] ? LANG_NAMES[code][currentLang] : code) : '');
-    const sideName = (set, side) => (set.langs && set.langs[side] ? langName(set.langs[side]) : t(side === 0 ? 'sideA' : 'sideB'));
+    // Fachbegriffe: ein Set mit Fach und beiden Seiten in derselben Sprache
+    // (`de → de`) oder ohne Sprachen. Dort heissen die Seiten Erklärung (`a`)
+    // und Begriff (`b`, den sucht der Lückentext) statt zweimal «Deutsch».
+    // Mit Fach, aber zwei Sprachen (Biologie, de → la) bleiben die Sprachen.
+    const termSet = (set) => !!set.subject && (!set.langs || set.langs[0] === set.langs[1]);
+    const sideName = (set, side) => (termSet(set) ? t(side === 0 ? 'sideDef' : 'sideTerm')
+      : set.langs && set.langs[side] ? langName(set.langs[side]) : t(side === 0 ? 'sideA' : 'sideB'));
     const TTS_LOCALE = { de: 'de-DE', fr: 'fr-FR', en: 'en-GB', it: 'it-IT', es: 'es-ES', pt: 'pt-PT' };
 
     // Bibliotheken und Spiele einmal holen, mit Zeitlimit fürs hängende Schulnetz
@@ -1595,7 +1621,193 @@
       "  «Rows: »/«Columns: »/«T: », «---»?",
     ].join("\n");
 
-    const kiPrompt = () => (currentLang === 'en' ? KI_PROMPT_EN : KI_PROMPT_DE);
+    // Fachbegriffe (Biologie, Geografie …): Erklärung vorne, Begriff hinten —
+    // der Lückentext sucht die B-Seite im Satz und «Schreiben» tippt so den
+    // Begriff statt einer Definition. `Fach:` legt das Set nach dem Fach ab.
+    const KI_TERMS_DE = [
+      "Du erstellst Lernkarten mit Fachbegriffen für den Unterricht. Erstelle ein Set nach meinen Angaben.",
+      "",
+      "===== NUR DAS HIER AUSFÜLLEN (Rest unverändert lassen) =====",
+      "Fach: [Biologie]",
+      "Thema oder Material: [Thema in einem Satz — oder: siehe angehängte Buchseite/Datei/Liste]",
+      "Sprache der Begriffe: [Deutsch]",
+      "Für wen: [z. B. 9. Klasse]",
+      "Anzahl Begriffe: [z. B. 20]",
+      "Lückensätze: [ja / nein]",
+      "Bilder: [nein / ja]",
+      "Besonderes: [optional, z. B. mit wissenschaftlichem Namen, Reihenfolge wie im Buch]",
+      "============================================================",
+      "",
+      "Schicke ich Material mit, nimm die Begriffe NUR daraus, in der Reihenfolge des",
+      "Materials, und erkläre sie so, wie es das Material tut. Sonst nimmst du dein",
+      "eigenes Wissen zum angegebenen Thema, auf dem Niveau der Klasse.",
+      "",
+      "SO GIBST DU ES AUS — daran scheitert es sonst:",
+      "- Gib beides aus, in dieser Reihenfolge:",
+      "  1. eine Datei zum Herunterladen, Endung .txt (kein .docx, kein PDF). Der",
+      "     Dateiname ist der Titel ohne Umlaute, Akzente und Sonderzeichen, mit",
+      "     Leerzeichen und normalem Bindestrich: Kapitel 3 - Die Zelle.txt",
+      "  2. denselben Inhalt nochmals in EINEM Code-Block (```), zum Kopieren.",
+      "- Kannst du keine Dateien erzeugen, reicht der Code-Block allein.",
+      "- Kein Wort davor oder danach: keine Einleitung, keine Erklärung, keine Rückfrage.",
+      "",
+      "FORMAT (genau so):",
+      "",
+      "# Kapitel 3 – Die Zelle",
+      "Sprachen: de → de",
+      "Fach: Biologie",
+      "",
+      "F: Organell, in dem die Zellatmung abläuft",
+      "A: das Mitochondrium",
+      "S: In den *Mitochondrien* gewinnt die Zelle Energie aus Traubenzucker.",
+      "HA: Mz. die Mitochondrien",
+      "---",
+      "F: dünne Hülle, die das Zellinnere nach aussen abgrenzt",
+      "A: die Zellmembran",
+      "S: Die Zellmembran lässt nur bestimmte Stoffe in die Zelle hinein.",
+      "---",
+      "",
+      "TITEL (die Zeile «# …»):",
+      "- Zeigt das Material ein Kapitel (Kapitel 3, 4.2), beginnt der Titel damit, genau",
+      "  wie im Buch. Steht dort auch ein Thema, folgt es nach « – »: «Kapitel 3 – Die Zelle».",
+      "- Ohne Kapitel im Material ist der Titel das Thema, kurz: «Die Zelle».",
+      "- Nicht in den Titel: Fach, Klasse, Datum, Wörter wie «Begriffe», «Fachbegriffe»",
+      "  oder «Glossar».",
+      "",
+      "REGELN:",
+      "- Erste Zeile «# Titel», dann «Sprachen: <Code> → <Code>» mit dem Code der Sprache",
+      "  der Begriffe auf beiden Seiten (de, fr, en, it), dann «Fach: <Fach>».",
+      "- «F: » ist die Erklärung, «A: » der Fachbegriff. «---» trennt die Begriffe.",
+      "  Nach jedem Begriff eine Zeile «---», auch nach dem letzten.",
+      "- Die Erklärung ist kurz (höchstens etwa 15 Wörter, kein ganzer Satz nötig), passt",
+      "  genau auf diesen einen Begriff und verrät ihn nicht: der Begriff und seine",
+      "  Wortteile kommen darin nicht vor («Membran der Zelle» für «Zellmembran» geht",
+      "  nicht). Passen zwei Erklärungen auf beide Begriffe, schärfe sie, bis jede nur",
+      "  auf einen passt.",
+      "- Der Begriff so, wie er im Unterricht geschrieben wird: Nomen in der Einzahl mit",
+      "  Artikel, Verben im Infinitiv. Gleichwertige Schreibweisen mit « / » trennen:",
+      "  «A: die Fotosynthese / die Photosynthese». Optionales in Klammern.",
+      "- «S: » ist ein Lückensatz, nur wenn oben «Lückensätze: ja» steht: ein kurzer Satz,",
+      "  in dem der Begriff vorkommt und der ihn aus dem Zusammenhang erraten lässt, ohne",
+      "  die Erklärung zu wiederholen. Steht der Begriff im Satz in anderer Form",
+      "  (Mehrzahl, gebeugt), setze ihn zwischen Sternchen: «In den *Mitochondrien* …».",
+      "- «HA: » erscheint erst mit der Lösung: Mehrzahl, wissenschaftlicher Name,",
+      "  Abkürzung (ATP). «H: » ist immer sichtbar, z. B. ein Teilgebiet; meist",
+      "  weglassen. Ist ein wissenschaftlicher Name verlangt, steht er als «HA: », nicht",
+      "  im Begriff.",
+      "- «![](Adresse)» ist ein Bild zum Begriff, nur wenn oben «Bilder: ja» steht: eine",
+      "  eigene Zeile vor «---». Nur Dateiseiten von Wikimedia Commons",
+      "  (https://commons.wikimedia.org/wiki/File:…), die du nachgeschlagen hast und die",
+      "  es sicher gibt — nie eine Adresse erfinden oder raten. Das Bild darf den Begriff",
+      "  nicht als Beschriftung zeigen. Findest du kein passendes Bild, lass die Zeile weg.",
+      "- Müssen zu einer Erklärung mehrere Begriffe gewusst werden (die Phasen der",
+      "  Mitose), darf «A: » eine Liste sein, auf EINER Zeile mit « | » getrennt:",
+      "  «A: 1. die Prophase | 2. die Metaphase | …», danach die Zeile «W: alle».",
+      "- Jeder Begriff nur einmal. Keine Nummerierung, keine Fettschrift, keine Erklärungen",
+      "  ausserhalb des Formats.",
+      "",
+      "ZUM SCHLUSS: geh die Liste nochmals durch und bessere STILL aus, was hier nicht",
+      "stimmt — am Ende nur das fertige Set ausgeben, keine Liste der Änderungen.",
+      "- Stimmt die Rechtschreibung jedes Begriffs genau? Er wird Buchstabe für",
+      "  Buchstabe geprüft.",
+      "- Passt jede Erklärung nur auf ihren Begriff und verrät sie ihn nicht?",
+      "- Kommt der Begriff im Satz wirklich vor?",
+      "- Gibt es jede Bildadresse wirklich? Sonst die Zeile streichen.",
+      "- Stimmt das Format überall: «F: », «A: », «S: », «H: »/«HA: », «![](…)», «---»?",
+    ].join("\n");
+
+    const KI_TERMS_EN = [
+      "You create flashcards with subject terms for school. Create a set from my input.",
+      "",
+      "===== FILL IN THIS PART ONLY (leave the rest unchanged) =====",
+      "Subject: [Biology]",
+      "Topic or material: [topic in one sentence — or: see attached book page/file/list]",
+      "Language of the terms: [English]",
+      "For whom: [e.g. grade 9]",
+      "Number of terms: [e.g. 20]",
+      "Gap sentences: [yes / no]",
+      "Images: [no / yes]",
+      "Special notes: [optional, e.g. with scientific names, same order as the book]",
+      "============================================================",
+      "",
+      "If I attach material, take the terms ONLY from it, in the order of the",
+      "material, and explain them the way the material does. Otherwise use your own",
+      "knowledge of the topic given above, at the level of the class.",
+      "",
+      "HOW TO OUTPUT IT — this is where it usually goes wrong:",
+      "- Give both, in this order:",
+      "  1. a file to download, extension .txt (no .docx, no PDF). The file name",
+      "     is the title without umlauts, accents and special characters, with",
+      "     spaces and a plain hyphen: Chapter 3 - The cell.txt",
+      "  2. the same content again in ONE code block (```), to copy.",
+      "- If you cannot produce files, the code block alone is enough.",
+      "- Not a word before or after: no introduction, no explanation, no questions.",
+      "",
+      "FORMAT (exactly like this):",
+      "",
+      "# Chapter 3 – The cell",
+      "Languages: en → en",
+      "Subject: Biology",
+      "",
+      "F: organelle in which cellular respiration takes place",
+      "A: mitochondrion",
+      "S: The *mitochondria* release energy from glucose.",
+      "HA: plural: mitochondria",
+      "---",
+      "F: thin layer that separates the inside of a cell from its surroundings",
+      "A: cell membrane",
+      "S: The cell membrane lets only certain substances into the cell.",
+      "---",
+      "",
+      "TITLE (the line «# …»):",
+      "- If the material shows a chapter (Chapter 3, 4.2), the title starts with it,",
+      "  exactly as in the book. If a topic is given there too, it follows after « – »:",
+      "  «Chapter 3 – The cell».",
+      "- Without a chapter in the material the title is the topic, short: «The cell».",
+      "- Not in the title: subject, grade, date, words like «terms» or «glossary».",
+      "",
+      "RULES:",
+      "- First line «# Title», then «Languages: <code> → <code>» with the code of the",
+      "  language of the terms on both sides (en, de, fr, it), then «Subject: <subject>».",
+      "- «F: » is the definition, «A: » the term. «---» separates the terms.",
+      "  Put a line «---» after every term, including the last one.",
+      "- The definition is short (about 15 words at most, no full sentence needed),",
+      "  fits exactly this one term and does not give it away: the term and its parts",
+      "  do not appear in it («membrane of the cell» for «cell membrane» is not allowed).",
+      "  If two definitions fit both terms, sharpen them until each fits only one.",
+      "- The term as it is written in class: nouns in the singular, without article.",
+      "  Separate equivalent spellings with « / »: «A: haemoglobin / hemoglobin».",
+      "  Optional parts in brackets.",
+      "- «S: » is a gap sentence, only if «Gap sentences: yes» above: a short sentence in",
+      "  which the term appears and which lets you guess it from the context, without",
+      "  repeating the definition. If the term appears in a different form (plural),",
+      "  put it between asterisks: «The *mitochondria* …».",
+      "- «HA: » appears only with the solution: plural, scientific name, abbreviation",
+      "  (ATP). «H: » is always visible, e.g. a sub-field; usually leave it out. If",
+      "  scientific names are asked for, they go in «HA: », not in the term.",
+      "- «![](address)» is an image for the term, only if «Images: yes» above: a line of",
+      "  its own before «---». Only file pages on Wikimedia Commons",
+      "  (https://commons.wikimedia.org/wiki/File:…) that you have looked up and that",
+      "  certainly exist — never invent or guess an address. The image must not show the",
+      "  term as a label. If you find no suitable image, leave the line out.",
+      "- If several terms belong to one definition and all must be known (the phases",
+      "  of mitosis), «A: » may be a list, on ONE line separated by « | »:",
+      "  «A: 1. prophase | 2. metaphase | …», followed by the line «W: all».",
+      "- Each term only once. No numbering, no bold text, no explanations outside the",
+      "  format.",
+      "",
+      "AT THE END: go through the list once more and SILENTLY fix what does not",
+      "match — output only the finished set, no list of changes.",
+      "- Is the spelling of every term exactly right? It is checked letter by letter.",
+      "- Does each definition fit only its term, without giving it away?",
+      "- Does the term really appear in the sentence?",
+      "- Does every image address really exist? Otherwise delete the line.",
+      "- Is the format right everywhere: «F: », «A: », «S: », «H: »/«HA: », «![](…)», «---»?",
+    ].join("\n");
+
+    const kiPrompt = (terms) => (terms
+      ? (currentLang === 'en' ? KI_TERMS_EN : KI_TERMS_DE)
+      : (currentLang === 'en' ? KI_PROMPT_EN : KI_PROMPT_DE));
 
     // ---------- Listen (beide Seiten) ----------
     // Mehrere Punkte mit «1.», «2)», «-» oder «•» vorne sind eine Liste
@@ -1635,17 +1847,38 @@
     const inline = (text, sep = '  ') => text.split('\n').join(sep);
     const fileSide = (text) => inline(text, ' | ');
 
+    // ---------- Bilder ----------
+    // Ein Wort kann ein Bild tragen (`img`, Datei `![](https://…)`): nur eine
+    // Adresse, keine Datei — so geht es im Link und im QR-Code mit und der
+    // Browser-Speicher bleibt klein. Nur https (http wäre auf Pages gesperrt).
+    // Gelesen bis zur letzten Klammer: Dateinamen auf Wikimedia tragen oft
+    // selbst welche («Cell_(biology).svg»).
+    const IMG_LINE = /^!\[[^\]]*\]\((.+)\)$/;
+    const cleanImg = (url) => {
+      const u = typeof url === 'string' ? url.trim().replace(/ /g, '%20') : '';
+      return /^https:\/\/[^\s"'<>]+$/i.test(u) ? u : '';
+    };
+    // Die Seite einer Datei auf Wikimedia Commons oder Wikipedia
+    // («…/wiki/File:Zelle.svg», «Datei:…») ist kein Bild — sie wird zur
+    // Bildadresse (Special:FilePath leitet weiter, SVG kommt als PNG, in der
+    // gewünschten Breite — Vorschaubilder holen so nicht 800 px).
+    // So genügt es, die Adresse der Commons-Seite zu kopieren.
+    const imgSrc = (url, width = 800) => {
+      const m = url.match(/^https:\/\/[a-z.]*(?:wikipedia|wikimedia)\.org\/wiki\/(?:File|Datei|Fichier|Image|Bild):([^?#]+)/i);
+      return m ? `https://commons.wikimedia.org/wiki/Special:FilePath/${m[1]}?width=${width}` : url;
+    };
+
     // Ein Wort in fester Gestalt: gleiche Schlüssel in gleicher Reihenfolge,
     // egal ob es aus der Datei, dem Link oder dem Editor kommt. `keepLink`
     // vergleicht Sets per JSON — eine andere Reihenfolge hiesse «anderes Set».
     const cleanWord = (w) => {
-      const f = cleanForms(w.f);
+      const f = cleanForms(w.f), img = cleanImg(w.img);
       return {
         a: w.a, b: w.b,
         ...(w.s && w.s.length ? { s: w.s } : {}), ...(w.h ? { h: w.h } : {}),
         ...(w.ha ? { ha: w.ha } : {}), ...(w.hb ? { hb: w.hb } : {}),
         ...(w.all && (isList(w.a) || isList(w.b)) ? { all: true } : {}),
-        ...(f ? { f } : {}),
+        ...(f ? { f } : {}), ...(img ? { img } : {}),
       };
     };
 
@@ -1725,7 +1958,8 @@
       });
       const lang = set.langs && set.langs[side === 'a' ? 0 : 1];
       const langs = lang && [lang, lang];
-      const out = { ...set, ...(langs ? { langs } : {}), words };
+      // Kein Fach: Wortformen sind keine Fachbegriffe (`termSet`)
+      const out = { ...set, ...(langs ? { langs } : {}), subject: undefined, words };
       formCache.set(set, out);
       return out;
     };
@@ -1786,6 +2020,8 @@
           else if (cur && tl.cells) table.push(tl.cells);
           continue;
         }
+        const im = line.match(IMG_LINE);
+        if (im) { if (cur) cur.img = im[1]; continue; }
         const m = line.match(/^(HF|HA|[FQASHW]):\s*(.*)$/i);
         if (!m) continue;
         const key = m[1].toUpperCase(), val = m[2].trim();
@@ -1810,16 +2046,24 @@
       return parts.length >= 2 ? [parts[0], parts[1]] : undefined;
     };
 
+    // «Fach: Biologie»: ein Set ohne Fremdsprache (Fachbegriffe) wird nach dem
+    // Fach abgelegt statt nach der Sprache (s. autoDir).
+    const subjectInFile = (text) => {
+      const m = text.match(/^(?:fach|subject)\s*:\s*(.+)$/im);
+      return m ? m[1].trim().slice(0, 60) || undefined : undefined;
+    };
+
     // «Sprache: en» (Einzahl!) ist wie in MyMemory die Sprache der Oberfläche.
 
     const parseFile = (text, filename) => {
       // Frühere KI-Prompts verlangten «Voci_Thema.txt»: Präfix weg, «_» zu Leerzeichen.
       const lang = langInFile(text);
       const langs = langsInFile(text);
+      const subject = subjectInFile(text);
       return {
         title: MyAblage.titleFromFile(text, filename, /^(voci|memory)_+(?=.)/i),
         words: parseFA(text),
-        ...(lang ? { lang } : {}), ...(langs ? { langs } : {}),
+        ...(lang ? { lang } : {}), ...(langs ? { langs } : {}), ...(subject ? { subject } : {}),
       };
     };
 
@@ -1833,13 +2077,15 @@
         f.t.map((row) => `T: ${row.map((x) => x || '–').join(' | ')}\n`).join('')
       : '');
     const toFile = (set) =>
-      `# ${set.title}\n` +
-      (set.langs ? `${currentLang === 'en' ? 'Languages' : 'Sprachen'}: ${set.langs[0]} → ${set.langs[1]}\n` : '') +
-      (set.lang ? `${set.lang === 'en' ? 'Language' : 'Sprache'}: ${set.lang}\n` : '') + '\n' +
+      MyAblage.fileHead(set.title, [
+        set.langs && `${currentLang === 'en' ? 'Languages' : 'Sprachen'}: ${set.langs[0]} → ${set.langs[1]}`,
+        set.subject && `${currentLang === 'en' ? 'Subject' : 'Fach'}: ${set.subject}`,
+        set.lang && `${set.lang === 'en' ? 'Language' : 'Sprache'}: ${set.lang}`,
+      ]) +
       set.words.map((w) =>
         `F: ${fileSide(w.a)}\nA: ${fileSide(w.b)}\n` + (w.s || []).map((s) => `S: ${s}\n`).join('') +
         (w.h ? `H: ${w.h}\n` : '') + (w.ha ? `HF: ${w.ha}\n` : '') + (w.hb ? `HA: ${w.hb}\n` : '') +
-        (w.all ? 'W: alle\n' : '') + formLines(w.f) + '---'
+        (w.img ? `![](${w.img})\n` : '') + (w.all ? 'W: alle\n' : '') + formLines(w.f) + '---'
       ).join('\n') + '\n';
 
     // Namen, Ordnerpfade, Ort, Ordner-Abgleich, ZIP und Link teilt MyVoci mit den
@@ -1876,28 +2122,38 @@
     // Jahr den neuen Klassenordner anlegen genügt. Ein schon vorhandener
     // Ordner der Sprache wird genommen, wie er auch heisst (Französisch,
     // Franzoesisch, French), sonst entsteht einer ohne Umlaut. Ohne
-    // Sprachangabe bleibt das Set zuoberst.
+    // Sprachangabe bleibt das Set zuoberst. Ein Fach (`Fach: Biologie`) geht
+    // der Sprache vor: Fachbegriffe sind `de → de` und landeten sonst in
+    // «Deutsch»; den Ordner des Fachs findet resolveFolderPath wie beim
+    // Anlegen (ohne Gross/Klein und Umlaut).
     const foreignLang = (set) => {
       const langs = set.langs || [];
       return langs.find((c) => c && c !== 'de') || langs[1] || '';
     };
+    const homeOf = (set) => (set.subject ? `fach:${plainName(set.subject).toLowerCase()}` : foreignLang(set));
     const CLASS_DIR = /^(klasse|class)\b/i;
     const autoDir = (set, folders) => {
       const code = foreignLang(set);
-      if (!code) return '';
-      const root = folders.find((f) => !f.includes('/') && langCode(f) === code)
-        || plainName(LANG_NAMES[code] ? langName(code) : code.charAt(0).toUpperCase() + code.slice(1));
+      const root = set.subject
+        ? ablage.resolveFolderPath({ sets: [], folders }, set.subject)
+        : code && (folders.find((f) => !f.includes('/') && langCode(f) === code)
+          || plainName(LANG_NAMES[code] ? langName(code) : code.charAt(0).toUpperCase() + code.slice(1)));
+      if (!root) return '';
       const classes = folders.filter((f) => parentDir(f) === root && CLASS_DIR.test(dirName(f)))
         .sort(MyAblage.collate);
       return classes.length ? classes[classes.length - 1] : root;
     };
     // Wohin ein Set ohne gewählten Ordner kommt: liegt schon genau ein Set mit
-    // gleichem Titel und gleicher Fremdsprache irgendwo, ist es eine neue
-    // Fassung davon und gehört dorthin (auch zuoberst, aus der Zeit vor der
-    // Ablage nach Sprache, oder in der Klasse vom letzten Jahr) — so fragt der
-    // Import «ersetzen?» statt still eine Zweitkopie anzulegen. Sonst autoDir.
+    // gleichem Titel und gleicher Fremdsprache (bzw. gleichem Fach) irgendwo,
+    // ist es eine neue Fassung davon und gehört dorthin (auch zuoberst, aus
+    // der Zeit vor der Ablage nach Sprache, oder in der Klasse vom letzten
+    // Jahr) — so fragt der Import «ersetzen?» statt still eine Zweitkopie
+    // anzulegen. Sonst autoDir. Ein Set von vor dem Fach (`de → de` ohne
+    // `Fach:`) ist auch der Zwilling einer Fassung mit Fach.
     const placeFor = (set, sets, folders) => {
-      const twins = sets.filter((s) => s.title === set.title && foreignLang(s) === foreignLang(set));
+      const home = homeOf(set);
+      const twins = sets.filter((s) => s.title === set.title
+        && (s.subject ? homeOf(s) === home : foreignLang(s) === foreignLang(set)));
       return twins.length === 1 ? twins[0].dir || '' : autoDir(set, folders);
     };
     const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
@@ -1967,20 +2223,21 @@
     // ---------- Direktlinks: Set komprimiert im URL-Fragment ----------
     const { b64urlEncode, b64urlDecode } = MyAblage;
 
+    // Neue Felder hinten; was fehlt, fällt weg — alte Links bleiben gültig und kurz
     const encodeSet = (set) => MyAblage.packLink([
         set.title, set.langs || 0, set.words.map((w) => {
-          // Neue Felder hinten; was fehlt, fällt weg — alte Links bleiben gültig und kurz
-          const row = [w.a, w.b, w.s && w.s.length ? w.s : 0, w.h || 0, w.ha || 0, w.hb || 0, w.all ? 1 : 0, w.f ? [w.f.r, w.f.c, w.f.t] : 0];
+          const row = [w.a, w.b, w.s && w.s.length ? w.s : 0, w.h || 0, w.ha || 0, w.hb || 0, w.all ? 1 : 0, w.f ? [w.f.r, w.f.c, w.f.t] : 0, w.img || 0];
           while (row.length > 2 && !row[row.length - 1]) row.pop();
           return row;
         }),
+        ...(set.subject ? [set.subject] : []),
       ]);
 
     const decodeSet = async (data) => {
-      const [title, langs, words] = await MyAblage.unpackLink(data);
+      const [title, langs, words, subject] = await MyAblage.unpackLink(data);
       return {
-        title, ...(langs ? { langs } : {}),
-        words: words.map(([a, b, s, h, ha, hb, all, f]) => cleanWord({ a, b, s: s || [], h, ha, hb, all, f: f && { r: f[0], c: f[1], t: f[2] } })),
+        title, ...(langs ? { langs } : {}), ...(typeof subject === 'string' && subject ? { subject } : {}),
+        words: words.map(([a, b, s, h, ha, hb, all, f, img]) => cleanWord({ a, b, s: s || [], h, ha, hb, all, f: f && { r: f[0], c: f[1], t: f[2] }, img })),
       };
     };
 
@@ -2960,9 +3217,25 @@
     // einfache Pfeil versprach eine Festlegung, die es nicht gibt. Die
     // Reihenfolge bleibt sichtbar, denn sie sagt, welche Seite `a` ist
     // (Vorlesen, Tastatur, Artikel-Toleranz hängen daran).
+    // Bild eines Worts, auf weissem Grund (durchsichtige Zeichnungen wären im
+    // Dunkelmodus schwarz auf schwarz). Lädt es nicht (offline, falsche
+    // Adresse), steht beim Üben nichts da; `note` sagt es stattdessen (Editor).
+    // `key` am <img>: ein wiederverwendetes Element zeigte beim Wechsel das
+    // alte Bild, bis das neue geladen war (beim Üben: Bild zum falschen Wort).
+    const WordImage = ({ url, width, className = '', note = false }) => {
+      const [bad, setBad] = useState(null);
+      if (!url) return null;
+      if (bad === url) return note ? <span className="text-xs text-orange shrink-0 pb-3">{t('imgBroken')}</span> : null;
+      return <img key={url} src={imgSrc(url, width)} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBad(url)}
+        className={`block bg-white rounded-lg object-contain ${className}`} />;
+    };
+    // Dieselbe Anfrage wie WordImage (Breite, Referrer), damit sie aus dem Cache kommt
+    const preloadImg = (url) => { const im = new Image(); im.referrerPolicy = 'no-referrer'; im.src = imgSrc(url); };
+
+    // Fachbegriffe (`de → de`) zeigen die Sprache nur einmal.
     const langBadge = (set) => set.langs && (
       <span className="kuerzel ml-2 align-[1px]">
-        {set.langs[0]}↔{set.langs[1]}
+        {set.langs[0] === set.langs[1] ? set.langs[0] : `${set.langs[0]}↔${set.langs[1]}`}
       </span>
     );
 
@@ -3019,7 +3292,10 @@
 
     // Was die Vorschau als «nicht verstanden» meldet: alles ausser den Zeilen,
     // die parseFA und der Kopf lesen (die Sprache:-Zeile kennt strayLines selbst).
-    const knownLine = (l) => /^-{3,}$/.test(l) || TABLE_LINE.test(l) || /^(?:(?:HF|HA|[FQASHW]):|(?:sprachen|languages)\s*:)/i.test(l);
+    // Ein Bild ohne brauchbare Adresse (http, Anführungszeichen) fiele still weg —
+    // es gilt darum als unverstanden.
+    const knownLine = (l) => /^-{3,}$/.test(l) || TABLE_LINE.test(l) || /^(?:(?:HF|HA|[FQASHW]):|(?:sprachen|languages|fach|subject)\s*:)/i.test(l)
+      || !!cleanImg((l.match(IMG_LINE) || [])[1]);
 
     // Kasten «Voci-Set erstellen». Eine eigene Komponente mit eigenem Zustand
     // für den eingefügten Text: lag der in der Übersicht, zeichnete jedes
@@ -3071,9 +3347,10 @@
             </label>
           )}
           <ol className="list-decimal list-inside text-sm text-text-2 space-y-1 mb-4">{t('steps')}</ol>
-          <button onClick={onCopyPrompt} className={`w-full ${BTN_PRIMARY} px-4 py-2 mb-6`}>
-            {t('copyPrompt')}
-          </button>
+          <div className="grid sm:grid-cols-2 gap-2 mb-6">
+            <button onClick={() => onCopyPrompt(false)} className={`${BTN_PRIMARY} px-4 py-2`}>{t('copyPrompt')}</button>
+            <button onClick={() => onCopyPrompt(true)} className={`${BTN_PRIMARY} px-4 py-2`}>{t('copyPromptTerms')}</button>
+          </div>
           <textarea value={pasted} onChange={(e) => typed(e.target.value)} {...hereDrop} rows={8} placeholder={t('pastePh')}
             aria-label={t('pasteLabel')} className={`w-full ${INPUT} ${dragging ? 'ziehen' : ''} text-sm font-mono`} />
           {pasted.trim() && !words.length && <p className="text-sm text-rot mt-2">{fileName ? t('noWordsInFile', fileName) : t('noWordsFound')}</p>}
@@ -3426,7 +3703,7 @@
               onFiles={(files) => importFiles(files, into)} takeRef={takeFile}
               onSave={(parsed, done) => addSet(parsed, into, done)}
               placeOf={(parsed) => placeFor(parsed, own, folders)}
-              onCopyPrompt={() => copyText(kiPrompt(), t('promptCopied'))} />
+              onCopyPrompt={(terms) => copyText(kiPrompt(terms), t('promptCopied'))} />
 
             <div className={`${CARD} p-3 sm:p-4 mb-6`}>
               <div className="flex items-center gap-0.5 mb-2 pl-2.5">
@@ -3481,7 +3758,7 @@
     };
 
     // ---------- Editor ----------
-    const EMPTY_WORD = { a: '', b: '', s: '', h: '', ha: '', hb: '', all: false, ft: '' };
+    const EMPTY_WORD = { a: '', b: '', s: '', h: '', ha: '', hb: '', all: false, ft: '', img: '' };
     // Wortformen im Editor: ein Textfeld in derselben Schreibweise wie die
     // Datei (Zeilen:/Spalten:/T:), gelesen mit demselben Zeilenleser
     // (readTableLine). Andere Zeilen (auch F:, ---) werden übergangen — und
@@ -3507,6 +3784,9 @@
     // die Karte, deren Wort sich geändert hat; dafür bleiben `ops` (s.
     // SetEditor) und die Beschriftungen über die Tastendrücke gleich.
     const WordCard = memoLang(({ w, i, nameA, nameB, ops }) => {
+      // Vorschau des Bilds erst nach Einfügen oder Verlassen des Felds: beim
+      // Tippen fragte sonst jede halbe Adresse einen Server an
+      const [imgShown, setImgShown] = useState(w.img);
       // Beide Seiten mehrzeilig: eine Zeile pro Listenpunkt («1. …», «- …»)
       const side = (key, label, placeholder) => (
         <label className="block">
@@ -3550,6 +3830,15 @@
             {field('ha', t('hintSide', nameA), t('hintSidePh'))}
             {field('hb', t('hintSide', nameB), t('hintSidePh'))}
           </div>
+          <div className="flex gap-3 items-end mt-3">
+            <label className="block flex-1 min-w-0">
+              <span className={LABEL}>{t('imgLabel')}</span>
+              <input type="text" value={w.img} placeholder={t('imgPh')} className={`w-full mt-1 ${INPUT}`} onBlur={() => setImgShown(w.img)}
+                onChange={(e) => { ops.setWord(i, 'img', e.target.value); if (e.nativeEvent.inputType === 'insertFromPaste') setImgShown(e.target.value); }} />
+            </label>
+            <WordImage url={cleanImg(imgShown)} width={96} className="w-[42px] h-[42px] p-0.5 shrink-0" note />
+          </div>
+          {w.img.trim() && !cleanImg(w.img) && <span className="block text-xs text-orange mt-1">{t('imgNoHttps')}</span>}
           {/* Wortformen: zugeklappt, solange das Wort keine hat — die
               meisten Wörter brauchen keine Tabelle */}
           {w.ft || w.fOpen ? (
@@ -3574,6 +3863,7 @@
       const [lang, setLang] = useState(set.lang || '');
       const [langA, setLangA] = useState(set.langs ? set.langs[0] : '');
       const [langB, setLangB] = useState(set.langs ? set.langs[1] : '');
+      const [subject, setSubject] = useState(set.subject || '');
       // `_k`: ein fester Schlüssel pro Wort, nur im Editor (Speichern nimmt die
       // Felder einzeln). Mit dem Index als Schlüssel wanderten nach Löschen
       // oder Verschieben Karte, gemerkte Höhe und Rückgängig der Felder zum
@@ -3591,7 +3881,7 @@
       // Jede Änderung geht durch `touch` — eine Stelle, die das Merkmal setzt.
       const touch = (fn) => (...args) => { setDirty(true); fn(...args); };
       const editTitle = touch(setTitle), editDir = touch(setDir), editLang = touch(setLang);
-      const editLangA = touch(setLangA), editLangB = touch(setLangB);
+      const editLangA = touch(setLangA), editLangB = touch(setLangB), editSubject = touch(setSubject);
 
       // Was die Wortkarten tun (s. WordCard): einmal gebaut und danach immer
       // dieselben Funktionen, sonst zeichnete jedes Zeichen wieder alle Karten.
@@ -3622,7 +3912,7 @@
           .map((w) => ({
             a: joinAnswer(w.a.split('\n')), b: joinAnswer(w.b.split('\n')),
             s: w.s.split('\n').map((x) => x.trim()).filter(Boolean), h: w.h.trim(), ha: w.ha.trim(), hb: w.hb.trim(), all: w.all,
-            f: parseTable(w.ft),
+            f: parseTable(w.ft), img: w.img,
           }))
           .filter((w) => w.a || w.b)
           .map(cleanWord);
@@ -3634,8 +3924,7 @@
         if (slotTaken(sets, { dir, title: name }, set.id)) return setError(t('errTitleTaken'));
         if (!clean.length) return setError(t('errNoWord'));
         if (clean.some((w) => !w.a || !w.b)) return setError(t('errHalfWord'));
-        const a = langCode(langA), b = langCode(langB);
-        onSave({ ...set, title: name, dir, words: clean, lang: lang || undefined, langs: a && b ? [a, b] : undefined });
+        onSave({ ...set, title: name, dir, words: clean, lang: lang || undefined, ...head });
       };
       const cancel = () => {
         if (!dirty) return onCancel();
@@ -3646,8 +3935,11 @@
         onOk: (name) => { const path = onNewFolder(dir, name); if (path) editDir(path); },
       });
 
-      const nameA = langA ? langName(langCode(langA)) : t('sideA');
-      const nameB = langB ? langName(langCode(langB)) : t('sideB');
+      const a = langCode(langA), b = langCode(langB);
+      const head = { langs: a && b ? [a, b] : undefined, subject: subject.trim() || undefined };
+      // Auch halb ausgefüllte Sprachen benennen ihre Seite
+      const named = { langs: [a, b], subject: head.subject };
+      const nameA = sideName(named, 0), nameB = sideName(named, 1);
       return (
         <div className={`${SCREEN} p-4 sm:p-8`}>
           <div className={COLUMN}>
@@ -3674,6 +3966,11 @@
                 <datalist id="langlist">{Object.keys(LANG_NAMES).map((c) => <option key={c} value={c}>{langName(c)}</option>)}</datalist>
               </div>
               <span className="block mt-1 text-sm text-text-2">{t('langsHint')}</span>
+              <label className="block mt-4">
+                <span className={LABEL}>{t('subjectLabel')}</span>
+                <input type="text" value={subject} onChange={(e) => editSubject(e.target.value)} placeholder={t('subjectPh')} className={`w-full mt-1 ${INPUT}`} />
+                <span className="block mt-1 text-sm text-text-2">{t('subjectHint')}</span>
+              </label>
               <label className="block mt-4">
                 <span className={LABEL}>{t('uiLangLabel')}</span>
                 <select value={lang} onChange={(e) => editLang(e.target.value)} className={`w-full mt-1 ${INPUT}`}>
@@ -3881,6 +4178,7 @@
               <StageDot s={stageOf(r)} className="mt-1.5" />
               <span className="text-text-3 w-6 shrink-0 text-right">{i + 1}.</span>
               <span className="flex-1 min-w-0 break-words"><b>{inline(w.a)}</b> — {inline(w.b)}{(w.h || w.ha || w.hb) && <span className="text-text-3"> ({[w.h, w.ha, w.hb].filter(Boolean).join(' · ')})</span>}</span>
+              {w.img && <WordImage url={w.img} width={64} className="w-5 h-5 p-px shrink-0 border border-linie" />}
             </li>
           );
         })}
@@ -4561,6 +4859,11 @@
       }, []);
       // Hören: das Wort kommt von selbst, sobald die Aufgabe da ist
       useEffect(() => { if (mode === 'listen' && item) setTimeout(() => speak(task.spoken, answerLang), 300); }, [pos]);
+      // Das Bild des nächsten Worts schon laden, sonst wartet die Karte beim Weiterschalten darauf
+      useEffect(() => {
+        const n = queue[pos + 1];
+        if (n && n.word.img) preloadImg(n.word.img);
+      }, [pos]);
 
       // Ergebnis verbuchen. Gibt den neuen Stand zurück, weil Karteikarten
       // sofort weiterschalten — dort darf `next` nicht mit dem alten Zustand
@@ -5056,6 +5359,7 @@
               {timed && phase === 'ask' && (
                 <div key={pos} className="absolute left-0 top-0 h-1.5 bg-orange-voll" style={{ animation: `shrink ${opts.timer}s linear forwards` }} />
               )}
+              {item.word.img && <WordImage url={item.word.img} className="mx-auto mb-4 p-2 max-w-full max-h-48 sm:max-h-64" />}
               {head}
               <div className="mt-6">{body}</div>
             </div>

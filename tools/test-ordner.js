@@ -67,6 +67,12 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     }
     return true;
   }, paths);
+  const readFile = (p) => page.evaluate(async (p) => {
+    let h = await navigator.storage.getDirectory();
+    const parts = p.split('/');
+    for (const d of parts.slice(0, -1)) h = await h.getDirectoryHandle(d);
+    return (await (await h.getFileHandle(parts.at(-1))).getFile()).text();
+  }, p);
   const storeHas = (title, want = true) => until(([t, w]) => (JSON.parse(localStorage.getItem('myvoci')).sets.some((s) => s.title === t)) === w, [title, want]);
   const refocus = () => page.evaluate(() => window.dispatchEvent(new Event('focus')));
 
@@ -139,6 +145,12 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   check(await hasFiles('Französisch/Klasse 2/Unite 4 - Kleider.txt').then(() => true, () => false),
     'gespeichert nach Sprache abgelegt, Dateiname nach der Namensregel');
   check(!(await page.locator('#create .vorschau').count()) && !(await box.inputValue()), 'nach dem Speichern ist der Kasten leer');
+  // Fachbegriffe (`de → de`, `Fach:`) kommen in den Ordner des Fachs, die Datei behält das Fach
+  await box.fill('# Kapitel 3 – Die Zelle\nSprachen: de → de\nFach: Biologie\n\nF: Steuerzentrale der Zelle\nA: der Zellkern\n---\n');
+  await page.click('#create .vorschau .knopf-1');
+  await storeHas('Kapitel 3 – Die Zelle');
+  check(await hasFiles('Biologie/Kapitel 3 - Die Zelle.txt').then(() => true, () => false), 'Fachbegriffe nach Fach abgelegt');
+  check((await readFile('Biologie/Kapitel 3 - Die Zelle.txt')).includes('Fach: Biologie\n'), 'Datei trägt «Fach: Biologie»');
   // ohne «# Titel» fragt die Vorschau danach, statt ein «Voci» anzulegen
   await box.fill('F: rot\nA: rouge\n---\n');
   check(await title.inputValue() === '', 'ohne «# Titel» bleibt das Titelfeld leer');

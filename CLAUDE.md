@@ -56,7 +56,8 @@ Die Wortformen (`formSet`) stehen gleich nach den Listen, vor dem Parser.
 - **`content-visibility: auto`** auf `.liste-zeile`, `.wortkarte`, `.wortliste > li`:
   nach den Memos war Paint der Rest (6× Ordner klappen: 612 → 17 ms Paint).
   Die Ersatzhöhe (`contain-intrinsic-block-size`) zählt ohne Polster und
-  Rand, gemessen für Computer und Handy. Was über den Rand ragt, schneidet
+  Rand, gemessen für Computer und Handy (leere Wortkarte 510/680 px; kommt
+  ein Feld dazu, neu messen). Was über den Rand ragt, schneidet
   die Regel ab — Texte darin brechen um (`break-words`).
 - **`findWord` (`splitSentence`)** baut pro Wort nur die Alternation ohne
   `\p{L}`; Wortgrenze (`letterBefore`) und Endung prüfen zwei feste Ausdrücke,
@@ -108,11 +109,11 @@ Zuordnen) · `MatchRound` (Zuordnen) · `TableRound` (Tabelle) · `GameRound`
 
 ## Datenmodell
 
-Ein Set: `{ id, title, dir, langs: ['de','fr'], lang, words: [{ a, b, s: [], h, ha, hb, all }] }`
+Ein Set: `{ id, title, dir, langs: ['de','fr'], lang, subject, words: [{ a, b, s: [], h, ha, hb, all, img }] }`
 — `a`/`b` die zwei Seiten, `s` Anwendungssätze, `h` Hinweis (immer sichtbar),
 `ha`/`hb` Hinweis zu einer Seite (Datei `HF:`/`HA:`: bei der gefragten Seite
 sofort, bei der gesuchten erst mit der Lösung), `lang` die Oberflächensprache
-beim Üben. Gespeichert wird `{ sets, folders }` unter `myvoci`; Ordner sind
+beim Üben, `subject` das Fach bei Fachbegriffen (s. unten). Gespeichert wird `{ sets, folders }` unter `myvoci`; Ordner sind
 Pfad-Strings wie in MyKahoot/MyMemory. Jedes Wort entsteht über `cleanWord`
 (feste Schlüssel-Reihenfolge, leere Felder fallen weg) — Datei, Link und
 Editor liefern so dasselbe Objekt, und `keepLink` erkennt das eigene Set.
@@ -128,6 +129,47 @@ Punkt, die Felder als Zeilen von `input`) und bei der Handschrift (eine
 Schriftzeile pro Punkt), bei Karteikarten nur als Vermerk. Im Direktlink
 stehen `ha`, `hb`, `all` hinten im Wort-Array, leere Enden fallen weg — alte
 Links bleiben gültig.
+
+**Fachbegriffe** (Biologie, Geografie …): ein Set mit `langs` zweimal
+derselben Sprache (`de → de`) und `Fach: Biologie` (`subject`, Datei
+`Fach:`/`Subject:`, im Link als viertes Element hinten). **`F:` ist die
+Erklärung, `A:` der Begriff** — der Lückentext sucht die B-Seite im Satz
+(`gapFor`) und «Schreiben» in Richtung `ab` tippt so den Begriff statt einer
+Definition (die Toleranz von `checkAnswer` reicht für keine ganze Definition).
+`termSet` erkennt solche Sets am Fach (mit gleichen oder ohne Sprachen;
+Biologie `de → la` behält die Sprachnamen, `formSet` streicht das Fach); `sideName` und der Editor sagen dann
+«Erklärung»/«Begriff» statt zweimal «Deutsch», das Badge zeigt die Sprache
+einmal. Eigener KI-Prompt (`KI_TERMS_DE`/`_EN`, zweiter Knopf im Kasten
+«Voci-Set erstellen», `kiPrompt(terms)`); im Editor das Feld «Fach».
+
+**Bilder** (`img` am Wort, Abschnitt «Bilder»): nur eine **Adresse**
+(Datei `![](https://…)` als eigene Zeile im Wort, im Link hinten im
+Wort-Array), keine Datei — so geht das Bild in Link und QR-Code mit und der
+Browser-Speicher bleibt klein. Eigene Bilddateien (Stufe 2) bräuchten
+IndexedDB, eine ZIP-Sicherung und Änderungen an `my-ablage.js` in MySuite,
+und ein Link trüge sie trotzdem nicht. Nur https (`cleanImg`, sonst fällt
+das Bild still weg; der Editor warnt). Gelesen bis zur **letzten** Klammer
+(Wikimedia-Namen tragen welche). Den Ordner des Fachs sucht
+`resolveFolderPath` aus dem Modul, wie beim Anlegen. Eine Dateiseite von Commons/Wikipedia
+(`/wiki/File:…`, `Datei:`) macht `imgSrc` zur Bildadresse
+(`Special:FilePath/…?width=800`) — die Seite zu kopieren genügt.
+`WordImage` zeigt das Bild auf weissem Grund (Zeichnungen sind oft
+durchsichtig), lädt es nicht, steht beim Üben nichts da, im Editor
+«Bild lädt nicht» (`note`). Gezeigt über der Frage in `Practice` (alle Modi
+dort, beide Richtungen), das nächste lädt vor; klein in der Wortliste der
+Set-Seite und neben dem Feld im Editor. Nicht in Zuordnen, Verteidigen und
+Wortformen. Der KI-Prompt für Fachbegriffe verlangt Bilder nur auf Wunsch,
+nur nachgeschlagene Commons-Seiten — erfundene Adressen sind die Gefahr.
+Ein Bild ohne brauchbare Adresse meldet die Vorschau als unverstanden
+(`knownLine`), sonst fiele es still weg. Bewusst offen: ein Link lässt das
+Gerät Bilder von beliebigen https-Servern laden (die Lehrperson teilt ihre
+eigenen Sets; eine Liste erlaubter Server schlösse andere Quellen aus).
+`WordImage` trägt `key={url}` am `<img>`: ein wiederverwendetes Element
+zeigte beim Weiterschalten das alte Bild, bis das neue geladen war.
+Vorschaubilder fragen Commons nur klein an (`imgSrc(url, width)`), das
+Vorladen geht über `preloadImg` (dieselbe Adresse wie die Karte). Im Editor
+erscheint die Vorschau erst nach Einfügen oder Verlassen des Felds — beim
+Tippen fragte sonst jede halbe Adresse einen Server an.
 
 **Formen** (`f` am Wort, Abschnitt «Formen»): eine Tabelle mit höchstens
 zwei Achsen, `{ r, c, t }` = Zeilen-, Spaltenbeschriftungen, Zellen. Datei:
@@ -169,7 +211,7 @@ Hören zeigt bei Wortformen die Frage (`task.prompt`): mange/manges/mangent
 klingen gleich.
 
 **Dateiformat** bleibt kompatibel zu MyMemory/MyTafelfussball (`F:`/`A:`/`---`);
-`S:`, `H:`, `HF:`, `HA:`, `W:`, `Zeilen:`/`Spalten:`/`T:` und `Sprachen: de → fr` sind Zusätze, die die
+`S:`, `H:`, `HF:`, `HA:`, `W:`, `Zeilen:`/`Spalten:`/`T:`, `![](…)`, `Sprachen: de → fr` und `Fach:` sind Zusätze, die die
 anderen Apps überlesen. Eine Liste schreibt `toFile` auf **eine** Zeile, Punkte
 mit ` | ` getrennt (`A: 1. petere | 2. appetere`): MyMemory liest nur die erste
 `A:`-Zeile und sähe sonst nur den ersten Punkt; für `F:` ginge es ohnehin nicht
@@ -752,7 +794,8 @@ zurücksetzen — dagegen hilft nur die Sicherung.
   deckend (`bg-rot-voll`), dazu `fach-0…5` für die Lernstufen. Eine alte
   Klasse wie `text-gray-500` oder `bg-red-100` erzeugt **gar nichts**.
   `white`/`black` gibt es nur für das, was so bleiben muss: Schreibflächen
-  (`PAD_FRAME`, die Tinte von iink ist dunkel), Knopf im `Switch`, Kamerabild.
+  (`PAD_FRAME`, die Tinte von iink ist dunkel), Knopf im `Switch`, Kamerabild,
+  Grund der Wortbilder (`WordImage`).
 - Bausteine im `<style type="text/tailwindcss">` (sonst gewinnt Tailwinds
   Preflight): `knopf-1/-2/-n` (über `BTN_PRIMARY`/`BTN_SECONDARY`/
   `BTN_NEUTRAL`, Polster am Aufruf), `kachel` (`CARD`), `kopf` (`LABEL`),
@@ -904,8 +947,10 @@ wenn sich etwas ändert. Kurz:
   Thema; Zusatz nur für andere Set-Arten (`– Sätze`, `– Verben (présent)`).
   Nicht in den Titel: Sprache, Klasse, Datum, «Vocabulary». Kein eigenes
   Eingabefeld dafür — die KI liest Einheit und Thema aus dem Material.
-- **Ordner** `<Sprache>/[Klasse N]`, automatisch beim Import (`placeFor` →
-  `autoDir`): ohne gewählten Ordner (Kasten auf «automatisch», aufs Fenster
+- **Ordner** `<Sprache>/[Klasse N]`, bei Fachbegriffen `<Fach>/[Klasse N]`
+  (das Fach geht der Sprache vor, Ordner ohne Gross/Klein und Umlaut gesucht;
+  «dieselbe Fassung» vergleicht dann das Fach statt der Sprache, `homeOf`),
+  automatisch beim Import (`placeFor` → `autoDir`): ohne gewählten Ordner (Kasten auf «automatisch», aufs Fenster
   oder auf die Liste gezogen, Link/QR) kommt ein Set in den Ordner seiner
   Fremdsprache (`foreignLang`: die Seite, die nicht `de` ist). Ein vorhandener
   Ordner der Sprache wird genommen, wie er auch heisst (`NAME_TO_CODE`,

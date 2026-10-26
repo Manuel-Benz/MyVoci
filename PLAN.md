@@ -4,6 +4,15 @@ Vokabeltrainer für den Unterricht, komplett clientseitig wie MyMemory: eine
 `index.html`, kein Backend, gespeichert im Browser, geteilt per Direktlink/QR.
 Live: https://manuel-benz.github.io/MyVoci/
 
+**Stand (26.10.2026):** **Fachbegriffe** (Biologie u. a.): `Fach: Biologie` legt
+ein Set im Ordner des Fachs ab statt nach Sprache, bei `de → de` heissen die Seiten
+Erklärung (`F:`) und Begriff (`A:`, den sucht der Lückentext), eigener KI-Prompt
+«Fachbegriffe», Feld «Fach» im Editor. **Bilder per Adresse** am Wort
+(`![](https://…)`, eine Commons-Dateiseite genügt): über der Frage beim Üben, klein
+in Wortliste und Editor, gehen im Link und QR-Code mit. Danach Review (high, 8
+Befunde, 7 behoben; Bilder von beliebigen Servern aus Links bewusst offen) und
+/simplify. Headless geprüft, auf dem iPad noch nicht.
+
 **Stand (22.10.2026, später):** Ordnerzeilen zeigen die Anzahl Sets darin (samt Unterordnern), wie in MyMemory, MyKahoot und MyTafelfussball (DESIGN.md «Sammlung auf der Startseite»).
 
 **Stand (22.10.2026):** **Ein Feld für Text oder Datei**: Einfügefeld und
@@ -619,7 +628,10 @@ mange/manges/mangent klingen gleich.
 
 - Lernstand geräteübergreifend live (ein Sync via GitHub/Gist bräuchte ein
   Token pro SchülerIn — eher nicht; die Sicherung als Datei deckt den Umzug ab).
-- Bilder statt Wort A (Bild-URL) für Anfänger.
+- ✅ Bilder per Adresse (26.10.2026). Offen: **eigene Bilddateien** (Stufe 2: Scan
+  aus dem Buch; bräuchte IndexedDB, ZIP-Sicherung und `my-ablage.js` in MySuite,
+  ein Link trüge sie nicht) und ein Modus **Abbildung beschriften** (Bild mit
+  Markierungen, Begriff pro Markierung). Bilder auch in Zuordnen.
 - Offline (Service Worker) für Schul-iPads ohne stabiles WLAN.
 - **Spiele**: s. Abschnitt «Spielideen» gleich darunter.
 
